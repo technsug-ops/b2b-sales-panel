@@ -8,7 +8,7 @@
 // Master code: permanent, SHA-256 compared against GATE_MASTER_HASH.
 // One-time codes: stored in Vercel Blob (codes.json); burned on first successful login.
 
-import { put, list } from '@vercel/blob';
+import { put, get } from '@vercel/blob';
 import { createHash, createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 
 const BLOB_PATH = 'gate/codes.json';
@@ -35,15 +35,15 @@ function verifyToken(tok) {
 
 async function loadCodes() {
   try {
-    const { blobs } = await list({ prefix: BLOB_PATH, limit: 1 });
-    if (!blobs.length) return [];
-    const r = await fetch(blobs[0].url, { cache: 'no-store' });
-    if (!r.ok) return [];
-    return await r.json();
-  } catch { return []; }
+    const res = await get(BLOB_PATH, { access: 'private', useCache: false });
+    if (!res) return [];
+    const text = await new Response(res.stream).text();
+    const data = JSON.parse(text);
+    return Array.isArray(data) ? data : [];
+  } catch (e) { if (e && e.name === 'BlobNotFoundError') return []; throw e; }
 }
 async function saveCodes(codes) {
-  await put(BLOB_PATH, JSON.stringify(codes), { access: 'public', addRandomSuffix: false, contentType: 'application/json', cacheControlMaxAge: 0 });
+  await put(BLOB_PATH, JSON.stringify(codes), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' });
 }
 function genCode() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -52,6 +52,9 @@ function genCode() {
 }
 
 export default async function handler(req, res) {
+  try { return await main(req, res); } catch (e) { console.error(e); return res.status(500).json({ ok: false, error: 'server', detail: String(e && e.message || e).slice(0, 200) }); }
+}
+async function main(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' });
   let body = req.body;
