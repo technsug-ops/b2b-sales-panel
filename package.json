@@ -1,0 +1,8 @@
+{
+  "name": "b2b-sales-panel",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vercel/blob": "2.8.1"
+  }
+}

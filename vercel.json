@@ -1,1 +1,1 @@
-{"cleanUrls":true}
+{"cleanUrls":true,"functions":{"api/gate.js":{"maxDuration":10}}}
