@@ -159,7 +159,8 @@ tr:last-child td{border:0}tbody tr{cursor:pointer}tbody tr:hover td{background:v
 .perm .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center}
 .perm .c{text-align:center}
 /* login gate */
-#gate{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:16px}
+#gate{position:fixed;inset:0;z-index:5000;background:var(--bg);display:grid;place-items:center;padding:16px}
+body.locked .app,body.locked .fab,body.locked .ai{visibility:hidden}
 #gate .box{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:var(--shadow);display:grid;gap:14px}
 #gate .brand{justify-content:center}
 #gate input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:15px}
@@ -1251,8 +1252,8 @@ $('#aiForm').onsubmit=e=>{e.preventDefault();const v=$('#aiIn').value.trim();if(
 const GATE_HASH="70ecb282a5f0e87bc2396479c072c93726ff16f5d0abbbc855a556a80178c2a5";
 async function sha256(str){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function gateOk(){try{return sessionStorage.getItem('b2b-gate')===GATE_HASH}catch(e){return false}}
-function showGate(){$('#gate').hidden=false;document.body.style.overflow='hidden';setTimeout(()=>$('#gatePw').focus(),50)}
-function hideGate(){$('#gate').hidden=true;document.body.style.overflow=''}
+function showGate(){$('#gate').hidden=false;document.body.classList.add('locked');document.body.style.overflow='hidden';setTimeout(()=>$('#gatePw').focus(),50)}
+function hideGate(){$('#gate').hidden=true;document.body.classList.remove('locked');document.body.style.overflow='';MAPS.forEach(({map})=>{try{map.invalidateSize()}catch(e){}})}
 $('#gateForm').onsubmit=async e=>{e.preventDefault();const h=await sha256($('#gatePw').value.trim());if(h===GATE_HASH){try{sessionStorage.setItem('b2b-gate',h)}catch(x){}hideGate()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}};
 if(!gateOk())showGate();
 render();
