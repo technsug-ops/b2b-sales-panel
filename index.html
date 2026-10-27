@@ -158,6 +158,13 @@ tr:last-child td{border:0}tbody tr{cursor:pointer}tbody tr:hover td{background:v
 .perm>div{padding:7px 6px;border-bottom:1px solid var(--line)}
 .perm .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center}
 .perm .c{text-align:center}
+/* login gate */
+#gate{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:16px}
+#gate .box{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:var(--shadow);display:grid;gap:14px}
+#gate .brand{justify-content:center}
+#gate input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:15px}
+#gate .err{color:var(--crit);font-size:12px;min-height:16px}
+#gate small.hint{color:var(--muted);text-align:center;font-size:11px}
 .menuBtn{display:none}
 /* partner website preview */
 #siteOverlay{position:fixed;inset:0;z-index:40;overflow:auto;background:var(--bg)}
@@ -255,6 +262,15 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
 
 </head>
 <body>
+<div id="gate" hidden>
+  <form class="box" id="gateForm">
+    <div class="brand"><div class="mark">B2B</div><div><b>B2B Sales Panel</b><small>Moonzelt · Euroconteiner · Wasserernte</small></div></div>
+    <div><label for="gatePw" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px" data-i="gate.pw">Zugangscode</label><input id="gatePw" type="password" autocomplete="current-password" autofocus></div>
+    <div class="err" id="gateErr"></div>
+    <button class="btn p" type="submit" style="justify-content:center" data-i="gate.btn">Anmelden</button>
+    <small class="hint" data-i="gate.hint">Demo-Zugang · nur für eingeladene Personen</small>
+  </form>
+</div>
 <div class="app">
 <aside class="side" id="side">
   <div class="brand"><div class="mark">B2B</div><div><b id="t-brand">B2B Sales Panel</b><small>Moonzelt · Euroconteiner · Wasserernte</small></div></div>
@@ -274,7 +290,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
     <span class="demo" data-i="demoNote">Demo · Beispieldaten</span>
     <span class="sp"></span>
     <div class="langs" id="langs"><button data-l="de">DE</button><button data-l="tr">TR</button><button data-l="en">EN</button></div>
-    <span class="pill" id="userPill">👤 —</span>
+    <span class="pill" id="userPill">👤 —</span><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
   </div>
   <div id="view"></div>
 </main>
@@ -334,6 +350,7 @@ de:{nav:{dash:"Dashboard",partners:"Partner",contracts:"Verträge",leads:"Leads"
  ref:{title:"Ihr persönlicher Referenzcode",hint:"Formulare auf den Websites erkennen diesen Code – Leads landen automatisch bei Ihnen.",link:"Ihr Link",copy:"Kopieren",copied:"Kopiert",quick:"Lead schnell erfassen",name:"Name / Firma",plz:"PLZ",brand:"Marke",phone:"Telefon",save:"Lead einreichen",saved:"Lead eingereicht – Status: Neu",stats:"Ihre Zahlen"},
  net:{invite:"+ Partner einladen",invited:"Einladung gesendet",sub:"Ihr Netzwerk",comm:"Netzwerkprovision (Monat)"},
  support:{title:"Ihr Ansprechpartner",msg:"Nachricht senden"},
+ gate:{pw:"Zugangscode",btn:"Anmelden",hint:"Demo-Zugang · nur für eingeladene Personen",err:"Zugangscode ist falsch.",logout:"Abmelden"},
  dpub:{btn:"+ Veröffentlichen",title:"Dokument / Video veröffentlichen",who:"Wer darf veröffentlichen: Super Admin · Inhaber · Sekretariat",file:"Datei",name:"Titel",kind:"Typ",brand:"Marke",audTypes:"Partnertypen",audTier:"Mindeststufe",audStates:"Bundesländer (optional)",audPartners:"Nur bestimmte Partner (optional)",notify:"Benachrichtigen",reach:"Erreicht",partners:"Partner",publish:"Jetzt veröffentlichen",published:"Veröffentlicht an {n} Partner",cancel:"Abbrechen",all:"Alle",pubBy:"veröffentlicht von"},
  ctr:{new:"+ Vertrag aus Vorlage",template:"Vorlage",brand:"Marke",term:"Laufzeit",note:"Felder werden automatisch aus der Partnerkarte (CRM) gefüllt.",preview:"Vorschau",pdf:"PDF erzeugen",sign:"Zur Unterschrift senden",cancel:"Abbrechen",sent:"Vertrag erzeugt und zur Unterschrift gesendet"}},
 tr:{nav:{dash:"Panel",partners:"Partnerler",contracts:"Sözleşmeler",leads:"Lead'ler",orders:"Siparişler",dam:"Materyaller (DAM)",notif:"Bildirimler",settings:"Ayarlar",myleads:"Lead'lerim",mycontract:"Sözleşmem",earn:"Kazançlarım",network:"Ağım",pricelist:"Fiyat Listesi & Sipariş"},
@@ -378,6 +395,7 @@ tr:{nav:{dash:"Panel",partners:"Partnerler",contracts:"Sözleşmeler",leads:"Lea
  ref:{title:"Kişisel referans kodunuz",hint:"Web sitelerindeki formlar bu kodu tanır – lead'ler otomatik size düşer.",link:"Linkiniz",copy:"Kopyala",copied:"Kopyalandı",quick:"Hızlı lead girişi",name:"Ad / Firma",plz:"Posta kodu",brand:"Marka",phone:"Telefon",save:"Lead'i gönder",saved:"Lead gönderildi – durum: Yeni",stats:"Rakamlarınız"},
  net:{invite:"+ Partner davet et",invited:"Davet gönderildi",sub:"Ağınız",comm:"Ağ komisyonu (ay)"},
  support:{title:"Yetkiliniz",msg:"Mesaj gönder"},
+ gate:{pw:"Erişim kodu",btn:"Giriş",hint:"Demo erişimi · yalnızca davetliler için",err:"Erişim kodu hatalı.",logout:"Çıkış"},
  dpub:{btn:"+ Yayınla",title:"Doküman / video yayınla",who:"Yayınlayabilen: Süper Admin · Patron · Sekreterya",file:"Dosya",name:"Başlık",kind:"Tür",brand:"Marka",audTypes:"Partner türleri",audTier:"Minimum seviye",audStates:"Eyaletler (isteğe bağlı)",audPartners:"Sadece belirli partnerler (isteğe bağlı)",notify:"Bildirim gönder",reach:"Ulaşır",partners:"partner",publish:"Şimdi yayınla",published:"{n} partnere yayınlandı",cancel:"İptal",all:"Tümü",pubBy:"yayınlayan"},
  ctr:{new:"+ Şablondan sözleşme",template:"Şablon",brand:"Marka",term:"Süre",note:"Alanlar partner kartından (CRM) otomatik doldurulur.",preview:"Önizleme",pdf:"PDF oluştur",sign:"İmzaya gönder",cancel:"İptal",sent:"Sözleşme oluşturuldu ve imzaya gönderildi"}},
 en:{nav:{dash:"Dashboard",partners:"Partners",contracts:"Contracts",leads:"Leads",orders:"Orders",dam:"Assets (DAM)",notif:"Notifications",settings:"Settings",myleads:"My leads",mycontract:"My contract",earn:"Earnings",network:"My network",pricelist:"Price list & order"},
@@ -422,6 +440,7 @@ en:{nav:{dash:"Dashboard",partners:"Partners",contracts:"Contracts",leads:"Leads
  ref:{title:"Your personal referral code",hint:"Website forms recognise this code – leads land with you automatically.",link:"Your link",copy:"Copy",copied:"Copied",quick:"Quick lead capture",name:"Name / company",plz:"Postcode",brand:"Brand",phone:"Phone",save:"Submit lead",saved:"Lead submitted – status: New",stats:"Your numbers"},
  net:{invite:"+ Invite partner",invited:"Invitation sent",sub:"Your network",comm:"Network commission (month)"},
  support:{title:"Your contact",msg:"Send message"},
+ gate:{pw:"Access code",btn:"Sign in",hint:"Demo access · invited people only",err:"Access code is incorrect.",logout:"Sign out"},
  dpub:{btn:"+ Publish",title:"Publish document / video",who:"May publish: Super admin · Owner · Secretariat",file:"File",name:"Title",kind:"Type",brand:"Brand",audTypes:"Partner types",audTier:"Minimum tier",audStates:"States (optional)",audPartners:"Specific partners only (optional)",notify:"Notify",reach:"Reaches",partners:"partners",publish:"Publish now",published:"Published to {n} partners",cancel:"Cancel",all:"All",pubBy:"published by"},
  ctr:{new:"+ Contract from template",template:"Template",brand:"Brand",term:"Term",note:"Fields are filled automatically from the partner card (CRM).",preview:"Preview",pdf:"Generate PDF",sign:"Send for signature",cancel:"Cancel",sent:"Contract generated and sent for signature"}}
 };
@@ -1209,6 +1228,7 @@ function render(){
 $('#roleSel').onchange=e=>{viewer=VIEWERS.find(v=>v.id===e.target.value);page='dash';selPartner=null;render()};
 $('#langs').onclick=e=>{const b=e.target.closest('button');if(!b)return;lang=b.dataset.l;try{localStorage.setItem('pp-lang',lang)}catch(x){}render()};
 $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
+$('#logoutBtn').onclick=()=>{try{sessionStorage.removeItem('b2b-gate')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
 
 /* ---------- AI assistant (scripted demo) ---------- */
 const AI_RESP={
@@ -1227,6 +1247,14 @@ function aiAsk(q,key){aiMsg('u',q);const k=key||(/vertr|sözleş|contract/i.test
 $('#aiFab').onclick=aiOpen;$('#aiClose').onclick=()=>{$('#ai').hidden=true;$('#aiFab').hidden=false};
 $('#aiForm').onsubmit=e=>{e.preventDefault();const v=$('#aiIn').value.trim();if(!v)return;$('#aiIn').value='';aiAsk(v)};
 
+/* ---------- access gate (demo: client-side code check) ---------- */
+const GATE_HASH="70ecb282a5f0e87bc2396479c072c93726ff16f5d0abbbc855a556a80178c2a5";
+async function sha256(str){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function gateOk(){try{return sessionStorage.getItem('b2b-gate')===GATE_HASH}catch(e){return false}}
+function showGate(){$('#gate').hidden=false;document.body.style.overflow='hidden';setTimeout(()=>$('#gatePw').focus(),50)}
+function hideGate(){$('#gate').hidden=true;document.body.style.overflow=''}
+$('#gateForm').onsubmit=async e=>{e.preventDefault();const h=await sha256($('#gatePw').value.trim());if(h===GATE_HASH){try{sessionStorage.setItem('b2b-gate',h)}catch(x){}hideGate()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}};
+if(!gateOk())showGate();
 render();
 </script>
 
