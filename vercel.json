@@ -1,1 +1,1 @@
-{"cleanUrls":true,"rewrites":[{"source":"/console","destination":"/index.html"}],"functions":{"api/gate.js":{"maxDuration":10}}}
+{"cleanUrls":true,"rewrites":[{"source":"/console","destination":"/"},{"source":"/zentrale","destination":"/"},{"source":"/partner","destination":"/"},{"source":"/freelancer","destination":"/"},{"source":"/leadgen","destination":"/"},{"source":"/distributor","destination":"/"}],"functions":{"api/gate.js":{"maxDuration":10}}}

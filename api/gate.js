@@ -4,6 +4,8 @@
 // POST /api/gate  { action: "create", admin, label, ttlHours } -> { ok, code, expires }
 // POST /api/gate  { action: "list", admin }                 -> { ok, codes: [...] }
 // POST /api/gate  { action: "revoke", admin, id }           -> { ok }
+// POST /api/gate  { action: "plogin", door, user, pass }    -> partner door login
+// POST /api/gate  { action: "pcreds_sync|pcreds_reset|pcreds_toggle", token(hq) } -> partner credentials (Firmenzentrale only)
 //
 // Master code: permanent, SHA-256 compared against GATE_MASTER_HASH.
 // One-time codes: stored in Vercel Blob (codes.json); burned on first successful login.
@@ -13,6 +15,9 @@ import { createHash, createHmac, randomInt, timingSafeEqual } from 'node:crypto'
 
 const BLOB_PATH = 'gate/codes.json';
 const NOTES_PATH = 'gate/notes.json';
+const CREDS_PATH = 'gate/partners.json';
+const HQ_HASH = process.env.GATE_HQ_HASH || '';
+const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
 const MASTER_HASH = process.env.GATE_MASTER_HASH || '';
 const ADMIN_SECRET = process.env.GATE_ADMIN_SECRET || '';
 const SESSION_HOURS = 12;
@@ -47,6 +52,18 @@ async function loadCodes() {
 async function saveCodes(codes) {
   await put(BLOB_PATH, JSON.stringify(codes), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' });
 }
+async function loadJson(path) {
+  try { const r = await get(path, { access: 'private', useCache: false }); if (!r) return null; return JSON.parse(await new Response(r.stream).text()); }
+  catch (e) { if (e && e.name === 'BlobNotFoundError') return null; throw e; }
+}
+async function saveJson(path, data) {
+  await put(path, JSON.stringify(data), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' });
+}
+const WORDS = ['Zelt', 'Regen', 'Stahl', 'Halle', 'Wasser', 'Montage', 'Planke', 'Anker', 'Wolke', 'Tanne', 'Kiesel', 'Falke', 'Brise', 'Felsen', 'Linde', 'Quelle'];
+function genPassword() { return `${WORDS[randomInt(WORDS.length)]}-${String(randomInt(10000)).padStart(4, '0')}-${WORDS[randomInt(WORDS.length)].toLowerCase()}`; }
+function slug(s) { return String(s).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24); }
+const publicCred = c => ({ id: c.id, name: c.name, doors: c.doors, user: c.user, pass: c.pass, active: c.active, created: c.created, lastLogin: c.lastLogin || null, logins: c.logins || 0 });
+
 function genCode() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const part = n => Array.from({ length: n }, () => alphabet[randomInt(alphabet.length)]).join('');
@@ -81,11 +98,52 @@ async function main(req, res) {
     return res.status(200).json({ ok: !!d, sub: d?.sub || null, exp: d?.exp || null });
   }
 
+  if (action === 'plogin') {
+    const door = String(body.door || ''); const user = String(body.user || '').trim().toLowerCase(); const pass = String(body.pass || '');
+    if (!DOORS.includes(door) || !user || !pass) return res.status(400).json({ ok: false, error: 'empty' });
+    const creds = (await loadJson(CREDS_PATH)) || [];
+    const c = creds.find(x => x.user === user);
+    if (!c || !c.active || !c.doors.includes(door) || !safeEq(c.pass, pass)) return res.status(401).json({ ok: false, error: 'invalid' });
+    c.lastLogin = Date.now(); c.logins = (c.logins || 0) + 1; c.lastDoor = door;
+    await saveJson(CREDS_PATH, creds);
+    return res.status(200).json({ ok: true, token: makeToken('p:' + c.id + ':' + door), kind: 'partner', pid: c.id, door });
+  }
+
+  if (action && action.startsWith('pcreds_')) {
+    const d = verifyToken(body.token);
+    if (!d || d.sub !== 'hq') return res.status(403).json({ ok: false, error: 'forbidden' });
+    let creds = (await loadJson(CREDS_PATH)) || [];
+    if (action === 'pcreds_sync') {
+      const list = Array.isArray(body.partners) ? body.partners.slice(0, 500) : [];
+      const used = new Set(creds.map(c => c.user));
+      for (const p of list) {
+        const id = Number(p.id); const doors = (p.doors || []).filter(x => DOORS.includes(x));
+        let c = creds.find(x => x.id === id);
+        if (!c) {
+          let u = slug(p.name) || 'partner' + id; let k = u; let n = 2; while (used.has(k)) k = u + '-' + n++; used.add(k);
+          creds.push({ id, name: String(p.name).slice(0, 80), doors, user: k, pass: genPassword(), active: true, created: Date.now() });
+        } else { c.name = String(p.name).slice(0, 80); c.doors = doors; }
+      }
+      await saveJson(CREDS_PATH, creds);
+      return res.status(200).json({ ok: true, creds: creds.map(publicCred) });
+    }
+    const c = creds.find(x => x.id === Number(body.id));
+    if (!c) return res.status(404).json({ ok: false, error: 'not found' });
+    if (action === 'pcreds_reset') c.pass = genPassword();
+    else if (action === 'pcreds_toggle') c.active = !c.active;
+    else return res.status(400).json({ ok: false, error: 'unknown action' });
+    await saveJson(CREDS_PATH, creds);
+    return res.status(200).json({ ok: true, cred: publicCred(c) });
+  }
+
   if (action === 'login') {
     const code = String(body.code || '').trim();
     if (!code) return res.status(400).json({ ok: false, error: 'empty' });
     if (MASTER_HASH && safeEq(sha(code), MASTER_HASH)) {
       return res.status(200).json({ ok: true, token: makeToken('master'), kind: 'master' });
+    }
+    if (HQ_HASH && safeEq(sha(code), HQ_HASH)) {
+      return res.status(200).json({ ok: true, token: makeToken('hq'), kind: 'hq' });
     }
     const norm = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const codes = await loadCodes();
