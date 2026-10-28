@@ -462,7 +462,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
     <span class="demo" data-i="demoNote">Demo · Beispieldaten</span>
     <span class="sp"></span>
     <div class="langs" id="langs"><button data-l="de">DE</button><button data-l="tr">TR</button><button data-l="en">EN</button><button data-l="nl">NL</button></div>
-    <a class="btn sm" id="doorBtn" hidden href="/"></a><span class="pill" id="expPill" hidden style="color:var(--warn);font-variant-numeric:tabular-nums"></span><span class="pill" id="userPill">👤 —</span><button class="btn sm" id="notesBtn" hidden title="Notizen">📝</button><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
+    <a class="btn sm" id="doorBtn" hidden href="/" target="_blank" rel="noopener"></a><span class="pill" id="expPill" hidden style="color:var(--warn);font-variant-numeric:tabular-nums"></span><span class="pill" id="userPill">👤 —</span><button class="btn sm" id="notesBtn" hidden title="Notizen">📝</button><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
   </div>
   <div id="view"></div>
 </main>
@@ -1212,7 +1212,7 @@ function deco(html){
 /* ---------- product home (www.B2B.com) ---------- */
 function showHome(){
   document.body.classList.add('locked');$('#gate').hidden=true;document.title='B2B-Easy · TechNS';
-  const L=(a,label,t,sub)=>`<a class="hlink" href="${areaHref(a,sub,t)}"><span>${label}</span><code>${targetUrl(a,sub,t)}</code><em>Demo: ${absUrl(a,sub,t).replace(/^https?:\/\//,'')}</em></a>`;
+  const L=(a,label,t,sub)=>`<a class="hlink" href="${areaHref(a,sub,t)}" target="_blank" rel="noopener"><span>${label}</span><code>${targetUrl(a,sub,t)}</code><em>Demo: ${absUrl(a,sub,t).replace(/^https?:\/\//,'')}</em></a>`;
   const T=(name,model,txt,links)=>`<div class="hten"><div class="htop"><b>${name}</b><span class="hbadge ${model==='Start'?'start':''}">${model}</span></div><p>${txt}</p><div class="hlinks">${links}</div></div>`;
   const el=document.createElement('div');el.id='home';el.innerHTML=deco(`<div class="hwrap">
     <div class="hbrand"><span class="mark">B2B</span><div><b>B2B-Easy</b><small>ein Produkt der TechNS UG · www.b2b-easy.com</small></div></div>
@@ -1287,7 +1287,7 @@ function showEmbed(){
       <div><h2 class="hsec">2 · ${L.loc}</h2><pre class="code">${snip('locator')}</pre>
         <div class="embframe"><div class="embbar">${sites[0]}/${nl?'dealers':'haendler'} <span>Vorschau</span></div><div class="embpage"><div data-notr class="b2bw"><b>${L.loc}</b><input id="embQ" placeholder="${L.q}"><div id="embList"></div></div></div></div>
         <h2 class="hsec">3 · DNS bei ${esc(TNAME)}</h2><pre class="code">${esc(`partner.${(TARGET_HOSTS[TENANT]||{}).network?TARGET_HOSTS[TENANT].network.replace(/^partner\./,''):'firma.de'}  CNAME  cname.b2b-easy.com.\nteam.${(TARGET_HOSTS[TENANT]||{}).staff?TARGET_HOSTS[TENANT].staff.replace(/^team\./,''):'firma.de'}     CNAME  cname.b2b-easy.com.\n_b2b-verify  TXT  "b2b-verify=…"`)}</pre>
-        <div class="hlinks">${['network','staff'].map(a=>`<a class="hlink" href="${areaHref(a)}"><span>${a==='network'?'Partner-Portal':'Mitarbeiter-Portal'}</span><code>${targetUrl(a)}</code><em>Demo: ${absUrl(a).replace(/^https?:\/\//,'')}</em></a>`).join('')}</div></div>
+        <div class="hlinks">${['network','staff'].map(a=>`<a class="hlink" href="${areaHref(a)}" target="_blank" rel="noopener"><span>${a==='network'?'Partner-Portal':'Mitarbeiter-Portal'}</span><code>${targetUrl(a)}</code><em>Demo: ${absUrl(a).replace(/^https?:\/\//,'')}</em></a>`).join('')}</div></div>
     </div>
     ${EDITION==='full'?`<p class="hfoot"><a href="${areaHref('home')}">← Alle Demo-Mandanten</a></p>`:`<p class="hfoot"><a href="${areaHref('staff')}">← Zum Portal</a></p>`}</div>`);
   document.body.appendChild(el);
@@ -1910,7 +1910,7 @@ function viewRegister(){
     <div class="f full"><label>${r('docs')}</label><label for="r_docs" style="display:block;border:2px dashed var(--line);border-radius:10px;padding:26px;text-align:center;color:var(--muted);cursor:pointer;font-weight:400">⤒ ${r('drop')}<input id="r_docs" type="file" multiple hidden></label></div>
     <div class="f full"><label class="chk"><input id="r_consent" type="checkbox" checked><span>${r('consent')}</span></label></div></div>`;
   const pub=document.body.classList.contains('public');
-  return `<div class="reg">${pub?`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>${TENANTS[0].name} · Partner-Programm</b><a class="btn sm" style="text-decoration:none;color:inherit" href="${areaHref('network')}">${lang==='tr'?'Partner girişi':lang==='en'?'Partner login':'Partner-Login'}</a></div>`:''}
+  return `<div class="reg">${pub?`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>${TENANTS[0].name} · Partner-Programm</b><a class="btn sm" style="text-decoration:none;color:inherit" href="${areaHref('network')}" target="_blank" rel="noopener">${lang==='tr'?'Partner girişi':lang==='en'?'Partner login':'Partner-Login'}</a></div>`:''}
     <div class="hero"><div><h1 style="font-size:26px">${r('title')}</h1><p style="margin:4px 0 0;color:var(--muted);max-width:60ch">${r('sub')}</p></div><div class="lg">${Object.values(BRANDS).map(b=>`<span style="background:${b.c}">${b.name}</span>`).join('')}</div></div>
     <div class="steps">${steps}</div>
     <div class="card"><h2 style="margin-bottom:12px">${r('s'+regStep)}</h2>${body}
@@ -3423,7 +3423,7 @@ function viewConsoleHome(){
   <div class="grid two">
     <div class="card"><div class="hd"><h2>Mandanten</h2><span class="sp"></span><button class="btn sm" data-goto="tenants">Verwalten →</button></div>
       <div class="tw"><table><thead><tr><th>Mandant</th><th>Plan</th><th>Partner</th><th>Phase</th><th>MRR</th><th></th></tr></thead><tbody>
-      ${TENANTS.map(x=>`<tr><td><b>${esc(x.name)}</b><br><small style="color:var(--muted)">${x.domain}</small></td><td>${x.plan}</td><td>${x.partners()}</td><td>${x.id==='t1'?`<span class="stt ${PHASE===3?'demo':'p1'}">${PHASE} / 3</span>`:'<span class="stt demo">3 / 3</span>'}</td><td style="font-variant-numeric:tabular-nums">${eur(x.mrr)}</td><td><a class="btn sm" href="${portalUrl()}" data-openportal="${x.id}">Portal ↗</a></td></tr>`).join('')}</tbody></table></div></div>
+      ${TENANTS.map((x,xi)=>`<tr><td><b>${esc(x.name)}</b><br><small style="color:var(--muted)">${x.domain}</small></td><td>${x.plan}</td><td>${x.partners()}</td><td>${x.id==='t1'?`<span class="stt ${PHASE===3?'demo':'p1'}">${PHASE} / 3</span>`:'<span class="stt demo">3 / 3</span>'}</td><td style="font-variant-numeric:tabular-nums">${eur(x.mrr)}</td><td><a class="btn sm" href="${TENANT_LIST[xi]?areaHref('staff',null,TENANT_LIST[xi]):portalUrl()}" data-openportal="${x.id}" target="_blank" rel="noopener">Portal ↗</a></td></tr>`).join('')}</tbody></table></div></div>
     <div style="display:grid;gap:14px;align-content:start">
       <div class="card"><div class="hd"><h2>Systemstatus</h2></div><dl class="kv"><dt>API</dt><dd><span class="st ok">online</span> · /api/gate</dd><dt>Hosting</dt><dd>Vercel fra1 · Supabase eu-central-1</dd><dt>Uptime 30 d</dt><dd>99,98 %</dd><dt>Queue</dt><dd>${QUEUE.filter(j=>j.st==='queued'||j.st==='retry').length} offen · ${failed} fehlgeschlagen</dd><dt>Letztes Backup</dt><dd>${SEC.lastBackup}</dd></dl></div>
       <div class="card"><div class="hd"><h2>Plattform-Aktivität</h2><span class="sp"></span>${ph(1)?'<button class="btn sm" data-goto="audit">Audit →</button>':''}</div><div class="feed">${platLog().slice(0,5).map(a=>`<div class="it"><span class="dot" style="background:var(--accent);margin-top:6px"></span><span>${esc(a.what)}<br><small style="color:var(--muted)">${esc(a.who)}</small></span><small>${a.when.slice(5)}</small></div>`).join('')}</div></div>
@@ -3534,7 +3534,7 @@ function bpAction(n,SECPH,GOTO,L){
   if(!ph(SECPH[n]))return `<span class="stt p2">Phase ${SECPH[n]}</span>`;
   const open=L==='tr'?'aç':L==='en'?'open':'öffnen';
   if(GOTO[n])return `<button class="btn sm" data-goto="${GOTO[n]}">→ ${open}</button>`;
-  return CONSOLE?`<a class="btn sm" href="${portalUrl()}">Portal ↗</a>`:`<span class="stt demo">✓</span>`;
+  return CONSOLE?`<a class="btn sm" href="${portalUrl()}" target="_blank" rel="noopener">Portal ↗</a>`:`<span class="stt demo">✓</span>`;
 }
 function viewBP(){
   const L=lang==='tr'?'tr':lang==='en'?'en':'de';
@@ -3846,7 +3846,7 @@ $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').val
       if(r.ok&&r.kind==='team'&&!CONSOLE&&!NET){setTeam(r.role,r.name,r.perms,r.roleName,r.user);enterAs('team',r.token);lockAt(r.exp)}
       else if(r.ok&&r.kind==='partner'&&NET){adoptDoor('p:'+r.pid+':'+r.door);enterAs('partner',r.token,r.pid);lockAt(r.exp)}
       else if(r.ok&&doorAllows(r.kind))enterAs(r.kind,r.token);
-      else if(r.error==='wrong_place'){const tg={tenant:r.tenant,area:r.area};const u=codeTargetUrl(tg);$('#gateErr').innerHTML=esc(L4('Dieser Code gilt für einen anderen Eingang: ','Bu kod başka bir giriş için geçerli: ','This code belongs to another entrance: ','Deze code hoort bij een andere ingang: '))+'<a href="'+esc(u)+'">'+esc(u)+'</a>';}
+      else if(r.error==='wrong_place'){const tg={tenant:r.tenant,area:r.area};const u=codeTargetUrl(tg);$('#gateErr').innerHTML=esc(L4('Dieser Code gilt für einen anderen Eingang: ','Bu kod başka bir giriş için geçerli: ','This code belongs to another entrance: ','Deze code hoort bij een andere ingang: '))+'<a href="'+esc(u)+'" target=\"_blank\" rel=\"noopener\">'+esc(u)+'</a>';}
       else if(r.ok){$('#gateErr').textContent=CONSOLE?DENY.console:HQ?DENY.zentrale:DENY.root;$('#gatePw').select()}
       else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
     else{const h=await sha256(code);const kind=h===GATE_HASH?'master':h===HQ_HASH?'hq':null;
