@@ -606,7 +606,12 @@ en:{nav:{bp:"Best practices",audit:"Audit log",tenants:"Tenants & white-label",i
 let lang=(()=>{try{return localStorage.getItem('pp-lang')||'de'}catch(e){return 'de'}})();
 /* ---------- tenant (first path segment, or <tenant>.b2b-easy.com) ---------- */
 const TENANT_LIST=['aydemir','ug-alu','sirius'];
-const TENANT=(()=>{try{const http=location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host);const raw=http?location.pathname:(location.hash.replace(/^#/,'')||'/');const s=(raw.split('/').filter(Boolean)[0]||'').toLowerCase();if(TENANT_LIST.includes(s))return s;if(http){const m=/^(?:partner\.)?([a-z0-9-]+)\.b2b-easy\.com$/.exec(location.hostname.toLowerCase());if(m&&TENANT_LIST.includes(m[1]))return m[1]}}catch(e){}return 'aydemir'})();
+/* customer domains (CNAME to B2B-Easy): host -> [tenant, area] */
+const HOST_MAP={'b2b.ug-alu.de':['ug-alu','site'],'partner.ug-alu.de':['ug-alu','network'],'team.ug-alu.de':['ug-alu','staff'],
+  'partner.aydemir-gruppe.de':['aydemir','network'],'team.aydemir-gruppe.de':['aydemir','staff'],
+  'partner.siriuswindows.nl':['sirius','network'],'team.siriuswindows.nl':['sirius','staff']};
+const CUSTOMHOST=(()=>{try{return location.protocol.startsWith('http')?HOST_MAP[location.hostname.toLowerCase()]||null:null}catch(e){return null}})();
+const TENANT=CUSTOMHOST?CUSTOMHOST[0]:(()=>{try{const http=location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host);const raw=http?location.pathname:(location.hash.replace(/^#/,'')||'/');const s=(raw.split('/').filter(Boolean)[0]||'').toLowerCase();if(TENANT_LIST.includes(s))return s;if(http){const m=/^(?:partner\.)?([a-z0-9-]+)\.b2b-easy\.com$/.exec(location.hostname.toLowerCase());if(m&&TENANT_LIST.includes(m[1]))return m[1]}}catch(e){}return 'aydemir'})();
 const TENANT_FEATURES={'ug-alu':['orders','stock','install','sites','hr'],'sirius':['orders','stock']};
 const LSK=k=>TENANT==='aydemir'?k:k+':'+TENANT;
 const ADDON_DEF={orders:{n:'Bestellung & Preisliste',d:'Händlerpreise je Stufe, Draft Order an Shop',ic:'📦'},stock:{n:'Lager & Lieferzeiten',d:'Verfügbarkeit, Wareneingang, Sendungen',ic:'🏭'},install:{n:'Montage-Termine',d:'Teams, Kalender, Slot-Anfragen',ic:'🔧'},projects:{n:'Projekt-Management',d:'Kanban, Aufgaben, Verantwortliche',ic:'🗂'},sites:{n:'Partner-Websites',d:'Mini-Sites & Co-Branding für Partner',ic:'🌐'},hr:{n:'Personal (HR)',d:'Mitarbeiter, Abwesenheiten, Organigramm',ic:'🧑‍💼'}};
@@ -960,6 +965,7 @@ const HOSTMODE=(()=>{try{return IS_HTTP&&location.hostname.toLowerCase().endsWit
 function rawPath(){try{return IS_HTTP?location.pathname:(location.hash.replace(/^#/,'')||'/')}catch(e){return '/'}}
 function parseArea(){
   const segs=rawPath().split('?')[0].split('/').filter(Boolean).map(x=>decodeURIComponent(x).toLowerCase());
+  if(CUSTOMHOST)return{area:CUSTOMHOST[1],rest:segs};
   if(HOSTMODE){const h=location.hostname.toLowerCase().slice(0,-(APP_DOMAIN.length+1));
     if(h==='console')return{area:'console',rest:segs};
     if(h.startsWith('partner.'))return{area:'network',rest:segs};
@@ -977,8 +983,8 @@ let PENDING=ROUTE.rest.length?ROUTE.rest:null;
 function areaBase(a,t){t=t||TENANT_SLUG;return HOSTMODE?'':a==='console'?'/console':a==='staff'?'/'+t:a==='network'?'/'+t+'/partner':a==='site'?'/'+t+'/site':a==='embed'?'/'+t+'/embed':''}
 function areaHost(a){return a==='console'?'console.':a==='network'?'partner.'+TENANT_SLUG+'.':a==='staff'?TENANT_SLUG+'.':'www.'}
 function areaPath(a,sub,t){return (areaBase(a,t)+(sub?'/'+sub:''))||'/'}
-function areaHref(a,sub,t){if(HOSTMODE)return location.protocol+'//'+areaHost(a)+APP_DOMAIN+(sub?'/'+sub:'');return IS_HTTP?areaPath(a,sub,t):'#'+areaPath(a,sub,t)}
-function absUrl(a,sub,t){return HOSTMODE?areaHref(a,sub,t):(IS_HTTP?location.origin:'https://b2b-portal.foundercheck.de')+areaPath(a,sub,t)}
+function areaHref(a,sub,t){if(CUSTOMHOST){const h=(TARGET_HOSTS[t||TENANT]||{})[a];return h?'https://'+h+(sub?'/'+sub:''):'https://b2b-portal.foundercheck.de'+areaPath(a,sub,t)}if(HOSTMODE)return location.protocol+'//'+areaHost(a)+APP_DOMAIN+(sub?'/'+sub:'');return IS_HTTP?areaPath(a,sub,t):'#'+areaPath(a,sub,t)}
+function absUrl(a,sub,t){return HOSTMODE||CUSTOMHOST?areaHref(a,sub,t):(IS_HTTP?location.origin:'https://b2b-portal.foundercheck.de')+areaPath(a,sub,t)}
 const TARGET_HOSTS={aydemir:{staff:'team.aydemir-gruppe.de',network:'partner.aydemir-gruppe.de'},'ug-alu':{staff:'team.ug-alu.de',network:'partner.ug-alu.de',site:'b2b.ug-alu.de'},sirius:{staff:'team.siriuswindows.nl',network:'partner.siriuswindows.nl'}};
 function targetUrl(a,sub,t){t=t||TENANT;const h=a==='console'?'console.'+APP_DOMAIN:a==='home'?'www.'+APP_DOMAIN:a==='embed'?'embed.'+APP_DOMAIN:(TARGET_HOSTS[t]||{})[a]||areaHost(a)+APP_DOMAIN;return h+(sub?'/'+sub:'')}
 if(ROUTE.legacy){try{history.replaceState(null,'',IS_HTTP?areaPath(AREA):(AREA==='home'?location.pathname+location.search:'#'+areaPath(AREA)))}catch(e){}}
@@ -1131,7 +1137,7 @@ function showSite(){
   const dealers=PARTNERS.filter(p=>p.status==='active'&&p.roles.some(r=>r.t==='partner'||r.t==='distributor'));
   const join=areaHref('network','join'),login=areaHref('network');
   const el=document.createElement('div');el.id='site';el.style.setProperty('--sa',TD.accent);el.innerHTML=deco(`
-  <div class="sdemo">Demo-Entwurf von TechNS für ${esc(TD.name)} – keine veröffentlichte Website · Zieladresse ${TD.domain}</div>
+  <div class="sdemo">Demo-Entwurf von TechNS für ${esc(TD.name)} – keine veröffentlichte Website${CUSTOMHOST?'':' · Zieladresse '+TD.domain}</div>
   <header class="shead"><div class="swrap shrow"><div class="slogo"><img src="${IMG('https://static.ug-alu.de/images/ug-alu.png')}" alt="${esc(TD.name)}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${TD.mark}'}))"><small>Fachpartner-Programm</small></div>
     <nav class="snav">${[['s-produkte','Produkte'],['s-programm','Partnerprogramm'],['s-haendler','Händlersuche'],['s-referenzen','Referenzen'],['s-kontakt','Kontakt']].map(([id,l])=>`<button data-sgo="${id}">${l}</button>`).join('')}<a class="sbtn ghost" href="${login}">Partner-Login</a></nav></div></header>
   <section class="shero" style="--simg:url('${IMG('https://static.ug-alu.de/images/header.png')}')"><div class="swrap"><p class="skick">Für Händler, Monteure und Vertriebspartner</p><h1>${C.hero}</h1><p class="slead">${C.sub}</p>
@@ -1224,8 +1230,8 @@ function syncUrl(){
   if(document.body.classList.contains('public')&&page!=='register')return;
   const want=areaHref(AREA,currentPath()).replace(/\/$/,'')||'/';
   const have=HOSTMODE||IS_HTTP?location.pathname.replace(/\/$/,'')||'/':(location.hash||'');
-  const cmp=HOSTMODE?want.replace(/^https?:\/\/[^/]+/,'')||'/':want;
-  if(cmp!==have&&cmp+'/'!==have){try{history[URL_REPLACE?'replaceState':'pushState'](null,'',want)}catch(e){}}
+  const cmp=HOSTMODE||CUSTOMHOST?want.replace(/^https?:\/\/[^/]+/,'')||'/':want;
+  if(cmp!==have&&cmp+'/'!==have){try{history[URL_REPLACE?'replaceState':'pushState'](null,'',CUSTOMHOST?cmp:want)}catch(e){}}
   URL_REPLACE=false}
 function onRouteChange(){const r=parseArea();if(r.area!==AREA||(document.body.classList.contains('public')&&r.rest[0]!=='join')){location.reload();return}const x=routeFromRest(r.rest,navItems());if(x){page=x.k;selPartner=x.sel;selDetail=x.det||null}else if(!r.rest.length){page=CONSOLE?'chome':'dash';selPartner=null;selDetail=null}else{page='notfound';selDetail=null}URL_REPLACE=true;render()}
 
