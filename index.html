@@ -246,10 +246,19 @@ body.public .shell,body.public .app{grid-template-columns:1fr!important}
 .sslide{position:relative}
 .sslider{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;padding-bottom:2px}
 .sslider::-webkit-scrollbar{display:none}
-.sslider>.scard{flex:0 0 calc((100% - 42px)/4);scroll-snap-align:start}
-@media(max-width:900px){.sslider>.scard{flex-basis:calc((100% - 14px)/2)}}
-@media(max-width:560px){.sslider>.scard{flex-basis:82%}}
-.sarr{position:absolute;top:34%;width:40px;height:40px;border-radius:50%;border:1px solid #d5dbe3;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:20px;line-height:1;cursor:pointer;z-index:2;color:#1d2733}
+.sslider>.scard{flex:0 0 calc((100% - 40px)/3);scroll-snap-align:start}
+#site .swrap.swide{max-width:1320px}
+#site .swide>h2,#site .swide>.ssub,#site .swide>.snote{margin-left:max(0px,calc((100% - 1040px)/2))}
+#site .sslider{gap:20px}
+#site .sslider .simg{aspect-ratio:4/3}
+#site .sslider>.scard b{font-size:20px}
+#site .sslider>.scard span{font-size:15px}
+#site .sslider>.scard{padding-bottom:20px}
+#site .sslider>.scard>*:not(.simg){padding:0 22px}
+.sslider .simg img{transition:transform .5s}.sslider>.scard:hover .simg img{transform:scale(1.04)}
+@media(max-width:900px){.sslider>.scard{flex-basis:calc((100% - 20px)/2)}}
+@media(max-width:560px){.sslider>.scard{flex-basis:86%}#site .sslider>.scard b{font-size:18px}}
+.sarr{position:absolute;top:30%;width:48px;height:48px;border-radius:50%;border:1px solid #d5dbe3;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:20px;line-height:1;cursor:pointer;z-index:2;color:#1d2733}
 .sarr.l{left:-18px}.sarr.r{right:-18px}.sarr[disabled]{opacity:0;pointer-events:none}
 @media(max-width:560px){.sarr{display:none}}
 #site .scard{background:#fff;border:1px solid #e3e8ee;border-radius:10px;padding:16px;display:grid;gap:4px;align-content:start}#site .scard b{font-size:16px}#site .scard span{color:#4a5866;font-size:14px}#site .scard small{color:#6b7785;font-size:12.5px}#site .simgcard{padding:0 0 14px;overflow:hidden}#site .simgcard>*:not(.simg){padding:0 16px}#site .simg{aspect-ratio:4/3;background:#eef2f6;margin-bottom:10px;overflow:hidden}#site .simg img{width:100%;height:100%;object-fit:cover;display:block}#site .scard ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;color:#4a5866}
@@ -1288,7 +1297,7 @@ function showSite(){
     <nav class="snav">${[['s-produkte','Produkte'],['s-programm','Partnerprogramm'],['s-haendler','Händlersuche'],['s-referenzen','Referenzen'],['s-kontakt','Kontakt']].map(([id,l])=>`<button data-sgo="${id}">${l}</button>`).join('')}<a class="sbtn ghost" href="${login}">Partner-Login</a></nav>${HV?`<button class="sburger" data-smenu aria-label="Menü"><i></i><i></i><i></i></button>`:''}</div></header>
   ${HV?`<div class="smenu" data-notr hidden><button class="sx" data-smenu aria-label="Schließen">×</button>${[['s-produkte','Produkte'],['s-programm','Partnerprogramm'],['s-haendler','Händlersuche'],['s-referenzen','Referenzen'],['s-kontakt','Kontakt']].map(([id,l])=>`<button data-sgo="${id}">${l}</button>`).join('')}<a class="sbtn" href="${login}">Partner-Login</a></div>`:''}
   ${heroHTML}
-  <section data-notr class="ssec" id="s-produkte"><div class="swrap"><h2>Produkte</h2><p class="ssub">Alle Systeme aus massiven Aluminiumprofilen, gefertigt nach Maß.</p>
+  <section data-notr class="ssec" id="s-produkte"><div class="swrap swide"><h2>Produkte</h2><p class="ssub">Alle Systeme aus massiven Aluminiumprofilen, gefertigt nach Maß.</p>
     <div class="sslide"><button class="sarr l" data-sarr="-1" aria-label="zurück" disabled>‹</button><div class="sslider">${cats.map(([n,d,im])=>`<div class="scard simgcard"><div class="simg"><img loading="lazy" src="${IMG(im)}" alt="${n}" onerror="this.parentNode.remove()"></div><b>${n}</b><span>${d}</span></div>`).join('')}</div><button class="sarr r" data-sarr="1" aria-label="weiter">›</button></div>
     <p class="snote">Händlerpreise und Bestellung nur im Partner-Portal.</p></div></section>
   <section data-notr class="ssec alt" id="s-programm"><div class="swrap"><h2>Partnerprogramm</h2><p class="ssub">Vier Wege, mit ${esc(TD.name)} zu arbeiten. Jede Rolle startet bei Basic und steigt mit Abschlüssen bis Premium.</p>
