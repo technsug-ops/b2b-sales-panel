@@ -1,1 +1,11 @@
-{"cleanUrls":true,"rewrites":[{"source":"/console","destination":"/"},{"source":"/zentrale","destination":"/"},{"source":"/partner","destination":"/"},{"source":"/freelancer","destination":"/"},{"source":"/leadgen","destination":"/"},{"source":"/distributor","destination":"/"}],"functions":{"api/gate.js":{"maxDuration":10}}}
+{
+  "cleanUrls": true,
+  "redirects": [
+    { "source": "/zentrale", "destination": "/aydemir", "permanent": true },
+    { "source": "/:door(partner|freelancer|leadgen|distributor)", "destination": "/aydemir/partner", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/" }
+  ],
+  "functions": { "api/gate.js": { "maxDuration": 10 } }
+}

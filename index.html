@@ -163,6 +163,23 @@ svg.i{width:1.05em;height:1.05em;vertical-align:-.16em;fill:none;stroke:currentC
 .nav .ic{display:inline-grid;place-items:center;width:18px}.nav .ic svg.i{width:17px;height:17px}
 .btn svg.i{width:15px;height:15px}
 .brand .mark svg.i{width:18px;height:18px}
+/* product home */
+#home{position:fixed;inset:0;z-index:6000;background:var(--bg,#f4f5f7);overflow:auto;padding:48px 16px}
+#home .hwrap{max-width:980px;margin:0 auto}
+#home .hbrand{display:flex;gap:12px;align-items:center;margin-bottom:40px}#home .hbrand .mark{width:44px;height:44px;border-radius:10px;background:#1b1f3b;color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}#home .hbrand b{display:block;font-size:17px}#home .hbrand small{color:var(--muted)}
+#home h1{font-size:clamp(26px,4vw,40px);line-height:1.15;margin:0 0 12px;letter-spacing:-.02em;max-width:760px}
+#home .hlead{font-size:16px;color:var(--muted);max-width:680px;margin:0 0 32px}
+#home .hgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+#home .hcard{display:flex;flex-direction:column;gap:6px;padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:inherit;text-decoration:none;transition:border-color .15s,transform .15s}
+#home .hcard:hover{border-color:var(--accent);transform:translateY(-2px)}
+#home .hcard small{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em}#home .hcard b{font-size:18px}#home .hcard span{color:var(--muted);font-size:13px;flex:1}
+#home .hcard code{font:600 13px ui-monospace,monospace;color:var(--accent);margin-top:8px}#home .hcard em{font-style:normal;font-size:11px;color:var(--muted)}
+#home .hfoot{margin-top:32px;font-size:12px;color:var(--muted)}
+/* url handbook */
+.uh table td code,.uh code{font:12.5px ui-monospace,monospace;background:var(--bg,#f4f5f7);padding:1px 6px;border-radius:5px;overflow-wrap:anywhere}
+.uh .rule{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0}.uh .rule>div{padding:10px 12px;border-radius:8px;font-size:13px}.uh .ok{background:color-mix(in srgb,var(--ok) 12%,transparent)}.uh .no{background:color-mix(in srgb,var(--crit) 12%,transparent)}
+.uh .ok b{color:var(--ok)}.uh .no b{color:var(--crit)}.uh ol{margin:0;padding-left:20px;display:grid;gap:6px;font-size:13.5px}.uh p{font-size:13.5px}
+@media(max-width:640px){.uh .rule{grid-template-columns:1fr}}
 /* Firmenzentrale look */
 body.hq{--accent:#1d4e89;--accent-soft:#e6eef8;--accent-fg:#ffffff}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.hq{--accent:#7fb0ea;--accent-soft:#16283d;--accent-fg:#0b1624}}
@@ -689,7 +706,7 @@ const px=(lon,lat)=>[(lon-5.7)*62,(55.3-lat)*62*1.55];
 
 /* ---------- access model (Super Admin controls what each partner sees) ---------- */
 const MODULES=['dash','network','pool','leads','myleads','referral','projects','pricelist','orders','stock','install','site','earn','mycontract','dam','notif'];
-const MOD_LABEL=m=>({me:'Mein Bereich',hr:'Personal',projects:'Projekte',team:'Team & Rollen',hqhome:'Zentrale',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
+const MOD_LABEL=m=>({urls:'Link-Handbuch',me:'Mein Bereich',hr:'Personal',projects:'Projekte',team:'Team & Rollen',hqhome:'Zentrale',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
 const DEFAULT_ACCESS={
  leadgen:['dash','myleads','referral','site','earn','mycontract','dam','notif'],
  freelancer:['dash','pool','myleads','stock','install','site','earn','mycontract','dam','notif'],
@@ -704,13 +721,45 @@ const mainType=p=>p.roles.slice().sort((a,b)=>TYPES.indexOf(b.t)-TYPES.indexOf(a
 /* ---------- state ---------- */
 const VIEWERS=[{id:"admin",label:()=>t('types.admin'),type:"admin",partner:null},
  ...PARTNERS.map(p=>({id:"p"+p.id,label:()=>t('types.'+mainType(p))+" · "+p.name,type:mainType(p),partner:p.id}))];
-/* ---------- doors: portal (/), TechNS console, Firmenzentrale, 4 partner doors ---------- */
-const DOOR_LIST=['console','partner','freelancer','leadgen','distributor'];
-const DOOR=(()=>{try{const seg=location.pathname.replace(/\/+$/,'').split('/').pop();if(DOOR_LIST.includes(seg))return seg;const h=location.hash.slice(1);return DOOR_LIST.includes(h)?h:''}catch(e){return ''}})();
-let CONSOLE=DOOR==='console';const HQ=false;const PDOOR=['partner','freelancer','leadgen','distributor'].includes(DOOR)?DOOR:null;
-const GKEY='b2b-gate'+(DOOR?':'+DOOR:''),KKEY='b2b-kind'+(DOOR?':'+DOOR:''),PKEY='b2b-pid'+(DOOR?':'+DOOR:'');
+/* ---------- routing: SaaS URL structure (see console > Link-Handbuch) ----------
+   Target:  www.B2B.com · console.B2B.com · <tenant>.B2B.com · partner.<tenant>.B2B.com
+   Demo (single host): / · /console · /<tenant> · /<tenant>/partner   (artifact: same paths after #) */
+const APP_DOMAIN='B2B.com',TENANT_SLUG='aydemir';
+const IS_HTTP=(()=>{try{return location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)}catch(e){return false}})();
+const LEGACY_PDOORS=['partner','freelancer','leadgen','distributor'];
+const HOSTMODE=(()=>{try{return IS_HTTP&&location.hostname.toLowerCase().endsWith('.'+APP_DOMAIN.toLowerCase())}catch(e){return false}})();
+function rawPath(){try{return IS_HTTP?location.pathname:(location.hash.replace(/^#/,'')||'/')}catch(e){return '/'}}
+function parseArea(){
+  const segs=rawPath().split('?')[0].split('/').filter(Boolean).map(x=>decodeURIComponent(x).toLowerCase());
+  if(HOSTMODE){const h=location.hostname.toLowerCase().slice(0,-(APP_DOMAIN.length+1));
+    if(h==='console')return{area:'console',rest:segs};
+    if(h.startsWith('partner.'))return{area:'network',rest:segs};
+    if(h&&h!=='www')return{area:'staff',rest:segs};
+    return{area:'home',rest:segs}}
+  if(!segs.length)return{area:'home',rest:[]};
+  if(segs[0]==='console')return{area:'console',rest:segs.slice(1)};
+  if(segs[0]===TENANT_SLUG)return segs[1]==='partner'?{area:'network',rest:segs.slice(2)}:{area:'staff',rest:segs.slice(1)};
+  if(segs[0]==='zentrale')return{area:'staff',rest:[],legacy:true};
+  if(LEGACY_PDOORS.includes(segs[0]))return{area:'network',rest:[],legacy:true};
+  return{area:'home',rest:[],legacy:true};
+}
+const ROUTE=parseArea(),AREA=ROUTE.area,NET=AREA==='network';
+let PENDING=ROUTE.rest.length?ROUTE.rest:null;
+function areaBase(a){return HOSTMODE?'':a==='console'?'/console':a==='staff'?'/'+TENANT_SLUG:a==='network'?'/'+TENANT_SLUG+'/partner':''}
+function areaHost(a){return a==='console'?'console.':a==='network'?'partner.'+TENANT_SLUG+'.':a==='staff'?TENANT_SLUG+'.':'www.'}
+function areaPath(a,sub){return (areaBase(a)+(sub?'/'+sub:''))||'/'}
+function areaHref(a,sub){if(HOSTMODE)return location.protocol+'//'+areaHost(a)+APP_DOMAIN+(sub?'/'+sub:'');return IS_HTTP?areaPath(a,sub):'#'+areaPath(a,sub)}
+function absUrl(a,sub){return HOSTMODE?areaHref(a,sub):(IS_HTTP?location.origin:'https://b2b-portal.foundercheck.de')+areaPath(a,sub)}
+function targetUrl(a,sub){return areaHost(a)+APP_DOMAIN+(sub?'/'+sub:'')}
+if(ROUTE.legacy){try{history.replaceState(null,'',IS_HTTP?areaPath(AREA):(AREA==='home'?location.pathname+location.search:'#'+areaPath(AREA)))}catch(e){}}
+let CONSOLE=AREA==='console';const HQ=false;
+let DOOR=CONSOLE?'console':'',PDOOR=null;
+if(NET){try{const d=sessionStorage.getItem('b2b-ptype');if(LEGACY_PDOORS.includes(d)&&sessionStorage.getItem('b2b-gate:network'))DOOR=PDOOR=d}catch(e){}}
+function adoptDoor(sub){const d=String(sub||'').split(':')[2];if(NET&&LEGACY_PDOORS.includes(d)){DOOR=PDOOR=d;try{sessionStorage.setItem('b2b-ptype',d)}catch(e){}}return PDOOR}
+const SKEY=AREA==='staff'||AREA==='home'?'':':'+AREA;
+const GKEY='b2b-gate'+SKEY,KKEY='b2b-kind'+SKEY,PKEY='b2b-pid'+SKEY;
 let PID=(()=>{try{return +sessionStorage.getItem(PKEY)||null}catch(e){return null}})();
-const RKEY='b2b-role'+(DOOR?':'+DOOR:'');
+const RKEY='b2b-role'+SKEY;
 let TEAMROLE=(()=>{try{return sessionStorage.getItem(RKEY)||null}catch(e){return null}})();
 let TEAMNAME=(()=>{try{return sessionStorage.getItem(RKEY+':n')||null}catch(e){return null}})();
 const ROLE_LBL={gf:'Geschäftsführer',tech:'Technik-Verantwortlicher',staff:'Verwaltung',mitarbeiter:'Mitarbeiter'};
@@ -720,12 +769,12 @@ let TEAMROLENAME=(()=>{try{return sessionStorage.getItem(RKEY+':r')||null}catch(
 const PERM_LBL={partners:'Partner & Verträge',leads:'Leads',projects:'Projekte',orders:'Bestellungen, Lager & Montage',dam:'Material & Partner-Websites',settings:'Einstellungen & Audit',hr:'Personal (HR)',creds:'Partner-Zugänge (Passwörter)',team:'Team & Rollen verwalten'};
 const PERM_KEYS=Object.keys(PERM_LBL);
 const hasP=x=>TEAMROLE?(TEAMPERMS||[]).includes(x):!['creds','team','hr'].includes(x);
-const canZentrale=()=>!PDOOR&&!CONSOLE&&!!TEAMROLE&&hasP('creds');
-const isGF=()=>!PDOOR&&!CONSOLE&&!!TEAMROLE&&hasP('team');
-const LIVE=(()=>{try{return location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)}catch(e){return false}})();
-function doorUrl(d){return LIVE?'/'+(d||''):(d?'#'+d:'#')}
-function portalUrl(){return doorUrl('')}
-function consoleUrl(){return doorUrl('console')}
+const canZentrale=()=>!NET&&!CONSOLE&&!!TEAMROLE&&hasP('creds');
+const isGF=()=>!NET&&!CONSOLE&&!!TEAMROLE&&hasP('team');
+const LIVE=IS_HTTP;
+function doorUrl(d){return d==='console'?areaHref('console'):d?areaHref('network'):areaHref('staff')}
+function portalUrl(){return areaHref('staff')}
+function consoleUrl(){return areaHref('console')}
 const DOOR_META={partner:{n:'Händler-Portal',c:'#0f6f8c',ic:'🏪',type:'partner'},freelancer:{n:'Freelancer-Portal',c:'#b07a0e',ic:'🧭',type:'freelancer'},leadgen:{n:'Leadgenerator-Portal',c:'#4f6b7d',ic:'📣',type:'leadgen'},distributor:{n:'Distributor-Portal',c:'#b23535',ic:'🛰',type:'distributor'}};
 
 let viewer=VIEWERS[0], page=CONSOLE?"chome":HQ?"hqhome":"dash", brandF="all", selPartner=null;
@@ -818,6 +867,43 @@ function deco(html){
   }).join('');
 }
 
+/* ---------- product home (www.B2B.com) ---------- */
+function showHome(){
+  document.body.classList.add('locked');$('#gate').hidden=true;document.title='B2B Sales Panel · TechNS';
+  const card=(a,title,who,txt)=>`<a class="hcard" href="${areaHref(a)}"><small>${who}</small><b>${title}</b><span>${txt}</span><code>${targetUrl(a)}</code><em>Demo: ${absUrl(a).replace(/^https?:\/\//,'')}</em></a>`;
+  const el=document.createElement('div');el.id='home';el.innerHTML=deco(`<div class="hwrap">
+    <div class="hbrand"><span class="mark">B2B</span><div><b>B2B Sales Panel</b><small>ein Produkt der TechNS UG</small></div></div>
+    <h1>Vertriebsnetz-Software für Hersteller und Händler</h1>
+    <p class="hlead">Leadgeneratoren, Freelancer, Partner und Distributoren in einer Plattform – mit Leads, Verträgen, Material, Benachrichtigungen und zuschaltbaren Modulen.</p>
+    <div class="hgrid">
+      ${card('staff','Firmen-Login','Mitarbeiter von '+TENANTS[0].name,'Geschäftsführung, Technik, Verwaltung und Mitarbeiter')}
+      ${card('network','Partner-Login','Vertriebsnetz von '+TENANTS[0].name,'Ein Eingang für alle Partnertypen – Typ und Stufe kommen aus dem Konto')}
+      ${card('console','TechNS Console','Plattform-Betreiber','Mandanten, Module, Rollout und Betrieb')}
+    </div>
+    <p class="hfoot">Demo-Mandant: ${TENANTS[0].name} · Zielstruktur ${APP_DOMAIN} (Platzhalter-Domain)</p></div>`);
+  document.body.appendChild(el);
+}
+
+/* ---------- page <-> path ---------- */
+const SLUGS={dash:'dashboard',partners:'network',network:'network',leads:'leads',myleads:'my-leads',pool:'lead-pool',referral:'referral',projects:'projects',contracts:'contracts',mycontract:'contract',pricelist:'pricelist',orders:'orders',stock:'stock',install:'appointments',sites:'sites',site:'my-site',earn:'earnings',dam:'materials',notif:'notifications',audit:'audit-log',settings:'settings',hr:'hr',me:'me',team:'settings/team',hqhome:'company',hqcreds:'settings/partner-access',hqdoors:'settings/portals',register:'join',
+  chome:'',tenants:'tenants',rollout:'rollout',codes:'access-codes',integrations:'integrations',security:'security',billing:'billing',pilot:'pilot',bp:'docs/best-practices',urls:'docs/url-handbook'};
+const slugOf=k=>k in SLUGS?SLUGS[k]:k;
+function routeFromRest(rest,items){
+  let segs=rest.slice(),sel=null;const last=segs[segs.length-1]||'';const m=/^p-(\d+)$/.exec(last);if(m){sel=+m[1];segs.pop()}
+  const path=segs.join('/');const keys=items.filter(i=>i.k).map(i=>i.k);
+  const k=keys.find(x=>slugOf(x)===path);return k?{k,sel}:null}
+function currentPath(){return pagePath(page,selPartner)}
+function pagePath(k,sel){const det=sel&&(k==='partners'||k==='network')?'/p-'+sel:'';return slugOf(k)+det}
+let URL_REPLACE=true;
+function syncUrl(){
+  if(AREA==='home'||document.body.classList.contains('locked')||PENDING)return;
+  const want=areaHref(AREA,currentPath()).replace(/\/$/,'')||'/';
+  const have=HOSTMODE||IS_HTTP?location.pathname.replace(/\/$/,'')||'/':(location.hash||'');
+  const cmp=HOSTMODE?want.replace(/^https?:\/\/[^/]+/,'')||'/':want;
+  if(cmp!==have&&cmp+'/'!==have){try{history[URL_REPLACE?'replaceState':'pushState'](null,'',want)}catch(e){}}
+  URL_REPLACE=false}
+function onRouteChange(){const r=parseArea();if(r.area!==AREA){location.reload();return}const x=routeFromRest(r.rest,navItems());if(x){page=x.k;selPartner=x.sel}else if(!r.rest.length){page=CONSOLE?'chome':'dash';selPartner=null}URL_REPLACE=true;render()}
+
 /* ---------- navigation ---------- */
 function navItems(){
   const unread=NOTIFS.filter(n=>n.un).length;
@@ -825,7 +911,7 @@ function navItems(){
   if(CONSOLE) return [
     {s:'console'},{k:'chome',ic:'◆'},{k:'tenants',ic:'🏢'},{k:'rollout',ic:'🚀'},{k:'codes',ic:'🔑'},
     {s:'consoleOps'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),...(ph(1)?[{k:'security',ic:'🛡️'}]:[]),...(ph(3)?[{k:'billing',ic:'💳'},{k:'pilot',ic:'🎯'}]:[]),...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),
-    {s:'consoleDocs'},{k:'bp',ic:'📘'}];
+    {s:'consoleDocs'},{k:'bp',ic:'📘'},{k:'urls',ic:'🔗'}];
   const meItem=TEAMROLE&&feat('hr')?[{k:'me',ic:'🙋'}]:[];
   if(viewer.type==='admin'&&TEAMROLE&&!(TEAMPERMS||[]).length) return [{s:'mine'},...meItem,{k:'notif',ic:'🔔',badge:unread}];
   if(viewer.type==='admin') return [
@@ -837,10 +923,11 @@ function navItems(){
 }
 function renderNav(){
   const items=navItems();
+  if(PENDING&&!document.body.classList.contains('locked')&&gateToken()&&(!NET||PDOOR)){const x=routeFromRest(PENDING,items);if(x){page=x.k;selPartner=x.sel;PENDING=null}}
   if(!items.some(i=>i.k===page)) page=CONSOLE?'chome':HQ?'hqhome':items.some(i=>i.k==='dash')?'dash':(items.find(i=>i.k)||{k:'dash'}).k;
   $('#nav').innerHTML=deco(items.map(i=>i.s?`<div class="navlabel">${i.s==='public'?'Website':i.s==='mine'?'Mein Bereich':i.s==='hq'?'Firmenzentrale':i.s==='console'?'Plattform':i.s==='consoleOps'?'Betrieb':i.s==='consoleDocs'?'Produkt':t('sec.'+i.s)}</div>`:
     `<button class="${i.k===page?'on':''}" data-k="${i.k}"><span class="ic">${i.ic}</span>${i.k==='register'?t('reg.nav'):MOD_LABEL(i.k)}${i.badge?`<span class="badge">${i.badge}</span>`:''}</button>`).join(''));
-  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{page=b.dataset.k;selPartner=null;render();$('#side').classList.remove('open')});
+  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{PENDING=null;page=b.dataset.k;selPartner=null;render();$('#side').classList.remove('open')});
 }
 
 /* ---------- views ---------- */
@@ -1734,7 +1821,6 @@ async function hqAct(action,id){
   AUDIT.unshift({who:TEAMNAME||'Firmenzentrale',what:(action==='pcreds_reset'?'Passwort neu erzeugt: ':'Zugang '+(CREDS.list.find(c=>c.id===id).active?'entsperrt':'gesperrt')+': ')+pName(id),when:new Date().toISOString().slice(0,16).replace('T',' ')});
   render();
 }
-const fullUrl=d=>(LIVE?location.origin:'https://b2b-portal.foundercheck.de')+'/'+d;
 function viewHqHome(){
   if(!CREDS.list&&!CREDS.loading){hqSync()}
   const L=CREDS.list||[];const by=d=>L.filter(c=>c.doors.includes(d)).length;
@@ -1764,13 +1850,98 @@ function viewHqCreds(){
 }
 function viewHqDoors(){
   const L=CREDS.list||[];
-  const what={partner:'Preisliste & Bestellung, Bestellungen, Lager, Montage, Vertrag, Material',freelancer:'Lead-Pool, eigene Leads, Lager, Montage, Vergütung, Vertrag, Material',leadgen:'Referenzcode, Lead erfassen, eigene Leads, Vergütung, Vertrag, Material',distributor:'Netzwerk, Lead-Pool, Leads, Preisliste, Bestellungen, Lager, Montage, Vergütung'};
-  return `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:14px">${Object.entries(DOOR_META).filter(([d])=>typeOn(d)).map(([d,M])=>`<div class="card doorcard" style="--dc:${M.c}"><div class="hd" style="margin:0"><h2>${M.ic} ${M.n}</h2><span class="sp"></span><span class="pill">${L.filter(c=>c.doors.includes(d)).length||'…'} Partner</span></div>
-    <div class="url">${fullUrl(d)}</div><small style="color:var(--muted)">Login: Benutzername + Passwort · sieht: ${what[d]}</small>
-    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="copy" data-v="${fullUrl(d)}">⧉ Link kopieren</button><a class="btn sm" href="${doorUrl(d)}" target="_blank">Login-Seite öffnen ↗</a></div></div>`).join('')}</div>
-  <div class="card"><div class="hd"><h2>Interne Eingänge</h2></div><dl class="kv"><dt>Aydemir-Portal</dt><dd><span class="cred-pw">${fullUrl('')}</span> · Team-Login (Geschäftsführer, Technik, Verwaltung)</dd><dt>Firmenzentrale</dt><dd>Bereich im Aydemir-Portal · nur Geschäftsführer & Technik</dd></dl></div>`;
+  const what={partner:'Preisliste & Bestellung, Bestellungen, Lager, Montage, Vertrag, Material',freelancer:'Lead-Pool, eigene Leads, Lager, Montage, Vergütung, Vertrag, Material',leadgen:'Referenzcode, Lead erfassen, eigene Leads, Vergütung, Vertrag, Material',distributor:'Netzwerk, Lead-Pool, Leads, Bestellungen, Vergütung, Vertrag, Material'};
+  const row=(a,title,who)=>`<div class="card doorcard"><div class="hd" style="margin:0"><h2>${title}</h2></div>
+    <div class="url">${absUrl(a)}</div><small style="color:var(--muted)">${who}</small><small style="color:var(--muted)">Zieladresse: <span class="cred-pw">${targetUrl(a)}</span></small>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="copy" data-v="${absUrl(a)}">⧉ Link kopieren</button><a class="btn sm" href="${areaHref(a)}" target="_blank">Login-Seite öffnen ↗</a></div></div>`;
+  return `<div class="grid two" style="margin-bottom:14px">
+    ${row('network','Partner-Portal','Ein Eingang für das gesamte Vertriebsnetz. Login mit Benutzername + Passwort; Typ und Stufe kommen aus dem Konto.')}
+    ${row('staff','Mitarbeiter-Portal','Team-Login für Geschäftsführung, Technik, Verwaltung und Mitarbeiter. Rechte kommen aus der Rolle.')}
+  </div>
+  <div class="card"><div class="hd"><h2>Was sieht welcher Partnertyp?</h2></div><div class="tw"><table><thead><tr><th>Typ</th><th>Zugänge</th><th>Sieht nach dem Login</th></tr></thead><tbody>
+    ${Object.entries(DOOR_META).filter(([d])=>typeOn(d)).map(([d,M])=>`<tr style="cursor:default"><td><span class="dot" style="background:${M.c}"></span> ${t('types.'+d)}</td><td>${L.length?L.filter(c=>c.doors.includes(d)).length:'…'}</td><td><small>${what[d]}</small></td></tr>`).join('')}
+  </tbody></table></div>
+  <p style="margin:10px 0 0;font-size:12.5px;color:var(--muted)">Alte Einzel-Eingänge (/partner, /freelancer, /leadgen, /distributor, /zentrale) leiten automatisch auf die neuen Adressen weiter.</p></div>`;
 }
 
+
+/* ---------- console: URL handbook ---------- */
+function viewUrls(){
+  const T=(de,tr)=>lang==='tr'?tr:de;
+  const D=APP_DOMAIN,S=TENANT_SLUG;
+  const link=(a,sub)=>`<a href="${areaHref(a,sub)}" target="_blank" rel="noopener"><code>${absUrl(a,sub).replace(/^https?:\/\//,'')}</code></a>`;
+  const areas=[
+    ['www.'+D,'—',T('Produktseite, Preise, Registrierung neuer Firmen','Ürün sitesi, fiyatlar, yeni firma kaydı'),T('öffentlich','herkese açık'),'home'],
+    ['console.'+D,'—',T('TechNS: Mandanten, Module, Rollout, Betrieb','TechNS: firmalar, modüller, rollout, işletim'),T('Master-Code + 2FA','Master kod + 2FA'),'console'],
+    [S+'.'+D,'—',T('Mitarbeiter des Mandanten (GF, Technik, Verwaltung, Mitarbeiter)','Firmanın personeli (GF, Teknik, İdare, Çalışan)'),T('Benutzername + Passwort, Rolle aus Konto','Kullanıcı adı + şifre, rol hesaptan'),'staff'],
+    ['partner.'+S+'.'+D,'—',T('Vertriebsnetz: Leadgenerator, Freelancer, Partner, Distributor','Satış ağı: Leadgenerator, Freelancer, Partner, Distributor'),T('ein Eingang – Typ & Stufe aus Konto','tek giriş – tür ve kademe hesaptan'),'network'],
+    ['docs.'+D+' · status.'+D,'—',T('Hilfe-Center und Systemstatus','Yardım merkezi ve sistem durumu'),T('öffentlich','herkese açık'),null]];
+  const groups=[
+    [T('Mitarbeiter-Portal','Personel portalı'),'staff',['dash','partners','leads','projects','contracts','orders','stock','install','sites','dam','notif','audit','settings','hr','me','hqhome','hqcreds','hqdoors','team','register']],
+    [T('Partner-Portal','Partner portalı'),'network',['dash','network','pool','leads','myleads','referral','projects','pricelist','orders','stock','install','site','earn','mycontract','dam','notif']],
+    ['Console','console',['chome','tenants','rollout','codes','integrations','security','billing','pilot','audit','bp','urls']]];
+  const rule=(ok,no)=>`<div class="rule"><div class="ok"><b>${T('Richtig','Doğru')}</b><br>${ok}</div><div class="no"><b>${T('Falsch','Yanlış')}</b><br>${no}</div></div>`;
+  return `<div class="uh" style="display:grid;gap:14px">
+  <div class="card"><div class="hd"><h2>${T('Link-Handbuch','Link El Kitabı')}</h2><span class="sp"></span><span class="pill">v1.0 · ${T('verbindlich für alle Mandanten','tüm firmalar için bağlayıcı')}</span></div>
+    <p style="margin:0 0 10px">${T('Dieses Handbuch legt fest, wie Adressen im B2B Sales Panel aufgebaut sind. Ziel: jede Adresse ist lesbar, stabil, teilbar und verrät nichts über interne Technik oder Berechtigungen.','Bu el kitabı B2B Sales Panel\'deki adreslerin nasıl kurulacağını belirler. Amaç: her adres okunabilir, kalıcı, paylaşılabilir olsun ve iç teknik ya da yetkiler hakkında bilgi vermesin.')} <b>${D}</b> ${T('ist Platzhalter für die spätere Produkt-Domain.','ileride belirlenecek ürün alan adı için yer tutucudur.')}</p>
+    <ol>
+      <li><b>${T('Mandant = Subdomain.','Firma = alt alan adı.')}</b> ${T('Jede Firma bekommt einen festen Kurznamen','Her firmanın sabit bir kısa adı olur')} (<code>${S}</code>) ${T('– alles liegt darunter.','– her şey onun altında durur.')}</li>
+      <li><b>${T('Zwei Eingänge pro Mandant.','Firma başına iki giriş.')}</b> ${T('Mitarbeiter und Vertriebsnetz sind getrennte Adressen und getrennte Sitzungen. Innerhalb des Vertriebsnetzes gibt es keine Extra-Eingänge pro Typ.','Personel ve satış ağı ayrı adres ve ayrı oturumdur. Satış ağı içinde tür başına ayrı kapı yoktur.')}</li>
+      <li><b>${T('Berechtigung kommt aus dem Konto, nie aus der Adresse.','Yetki hesaptan gelir, asla adresten değil.')}</b> ${T('Wer eine fremde Adresse aufruft, sieht nur, was seine Rolle erlaubt.','Başkasının adresini açan kişi yalnızca rolünün izin verdiğini görür.')}</li>
+      <li><b>${T('Pfade sind Englisch, klein, mit Bindestrich','Yollar İngilizce, küçük harf, tireli')}</b> ${T('– unabhängig von der Oberflächensprache (DE/TR/EN).','– arayüz dilinden (DE/TR/EN) bağımsız.')}</li>
+      <li><b>${T('Datensätze haben eine feste Adresse','Kayıtların sabit bir adresi olur')}</b> ${T('mit Präfix-ID','önekli kimlikle')} (<code>p-1042</code>, <code>l-2051</code>). ${T('Filter stehen im Query-String, nie im Pfad.','Filtreler yolda değil, sorgu dizesinde durur.')}</li>
+    </ol></div>
+
+  <div class="card"><div class="hd"><h2>${T('Zielstruktur','Hedef yapı')}</h2></div><div class="tw"><table><thead><tr><th>${T('Adresse','Adres')}</th><th>${T('Wofür','Ne için')}</th><th>Login</th><th>${T('Demo heute','Bugünkü demo')}</th></tr></thead><tbody>
+    ${areas.map(([u,,w,l,a])=>`<tr style="cursor:default"><td><code>${u}</code></td><td>${w}</td><td><small>${l}</small></td><td>${a?link(a):'—'}</td></tr>`).join('')}
+    <tr style="cursor:default"><td><code>portal.aydemir-gruppe.de</code></td><td>${T('Optional: eigene Domain des Mandanten (White-Label) – zeigt auf','İsteğe bağlı: firmanın kendi alan adı (white-label) – yönlendirdiği yer')} <code>${S}.${D}</code></td><td><small>${T('wie Mitarbeiter-Portal','personel portalı gibi')}</small></td><td>—</td></tr>
+  </tbody></table></div>
+  <p style="margin:10px 0 0;color:var(--muted);font-size:12.5px">${T('Die Demo läuft auf einer einzigen Domain. Darum werden die Subdomains dort als erster Pfadteil nachgebildet','Demo tek bir alan adında çalışıyor. Bu yüzden alt alan adları orada yolun ilk parçası olarak taklit ediliyor')}: <code>${S}.${D}/leads</code> = <code>/${S}/leads</code>. ${T('Die Seitenpfade dahinter sind identisch.','Arkasındaki sayfa yolları aynıdır.')}</p></div>
+
+  <div class="card"><div class="hd"><h2>${T('Seitenpfade','Sayfa yolları')}</h2></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">${groups.map(([n,a,keys])=>`<div><p style="margin:0 0 6px"><b>${n}</b> · <code>${areaHost(a)}${D}</code></p><div class="tw"><table><tbody>${keys.map(k=>`<tr style="cursor:default"><td style="padding:5px 8px">${k==='register'?t('reg.nav'):MOD_LABEL(k)}</td><td style="padding:5px 8px"><code>/${slugOf(k)}</code></td></tr>`).join('')}</tbody></table></div></div>`).join('')}</div>
+    <p style="margin:10px 0 0;color:var(--muted);font-size:12.5px">${T('Detailseiten','Detay sayfaları')}: <code>/network/p-1042</code> · <code>/leads/l-2051</code> · <code>/contracts/c-318</code>. ${T('Module, die beim Mandanten nicht gebucht sind, liefern 404 – nicht „Zugriff verweigert“.','Firmada açık olmayan modüller 404 döner – "erişim reddedildi" değil.')}</p></div>
+
+  <div class="card"><div class="hd"><h2>${T('Regeln mit Beispielen','Örnekli kurallar')}</h2></div><div style="display:grid;gap:8px">
+    ${rule(`<code>/leads?region=bayern&amp;status=open</code><br>${T('Bundesland ist ein Filter','Eyalet bir filtredir')}`,`<code>/bayern/leads</code><br>${T('Region im Pfad – bricht bei Gebietswechsel','Bölge yolda – bölge değişince kırılır')}`)}
+    ${rule(`<code>/network/p-1042</code><br>${T('feste ID, Name kann sich ändern','sabit kimlik, isim değişebilir')}`,`<code>/network/hofladen-kreuzer</code><br>${T('Name als Schlüssel – bricht bei Umfirmierung','İsim anahtar – unvan değişince kırılır')}`)}
+    ${rule(`<code>/settings/team</code><br>${T('Sprache kommt aus dem Profil','Dil profilden gelir')}`,`<code>/de/einstellungen/team</code><br>${T('drei Sprachen = drei Adressen für dieselbe Seite','üç dil = aynı sayfaya üç adres')}`)}
+    ${rule(`<code>partner.${S}.${D}</code><br>${T('ein Eingang, Typ aus dem Konto','tek giriş, tür hesaptan')}`,`<code>/freelancer</code>, <code>/leadgen</code>, <code>/distributor</code><br>${T('Eingang verrät Struktur, lädt zum Raten ein','kapı yapıyı ele verir, tahmine davet eder')}`)}
+    ${rule(`<code>/company</code>, <code>/settings/partner-access</code>`,`<code>/zentrale</code>, <code>/admin.php</code>, <code>/index.html#hq</code><br>${T('interne oder technische Wörter','iç ya da teknik kelimeler')}`)}
+  </div></div>
+
+  <div class="grid two">
+  <div class="card"><div class="hd"><h2>${T('Öffentliche Händlerseiten (SEO)','Herkese açık bayi sayfaları (SEO)')}</h2></div>
+    <p style="margin:0 0 8px">${T('Nur hier gehören Bundesland und Stadt in den Pfad – auf der Website der Marke, nicht im Portal. Inhalt kommt automatisch aus dem Partnerverzeichnis.','Eyalet ve şehir yalnızca burada yola girer – portalda değil, markanın sitesinde. İçerik partner listesinden otomatik gelir.')}</p>
+    <p style="margin:0"><code>wasserernte.com/haendler/bayern</code><br><code>wasserernte.com/haendler/bayern/muenchen</code><br><code>moonzelt.com/partner/nrw/koeln</code></p></div>
+  <div class="card"><div class="hd"><h2>${T('Weiterleitungen alter Adressen','Eski adreslerin yönlendirilmesi')}</h2></div>
+    <div class="tw"><table><tbody>
+      <tr style="cursor:default"><td><code>/zentrale</code></td><td>→ <code>/${S}</code></td><td><small>301</small></td></tr>
+      <tr style="cursor:default"><td><code>/partner</code> · <code>/freelancer</code> · <code>/leadgen</code> · <code>/distributor</code></td><td>→ <code>/${S}/partner</code></td><td><small>301</small></td></tr>
+      <tr style="cursor:default"><td>${T('alter Mandanten-Kurzname','eski firma kısa adı')}</td><td>→ ${T('neuer Kurzname, gleicher Pfad','yeni kısa ad, aynı yol')}</td><td><small>301</small></td></tr>
+    </tbody></table></div>
+    <p style="margin:8px 0 0;color:var(--muted);font-size:12.5px">${T('Nach dem Login wird man auf die ursprünglich aufgerufene Seite zurückgeleitet (Deep-Link bleibt erhalten).','Girişten sonra kişi ilk açmak istediği sayfaya geri yönlendirilir (derin link korunur).')}</p></div>
+  </div>
+
+  <div class="card"><div class="hd"><h2>${T('Technische Umsetzung','Teknik uygulama')}</h2></div><ol>
+    <li>${T('DNS','DNS')}: <code>*.${D}</code> ${T('als Wildcard auf die Plattform; Nameserver bei Vercel, damit Wildcard-Zertifikate automatisch ausgestellt werden.','wildcard olarak platforma; wildcard sertifikaların otomatik çıkması için nameserver Vercel\'de.')}</li>
+    <li>Middleware: ${T('liest den Host','host bilgisini okur')} → <code>${S}</code> → ${T('Mandant + Bereich (Mitarbeiter/Partner) – vor jeder Datenbankabfrage; RLS filtert zusätzlich nach Mandant.','firma + alan (personel/partner) – her veritabanı sorgusundan önce; RLS ayrıca firmaya göre filtreler.')}</li>
+    <li>${T('Reservierte Kurznamen','Ayrılmış kısa adlar')}: <code>www</code> <code>console</code> <code>api</code> <code>app</code> <code>docs</code> <code>status</code> <code>mail</code> <code>admin</code> <code>partner</code> <code>static</code>.</li>
+    <li>${T('Kurzname: 3–30 Zeichen, a–z, 0–9, Bindestrich; nach Go-live unveränderlich – Änderung nur mit 301 vom alten Namen.','Kısa ad: 3–30 karakter, a–z, 0–9, tire; canlıya geçtikten sonra değişmez – değişiklik yalnızca eski addan 301 ile.')}</li>
+    <li>${T('Cookies gelten nur für die eigene Subdomain (kein','Çerezler yalnızca kendi alt alan adında geçerli (')} <code>Domain=.${D}</code>${T(') – Mitarbeiter- und Partner-Sitzung sind getrennt.',' yok) – personel ve partner oturumları ayrı.')}</li>
+    <li>White-Label: ${T('Mandant setzt','Firma şunu ayarlar:')} <code>CNAME portal.aydemir-gruppe.de → cname.${D}</code>; ${T('Zertifikat automatisch; Canonical-Adresse ist dann die eigene Domain.','sertifika otomatik; kanonik adres artık firmanın kendi alan adıdır.')}</li>
+    <li>${T('E-Mails und Benachrichtigungen enthalten immer die vollständige Adresse der Detailseite.','E-postalar ve bildirimler her zaman detay sayfasının tam adresini içerir.')}</li>
+  </ol></div>
+
+  <div class="card"><div class="hd"><h2>${T('Checkliste neuer Mandant','Yeni firma kontrol listesi')}</h2></div><ol>
+    <li>${T('Kurzname festlegen und gegen reservierte Namen prüfen','Kısa adı belirle ve ayrılmış adlarla karşılaştır')}</li>
+    <li>${T('Mandant in der Console anlegen, Module und Partnertypen wählen','Firmayı konsolda oluştur, modülleri ve partner türlerini seç')}</li>
+    <li>${T('Erstes Geschäftsführer-Konto anlegen – Zugangsdaten nur an den Mandanten','İlk Geschäftsführer hesabını oluştur – giriş bilgileri yalnızca firmaya')}</li>
+    <li>${T('Optional: eigene Domain verbinden und prüfen','İsteğe bağlı: firmanın kendi alan adını bağla ve kontrol et')}</li>
+    <li>${T('Beide Eingänge testen','İki girişi de test et')}: <code>${S}.${D}</code> ${T('und','ve')} <code>partner.${S}.${D}</code></li>
+  </ol></div>
+  </div>`;
+}
 
 /* ---------- console: modules & partner structure per tenant ---------- */
 let TCEDIT=null;
@@ -1939,11 +2110,12 @@ function render(){
   if(CONSOLE){viewer=VIEWERS[0];$('#t-brand').textContent='TechNS Console';bs.textContent='B2B Sales Panel · Plattform';bm.textContent='TN';}
   else if(HQ){viewer=VIEWERS[0];$('#t-brand').textContent='Firmenzentrale';bs.textContent=TENANTS[0].name+' · Partner-Zugänge';bm.textContent='HQ';}
   else if(PDOOR){const M=DOOR_META[DOOR];$('#t-brand').textContent=M.n;bs.textContent=viewer.partner?pName(viewer.partner):'';bm.innerHTML=deco(M.ic);document.body.style.setProperty('--accent',M.c)}
+  else if(NET){$('#t-brand').textContent='Partner-Portal';bs.textContent=TENANTS[0].name;bm.innerHTML=ico('network')}
   else{$('#t-brand').textContent=TENANTS[0].name;bs.textContent='Moonzelt · Euroconteiner · Wasserernte';bm.textContent='A';}
-  document.querySelector('.rolebox').hidden=true;if(!PDOOR&&!CONSOLE&&!HQ)viewer=VIEWERS[0];
+  document.querySelector('.rolebox').hidden=true;if(!NET&&!CONSOLE&&!HQ)viewer=VIEWERS[0];
   $('#doorBtn').innerHTML=CONSOLE?ico('external')+' Mandanten-Portal':'';$('#doorBtn').hidden=!CONSOLE;$('#doorBtn').setAttribute('href',portalUrl());
-  const gb=document.querySelector('#gate .brand');if(gb){const M=PDOOR?DOOR_META[DOOR]:null;gb.querySelector('b').textContent=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':M?M.n:TENANTS[0].name;gb.querySelector('small').textContent=CONSOLE?'Entwickler-Zugang · nur Master-Code':HQ?TENANTS[0].name+' · Zentrale-Code':M?TENANTS[0].name+' · Benutzername & Passwort':'Moonzelt · Euroconteiner · Wasserernte';gb.querySelector('.mark').innerHTML=CONSOLE?'TN':HQ?'HQ':M?deco(M.ic):'A';if(M)gb.querySelector('.mark').style.background=M.c}
-  $('#gateUserWrap').hidden=!!CONSOLE;$('#gateUserLbl').textContent=PDOOR?'Benutzername':'Benutzername (Team) – leer lassen für Zugangscode';$('#gatePwLbl').textContent=PDOOR?'Passwort':CONSOLE?'Master-Code':'Passwort / Zugangscode';
+  const gb=document.querySelector('#gate .brand');if(gb){const M=NET?(PDOOR?DOOR_META[DOOR]:{n:'Partner-Portal',c:'#0f6f8c',ic:'🛰'}):null;gb.querySelector('b').textContent=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':M?M.n:TENANTS[0].name;gb.querySelector('small').textContent=CONSOLE?'Entwickler-Zugang · nur Master-Code':HQ?TENANTS[0].name+' · Zentrale-Code':M?TENANTS[0].name+' · Benutzername & Passwort':'Moonzelt · Euroconteiner · Wasserernte';gb.querySelector('.mark').innerHTML=CONSOLE?'TN':HQ?'HQ':M?deco(M.ic):'A';if(M)gb.querySelector('.mark').style.background=M.c}
+  $('#gateUserWrap').hidden=!!CONSOLE;$('#gateUserLbl').textContent=NET?'Benutzername':'Benutzername (Team) – leer lassen für Zugangscode';$('#gatePwLbl').textContent=NET?'Passwort':CONSOLE?'Master-Code':'Passwort / Zugangscode';
   const sel=$('#roleSel');sel.innerHTML=VIEWERS.map(v=>`<option value="${v.id}" ${v===viewer?'selected':''}>${v.label()}</option>`).join('');
   const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
   $('#roleChips').innerHTML=(me?me.roles.map(r=>`<span class="pill" style="font-size:11px;padding:2px 8px"><span class="dot" style="background:${BRANDS[r.b].c}"></span>${t('types.'+r.t)} ${r.tier}</span>`).join(''):`<span class="pill t" style="font-size:11px;padding:2px 8px">${t('types.admin')}</span>`);
@@ -1951,9 +2123,10 @@ function render(){
   const adminSess=CONSOLE?isMaster():(viewer.type==='admin'&&(isMaster()||canZentrale()));$('#notesBtn').hidden=!adminSess;if(!adminSess)$('#notes').hidden=true;
   renderNav();
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
-  document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':PDOOR?DOOR_META[DOOR].n:TENANTS[0].name+' · Verwaltung';
+  document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':NET?(PDOOR?DOOR_META[DOOR].n:'Partner-Portal')+' · '+TENANTS[0].name:TENANTS[0].name+' · Verwaltung';
   const v=$('#view');
-  v.innerHTML=deco(({me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]());
+  v.innerHTML=deco(({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]());
+  syncUrl();
   /* access toggles (admin) */
   v.querySelectorAll('[data-mod],[data-brand],[data-flag]').forEach(cb=>cb.onchange=()=>{const p=PARTNERS.find(x=>x.id===selPartner);
     if(cb.dataset.mod){p.access.modules=MODULES.filter(m=>m==='dash'||(m===cb.dataset.mod?cb.checked:p.access.modules.includes(m)))}
@@ -2120,7 +2293,7 @@ function render(){
 $('#roleSel').onchange=e=>{viewer=VIEWERS.find(v=>v.id===e.target.value);page='dash';selPartner=null;render()};
 $('#langs').onclick=e=>{const b=e.target.closest('button');if(!b)return;lang=b.dataset.l;try{localStorage.setItem('pp-lang',lang)}catch(x){}render()};
 $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
-$('#logoutBtn').onclick=()=>{lockAt(null);setTeam(null);try{sessionStorage.removeItem(PKEY);sessionStorage.removeItem(GKEY);sessionStorage.removeItem(KKEY);sessionStorage.removeItem('b2b-admin')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
+$('#logoutBtn').onclick=()=>{lockAt(null);setTeam(null);try{sessionStorage.removeItem(PKEY);sessionStorage.removeItem(GKEY);sessionStorage.removeItem(KKEY);sessionStorage.removeItem('b2b-admin')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';if(NET){PDOOR=null;DOOR='';PID=null;try{sessionStorage.removeItem('b2b-ptype')}catch(e){}document.body.style.removeProperty('--accent')}showGate();render()};
 
 /* ---------- AI assistant (scripted demo) ---------- */
 const AI_RESP={
@@ -2173,7 +2346,7 @@ const DENY={console:'Die Konsole ist nur mit dem Master-Code zugänglich.',zentr
 function doorAllows(kind,sub){
   if(CONSOLE)return kind==='master';
   if(HQ)return kind==='hq';
-  if(PDOOR)return kind==='partner'&&String(sub||'').endsWith(':'+DOOR);
+  if(NET){if(kind!=='partner')return false;return !!adoptDoor(sub)}
   return kind==='master'||kind==='once'||kind==='team';
 }
 function kindOfSub(sub){return sub==='master'?'master':sub==='hq'?'hq':String(sub||'').startsWith('p:')?'partner':String(sub||'').startsWith('t:')?'team':'once'}
@@ -2192,11 +2365,11 @@ function localRoles(){let r=null;try{r=JSON.parse(localStorage.getItem('b2b-role
 function saveLocalRoles(r){try{localStorage.setItem('b2b-roles',JSON.stringify(r))}catch(e){}}
 function saveLocalTeam(t){try{localStorage.setItem('b2b-team',JSON.stringify(t))}catch(e){}}
 function saveLocalCreds(c){try{localStorage.setItem('b2b-creds',JSON.stringify(c))}catch(e){}}
-$('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();const user=($('#gateUser').value||'').trim().toLowerCase();if(!code||(PDOOR&&!user))return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
+$('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();const user=($('#gateUser').value||'').trim().toLowerCase();if(!code||(NET&&!user))return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
   try{
-    if(PDOOR){
-      if(GATE_API){const r=await gateApi({action:'plogin',door:DOOR,user,pass:code});if(r.ok)enterAs('partner',r.token,r.pid);else{$('#gateErr').textContent=r.error==='door_off'?'Dieser Eingang ist derzeit nicht aktiv. Bitte wenden Sie sich an Ihren Ansprechpartner.':'Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
-      else{const c=localCreds().find(x=>x.user===user&&x.pass===code&&x.active&&x.doors.includes(DOOR));if(c){c.logins=(c.logins||0)+1;c.lastLogin=Date.now();saveLocalCreds(localCreds().map(x=>x.id===c.id?c:x));enterAs('partner','local:p:'+c.id+':'+DOOR,c.id)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
+    if(NET){
+      if(GATE_API){const r=await gateApi({action:'plogin',door:'network',user,pass:code});if(r.ok){adoptDoor('p:'+r.pid+':'+r.door);enterAs('partner',r.token,r.pid)}else{$('#gateErr').textContent=r.error==='door_off'?'Dieser Eingang ist derzeit nicht aktiv. Bitte wenden Sie sich an Ihren Ansprechpartner.':'Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
+      else{const c=localCreds().find(x=>x.user===user&&x.pass===code&&x.active&&x.doors.some(d=>typeOn(d)));if(c){const d=c.doors.find(x=>typeOn(x));c.logins=(c.logins||0)+1;c.lastLogin=Date.now();saveLocalCreds(localCreds().map(x=>x.id===c.id?c:x));adoptDoor('p:'+c.id+':'+d);enterAs('partner','local:p:'+c.id+':'+d,c.id)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
     }else if(!CONSOLE&&user){
       if(GATE_API){const r=await gateApi({action:'tlogin',user,pass:code});if(r.ok){setTeam(r.role,r.name,r.perms,r.roleName,r.user);enterAs('team',r.token)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
       else{const m=localTeam().find(x=>x.user===user&&x.pass===code&&x.active);if(m){m.lastLogin=Date.now();m.logins=(m.logins||0)+1;saveLocalTeam(localTeam().map(x=>x.id===m.id?m:x));const R=localRoles().find(x=>x.key===m.role)||{perms:[],name:m.role};setTeam(m.role,m.name,R.perms,R.name,m.user);enterAs('team','local:t:'+m.id+':'+m.role)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
@@ -2208,7 +2381,7 @@ $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').val
       if(kind&&doorAllows(kind))enterAs(kind,'local:'+kind);else{$('#gateErr').textContent=kind?(CONSOLE?DENY.console:HQ?DENY.zentrale:DENY.root):t('gate.err');$('#gatePw').select()}}
   }catch(x){$('#gateErr').textContent=t('gate.neterr')}
   btn.disabled=false;btn.textContent=t('gate.btn')};
-(async()=>{const tok=gateToken();if(!tok){showGate();return}
+(async()=>{if(AREA==='home'){showHome();return}const tok=gateToken();if(!tok){showGate();return}
   if(tok.startsWith('local:')){const sub=tok.slice(6);if(!doorAllows(kindOfSub(sub),sub)){showGate()}else if(kindOfSub(sub)==='team'){const R=localRoles().find(x=>x.key===sub.split(':')[2]);setTeam(sub.split(':')[2],TEAMNAME,R?R.perms:[],R?R.name:'');render()}return}
   if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});
     if(!r.ok||!doorAllows(kindOfSub(r.sub),r.sub)){try{sessionStorage.removeItem(GKEY)}catch(x){}showGate()}
@@ -2217,7 +2390,7 @@ $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').val
 async function loadTcfg(){if(!GATE_API)return;try{const r=await gateApi({action:'tenant_cfg_get'});if(r.ok&&r.cfg){TCFG=r.cfg;try{localStorage.setItem('b2b-tcfg',JSON.stringify(TCFG))}catch(e){}render()}}catch(e){}}
 document.querySelectorAll('#menuBtn,#notesBtn,#logoutBtn,.fab,#ai .hd b,#notes .hd b,#notesClose,#aiClose').forEach(e=>{e.innerHTML=deco(e.innerHTML)});
 loadTcfg();
-window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);const nd=DOOR_LIST.includes(h)?h:'';if(nd!==DOOR)location.reload()});
+window.addEventListener('popstate',onRouteChange);if(!IS_HTTP)window.addEventListener('hashchange',onRouteChange);
 render();
 </script>
 

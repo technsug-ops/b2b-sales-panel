@@ -4,7 +4,7 @@
 // POST /api/gate  { action: "create", admin, label, ttlHours } -> { ok, code, expires }
 // POST /api/gate  { action: "list", admin }                 -> { ok, codes: [...] }
 // POST /api/gate  { action: "revoke", admin, id }           -> { ok }
-// POST /api/gate  { action: "plogin", door, user, pass }    -> partner door login
+// POST /api/gate  { action: "plogin", door:"network", user, pass } -> partner login (type from account)
 // POST /api/gate  { action: "pcreds_sync|pcreds_reset|pcreds_toggle", token(hq) } -> partner credentials (Firmenzentrale only)
 //
 // Master code: permanent, SHA-256 compared against GATE_MASTER_HASH.
@@ -147,13 +147,16 @@ async function main(req, res) {
   }
 
   if (action === 'plogin') {
-    const door = String(body.door || ''); const user = String(body.user || '').trim().toLowerCase(); const pass = String(body.pass || '');
-    if (!DOORS.includes(door) || !user || !pass) return res.status(400).json({ ok: false, error: 'empty' });
+    // single partner entrance ("network"); legacy per-type doors still accepted
+    const asked = String(body.door || 'network'); const user = String(body.user || '').trim().toLowerCase(); const pass = String(body.pass || '');
+    if ((asked !== 'network' && !DOORS.includes(asked)) || !user || !pass) return res.status(400).json({ ok: false, error: 'empty' });
     const creds = (await loadJson(CREDS_PATH)) || [];
     const c = creds.find(x => x.user === user);
-    if (!c || !c.active || !c.doors.includes(door) || !safeEq(c.pass, pass)) return res.status(401).json({ ok: false, error: 'invalid' });
+    if (!c || !c.active || !safeEq(c.pass, pass) || (asked !== 'network' && !c.doors.includes(asked))) return res.status(401).json({ ok: false, error: 'invalid' });
     const tc = (await loadJson(TCFG_PATH)) || DEFAULT_TCFG;
-    if (tc.types && tc.types[door] && tc.types[door].on === false) return res.status(403).json({ ok: false, error: 'door_off' });
+    const isOn = d => !(tc.types && tc.types[d] && tc.types[d].on === false);
+    const door = asked === 'network' ? (c.doors.filter(d => DOORS.includes(d)).find(isOn) || null) : (isOn(asked) ? asked : null);
+    if (!door) return res.status(403).json({ ok: false, error: 'door_off' });
     c.lastLogin = Date.now(); c.logins = (c.logins || 0) + 1; c.lastDoor = door;
     await saveJson(CREDS_PATH, creds);
     return res.status(200).json({ ok: true, token: makeToken('p:' + c.id + ':' + door), kind: 'partner', pid: c.id, door });
