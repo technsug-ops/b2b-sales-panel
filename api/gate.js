@@ -1,7 +1,9 @@
 // Access gate for the B2B Sales Panel demo.
 // POST /api/gate  { action: "login", code }                 -> { ok, token }
 // POST /api/gate  { action: "verify", token }               -> { ok }
-// POST /api/gate  { action: "create", admin, label, ttlHours } -> { ok, code, expires }
+// POST /api/gate  { action: "create", admin, label, ttlHours, target:{tenant, area:"team"|"partner", role|pid,door} } -> { ok, code, expires }
+//   A one-time code is bound to one company (tenant) and one access (team role or one partner account).
+//   It only works at that company's entrance and lands with exactly those rights.
 // POST /api/gate  { action: "list", admin }                 -> { ok, codes: [...] }
 // POST /api/gate  { action: "revoke", admin, id }           -> { ok }
 // POST /api/gate  { action: "plogin", door:"network", user, pass } -> partner login (type from account)
@@ -56,6 +58,8 @@ async function loadRoles(T = 'aydemir') {
 }
 async function permsOf(sub, T = 'aydemir') {
   if (sub === 'hq') return PERMS.slice();
+  const c = /^t:c_[a-z0-9]+:([a-z0-9-]+)$/.exec(String(sub || ''));
+  if (c) { const roles = await loadRoles(T); const role = roles.find(x => x.key === c[1]); return role ? role.perms : []; }
   const m = /^t:(\d+):([a-z0-9-]+)$/.exec(String(sub || ''));
   if (!m) return null;
   const team = await loadTeam(T); const mem = team.find(x => x.id === Number(m[1]));
@@ -99,10 +103,10 @@ const SESSION_HOURS = 12;
 const sha = s => createHash('sha256').update(String(s)).digest('hex');
 const safeEq = (a, b) => { const x = Buffer.from(String(a)); const y = Buffer.from(String(b)); return x.length === y.length && timingSafeEqual(x, y); };
 
-function makeToken(sub, expCap, ten) {
+function makeToken(sub, expCap, ten, extra) {
   let exp = Date.now() + SESSION_HOURS * 3600e3;
   if (expCap && expCap < exp) exp = expCap;
-  const payload = Buffer.from(JSON.stringify(ten ? { sub, exp, ten } : { sub, exp })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ sub, exp, ...(ten ? { ten } : {}), ...(extra || {}) })).toString('base64url');
   const sig = createHmac('sha256', ADMIN_SECRET + MASTER_HASH).update(payload).digest('base64url');
   return `${payload}.${sig}`;
 }
@@ -174,7 +178,7 @@ async function main(req, res) {
     const d = scoped(verifyToken(body.token));
     const perms = d && String(d.sub).startsWith('t:') ? await permsOf(d.sub, T) : undefined;
     if (d && String(d.sub).startsWith('t:') && perms === null) return res.status(200).json({ ok: false });
-    return res.status(200).json({ ok: !!d, sub: d?.sub || null, exp: d?.exp || null, perms, tenant: d ? (d.ten || (/^[tp]:/.test(String(d.sub)) ? 'aydemir' : null)) : null });
+    return res.status(200).json({ ok: !!d, sub: d?.sub || null, exp: d?.exp || null, once: !!(d && d.once), perms, tenant: d ? (d.ten || (/^[tp]:/.test(String(d.sub)) ? 'aydemir' : null)) : null });
   }
 
   if (action === 'plogin') {
@@ -299,9 +303,23 @@ async function main(req, res) {
     const now = Date.now();
     const hit = codes.find(c => !c.usedAt && c.expires > now && safeEq(c.hash, sha(norm)));
     if (!hit) return res.status(401).json({ ok: false, error: 'invalid' });
+    const tg = hit.target || null;
+    const area = String(body.area || '');
+    if (tg) {
+      // bound code: only at its own company and entrance; a wrong entrance does not burn it
+      const want = tg.area === 'partner' ? 'network' : 'staff';
+      if (tg.tenant !== T || (area && area !== want)) return res.status(409).json({ ok: false, error: 'wrong_place', tenant: tg.tenant, area: tg.area });
+    }
     hit.usedAt = now;
     hit.usedUa = String(req.headers['user-agent'] || '').slice(0, 120);
     await saveCodes(codes);
+    if (tg && tg.area === 'team') {
+      const roles = await loadRoles(T); const role = roles.find(x => x.key === tg.role) || { key: tg.role, name: tg.role, perms: [] };
+      return res.status(200).json({ ok: true, token: makeToken('t:' + hit.id + ':' + role.key, hit.expires, T, { once: 1 }), kind: 'team', tenant: T, role: role.key, roleName: role.name, perms: role.perms, name: hit.label || 'Gast', user: 'code', exp: hit.expires });
+    }
+    if (tg && tg.area === 'partner') {
+      return res.status(200).json({ ok: true, token: makeToken('p:' + tg.pid + ':' + tg.door, hit.expires, T, { once: 1 }), kind: 'partner', tenant: T, pid: tg.pid, door: tg.door, exp: hit.expires });
+    }
     return res.status(200).json({ ok: true, token: makeToken(hit.id, hit.expires), kind: 'once', label: hit.label, exp: hit.expires });
   }
 
@@ -314,10 +332,16 @@ async function main(req, res) {
   if (action === 'create') {
     const ttl = Math.min(Math.max(Number(body.ttlHours) || 48, 0.25), 24 * 30);
     const code = genCode();
-    const entry = { id: 'c_' + Date.now().toString(36) + randomInt(1e6).toString(36), label: String(body.label || '').slice(0, 80), hash: sha(code.replace(/-/g, '')), created: Date.now(), expires: Date.now() + ttl * 3600e3, usedAt: null };
+    const t0 = body.target || {};
+    if (!TENANTS.includes(t0.tenant) || !['team', 'partner'].includes(t0.area)) return res.status(400).json({ ok: false, error: 'target' });
+    const target = t0.area === 'team'
+      ? { tenant: t0.tenant, area: 'team', role: String(t0.role || '').replace(/[^a-z0-9-]/g, '').slice(0, 30) || 'staff', roleName: String(t0.roleName || '').slice(0, 60) }
+      : { tenant: t0.tenant, area: 'partner', pid: Number(t0.pid) || 0, door: PTYPES.includes(t0.door) ? t0.door : 'partner', pname: String(t0.pname || '').slice(0, 80) };
+    if (target.area === 'partner' && !target.pid) return res.status(400).json({ ok: false, error: 'target' });
+    const entry = { id: 'c_' + Date.now().toString(36) + randomInt(1e6).toString(36), label: String(body.label || '').slice(0, 80), target, hash: sha(code.replace(/-/g, '')), created: Date.now(), expires: Date.now() + ttl * 3600e3, usedAt: null };
     codes.unshift(entry);
     await saveCodes(codes.slice(0, 500));
-    return res.status(200).json({ ok: true, code, id: entry.id, expires: entry.expires, label: entry.label });
+    return res.status(200).json({ ok: true, code, id: entry.id, expires: entry.expires, label: entry.label, target });
   }
   if (action === 'list') {
     return res.status(200).json({ ok: true, codes: codes.map(({ hash, usedUa, ...c }) => ({ ...c, usedUa })) });
