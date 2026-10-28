@@ -543,7 +543,13 @@ en:{nav:{bp:"Best practices",audit:"Audit log",tenants:"Tenants & white-label",i
  ctr:{new:"+ Contract from template",template:"Template",brand:"Brand",term:"Term",note:"Fields are filled automatically from the partner card (CRM).",preview:"Preview",pdf:"Generate PDF",sign:"Send for signature",cancel:"Cancel",sent:"Contract generated and sent for signature"}}
 };
 let lang=(()=>{try{return localStorage.getItem('pp-lang')||'de'}catch(e){return 'de'}})();
-const t=(k)=>k.split('.').reduce((o,p)=>o&&o[p],I18N[lang])??k;
+const ADDON_DEF={orders:{n:'Bestellung & Preisliste',d:'Händlerpreise je Stufe, Draft Order an Shop',ic:'📦'},stock:{n:'Lager & Lieferzeiten',d:'Verfügbarkeit, Wareneingang, Sendungen',ic:'🏭'},install:{n:'Montage-Termine',d:'Teams, Kalender, Slot-Anfragen',ic:'🔧'},projects:{n:'Projekt-Management',d:'Kanban, Aufgaben, Verantwortliche',ic:'🗂'},sites:{n:'Partner-Websites',d:'Mini-Sites & Co-Branding für Partner',ic:'🌐'},hr:{n:'Personal (HR)',d:'Mitarbeiter, Abwesenheiten, Organigramm',ic:'🧑‍💼'}};
+const CORE_DEF=[['▦','Dashboard & Live-Karte'],['👥','Partnernetz (Typen × Stufen)'],['📥','Leads, Pool, Referenzcodes'],['📄','Verträge & Provision'],['🗂️','Material (DAM)'],['🔔','Benachrichtigungen'],['🔐','Partner-Eingänge & Zugänge'],['👔','Team & Rollen']];
+let TCFG=(()=>{try{const c=JSON.parse(localStorage.getItem('b2b-tcfg')||'null');if(c)return c}catch(e){}return {features:Object.keys(ADDON_DEF),types:{leadgen:{on:true,label:''},freelancer:{on:true,label:''},partner:{on:true,label:''},distributor:{on:true,label:''}}}})();
+const feat=x=>(TCFG.features||[]).includes(x);
+const typeOn=x=>!TCFG.types||!TCFG.types[x]||TCFG.types[x].on!==false;
+const typesOn=()=>['leadgen','freelancer','partner','distributor'].filter(typeOn);
+const t=(k)=>{if(k.startsWith('types.')&&TCFG.types){const o=TCFG.types[k.slice(6)];if(o&&o.label)return o.label}return k.split('.').reduce((o,p)=>o&&o[p],I18N[lang])??k};
 
 /* ---------- sample data ---------- */
 const BRANDS={mz:{name:"Moonzelt",site:"moonzelt.com",c:"var(--mz)"},ec:{name:"Euroconteiner",site:"euroconteiner.com",c:"var(--ec)"},we:{name:"Wasserernte",site:"wasserernte.com",c:"var(--we)"}};
@@ -735,10 +741,11 @@ function navItems(){
     {s:'consoleOps'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),...(ph(1)?[{k:'security',ic:'🛡️'}]:[]),...(ph(3)?[{k:'billing',ic:'💳'},{k:'pilot',ic:'🎯'}]:[]),...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),
     {s:'consoleDocs'},{k:'bp',ic:'📘'}];
   if(viewer.type==='admin') return [
-    {s:'admin'},{k:'dash',ic:'▦'},...(hasP('partners')?[{k:'partners',ic:'👥'}]:[]),...(hasP('leads')?[{k:'leads',ic:'📥'}]:[]),...(hasP('projects')?[{k:'projects',ic:'🗂'}]:[]),...(hasP('partners')?[{k:'contracts',ic:'📄'}]:[]),...(hasP('orders')?[{k:'orders',ic:'📦'},{k:'stock',ic:'🏭'},{k:'install',ic:'🔧'}]:[]),...(hasP('dam')?[{k:'sites',ic:'🌐'},{k:'dam',ic:'🗂️'}]:[]),{k:'notif',ic:'🔔',badge:unread},...(hasP('settings')&&ph(1)?[{k:'audit',ic:'🧾'}]:[]),...(hasP('hr')?[{k:'hr',ic:'🧑‍💼'}]:[]),...(hasP('settings')?[{k:'settings',ic:'⚙️'}]:[]),...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}]:[]),...(isGF()?[...(canZentrale()?[]:[{s:'hq'}]),{k:'team',ic:'👔'}]:[]),{s:'public'},{k:'register',ic:'📝'}];
+    {s:'admin'},{k:'dash',ic:'▦'},...(hasP('partners')?[{k:'partners',ic:'👥'}]:[]),...(hasP('leads')?[{k:'leads',ic:'📥'}]:[]),...(hasP('projects')&&feat('projects')?[{k:'projects',ic:'🗂'}]:[]),...(hasP('partners')?[{k:'contracts',ic:'📄'}]:[]),...(hasP('orders')?[...(feat('orders')?[{k:'orders',ic:'📦'}]:[]),...(feat('stock')?[{k:'stock',ic:'🏭'}]:[]),...(feat('install')?[{k:'install',ic:'🔧'}]:[])]:[]),...(hasP('dam')?[...(feat('sites')?[{k:'sites',ic:'🌐'}]:[]),{k:'dam',ic:'🗂️'}]:[]),{k:'notif',ic:'🔔',badge:unread},...(hasP('settings')&&ph(1)?[{k:'audit',ic:'🧾'}]:[]),...(hasP('hr')&&feat('hr')?[{k:'hr',ic:'🧑‍💼'}]:[]),...(hasP('settings')?[{k:'settings',ic:'⚙️'}]:[]),...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}]:[]),...(isGF()?[...(canZentrale()?[]:[{s:'hq'}]),{k:'team',ic:'👔'}]:[]),{s:'public'},{k:'register',ic:'📝'}];
   const p=PARTNERS.find(x=>x.id===viewer.partner);
   const ic={projects:'🗂',dash:'▦',network:'👥',pool:'🎯',leads:'📥',myleads:'📥',referral:'🔗',pricelist:'📦',orders:'🧾',stock:'🏭',install:'🔧',site:'🌐',earn:'💶',mycontract:'📄',dam:'🗂️',notif:'🔔'};
-  return [{s:'me'},...MODULES.filter(m=>p.access.modules.includes(m)).map(m=>({k:m,ic:ic[m],badge:m==='notif'?unread:0}))];
+  const FM={pricelist:'orders',orders:'orders',stock:'stock',install:'install',site:'sites',projects:'projects'};
+  return [{s:'me'},...MODULES.filter(m=>p.access.modules.includes(m)&&(!FM[m]||feat(FM[m]))).map(m=>({k:m,ic:ic[m],badge:m==='notif'?unread:0}))];
 }
 function renderNav(){
   const items=navItems();
@@ -759,10 +766,10 @@ function mapBlock(list,{small=false,controls=true}={}){
   const states=[...new Set(PARTNERS.map(p=>p.state))].sort();
   const ctl=controls?`<div class="mapctl"><input id="mapQ" placeholder="🔍 ${t('cols.name')} / ${t('cols.city')}" value="${esc(mapQ)}">
     <select id="mapState"><option value="all">${lang==='tr'?'Tüm bölgeler':lang==='en'?'All regions':'Alle Regionen'}</option><optgroup label="Deutschland">${states.filter(x=>DE_STATE_LIST.includes(x)).map(s=>`<option ${mapState===s?'selected':''}>${s}</option>`).join('')}</optgroup><optgroup label="Europa">${states.filter(x=>!DE_STATE_LIST.includes(x)).map(s=>`<option ${mapState===s?'selected':''}>${s}</option>`).join('')}</optgroup></select>
-    <div class="chips"><button class="chip ${mapType==='all'?'on':''}" data-mt="all">${lang==='tr'?'Tümü':lang==='en'?'All':'Alle'}</button>${TYPES.map(k=>`<button class="chip ${mapType===k?'on':''}" data-mt="${k}"><span class="dot" style="background:${TYPE_COL[k]}"></span>${t('types.'+k)}</button>`).join('')}</div>
+    <div class="chips"><button class="chip ${mapType==='all'?'on':''}" data-mt="all">${lang==='tr'?'Tümü':lang==='en'?'All':'Alle'}</button>${typesOn().map(k=>`<button class="chip ${mapType===k?'on':''}" data-mt="${k}"><span class="dot" style="background:${TYPE_COL[k]}"></span>${t('types.'+k)}</button>`).join('')}</div>
     <span class="pill" style="margin-left:auto">${f.length} / ${list.length}</span></div>`:'';
   const html=`${ctl}<div class="lmap ${small?'small':''}" data-map data-ids="${f.map(p=>p.id).join(',')}">${window.L?'':mapSVG(f,{small})}</div>
-  <div class="legend">${TYPES.map(k=>`<span><span class="dot" style="background:${TYPE_COL[k]}"></span> ${t('types.'+k)}</span>`).join('')}<span style="margin-left:auto">© OpenStreetMap contributors · DE + EU</span></div>
+  <div class="legend">${typesOn().map(k=>`<span><span class="dot" style="background:${TYPE_COL[k]}"></span> ${t('types.'+k)}</span>`).join('')}<span style="margin-left:auto">© OpenStreetMap contributors · DE + EU</span></div>
   ${controls?`<div class="maplist">${f.map(p=>{const r=mainRoleOf(p);return `<button data-fly="${p.id}"><b>${esc(p.name)}</b><small>${p.city} · ${p.state}</small><span>${p.roles.filter(r=>brandF==='all'||r.b===brandF).map(r=>`<span class="tag ${r.b}" style="font-size:10px">${BRANDS[r.b].name}</span> ${tierTag(r.tier)}`).join(' ')}</span></button>`}).join('')}</div>`:''}`;
   return html;
 }
@@ -802,7 +809,7 @@ function mapSVG(list,{small=false}={}){
     return `<g class="pin" data-id="${p.id}"><circle cx="${x}" cy="${y}" r="${r+5}" fill="${col[main.t]}" opacity=".18"/><circle cx="${x}" cy="${y}" r="${r}" fill="${col[main.t]}" stroke="var(--panel)" stroke-width="1.5"><title>${esc(p.name)} · ${p.city} · ${roles.map(r=>BRANDS[r.b].name+' '+t('types.'+r.t)+' '+r.tier).join(', ')}</title></circle>${small?'':`<text class="lbl" x="${x+r+4}" y="${y+4}">${esc(p.city)}</text>`}</g>`;
   }).join('');
   return `<svg class="map" viewBox="0 0 600 700" role="img" aria-label="${t('map.title')}"><path class="land" d="${path}"/>${pins}</svg>
-  <div class="legend"><b style="color:var(--fg)">${t('map.legendTypes')}:</b>${TYPES.map(k=>`<span><span class="dot" style="background:${col[k]}"></span> ${t('types.'+k)}</span>`).join('')}</div>`;
+  <div class="legend"><b style="color:var(--fg)">${t('map.legendTypes')}:</b>${typesOn().map(k=>`<span><span class="dot" style="background:${col[k]}"></span> ${t('types.'+k)}</span>`).join('')}</div>`;
 }
 function allowedBrands(){const p=viewer.partner?PARTNERS.find(x=>x.id===viewer.partner):null;return p?p.access.brands:Object.keys(BRANDS)}
 function brandChips(){
@@ -881,7 +888,7 @@ function partnerCard(id){
       <div class="card"><div class="hd"><h2>${t('nav.orders')} & ${t('nav.leads')}</h2></div>${os.length?ordersTable(os):''}${ls.length?leadsTable(ls):''}${!os.length&&!ls.length?'<p style="color:var(--muted);margin:0">—</p>':''}</div>
     </div>
     <div style="display:grid;gap:14px;align-content:start">
-      ${viewer.type==='admin'?accessCard(p)+siteAdminCard(p):''}
+      ${viewer.type==='admin'?accessCard(p)+(feat('sites')?siteAdminCard(p):''):''}
       ${tierProgress(p)}
       <div class="card"><div class="hd"><h2>${t('perf')}</h2></div>
         <svg viewBox="0 0 300 90" style="width:100%;display:block"><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="${[12,18,15,22,30,28,34,41,38,47,52,58].map((v,i)=>`${10+i*25},${85-v*1.2}`).join(' ')}"/>${[12,18,15,22,30,28,34,41,38,47,52,58].map((v,i)=>`<circle cx="${10+i*25}" cy="${85-v*1.2}" r="2.5" fill="var(--accent)"/>`).join('')}<text x="285" y="12" class="lbl" fill="var(--muted)" font-size="10" text-anchor="end">${eur(58000)}</text></svg>
@@ -943,7 +950,7 @@ function dpubDialog(){
       <div class="f"><label>${k('kind')}</label><select id="dp_kind">${['PDF','Video (MP4)','Bilder (ZIP)','Präsentation','Tabelle','Vorlage (DOCX)'].map(x=>`<option ${dpub.kind===x?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="f"><label>${k('brand')}</label><select id="dp_brand"><option value="all" ${dpub.b==='all'?'selected':''}>${k('all')} (Gruppe)</option>${Object.entries(BRANDS).map(([b,x])=>`<option value="${b}" ${dpub.b===b?'selected':''}>${x.name}</option>`).join('')}</select></div>
       <div class="f"><label>${k('audTier')}</label><select id="dp_min">${['basic','silver','gold','premium'].map(x=>`<option value="${x}" ${dpub.min===x?'selected':''}>${x[0].toUpperCase()+x.slice(1)}</option>`).join('')}</select></div>
-      <div class="f full"><label>${k('audTypes')}</label><div class="opt">${TYPES.map(x=>`<label><input type="checkbox" data-dpt="${x}" ${dpub.types.includes(x)?'checked':''}><span>${t('types.'+x)}</span></label>`).join('')}</div></div>
+      <div class="f full"><label>${k('audTypes')}</label><div class="opt">${typesOn().map(x=>`<label><input type="checkbox" data-dpt="${x}" ${dpub.types.includes(x)?'checked':''}><span>${t('types.'+x)}</span></label>`).join('')}</div></div>
       <div class="f"><label>${k('audStates')}</label><select id="dp_states" multiple size="5">${states.map(x=>`<option ${dpub.states.includes(x)?'selected':''}>${x}</option>`).join('')}</select></div>
       <div class="f"><label>${k('audPartners')}</label><select id="dp_partners" multiple size="5">${PARTNERS.map(p=>`<option value="${p.id}" ${dpub.partners.includes(p.id)?'selected':''}>${esc(p.name)} · ${p.city}</option>`).join('')}</select></div>
       ${ph(2)?'':'<!--'}<div class="f full"><label>${t('bp.usage')}</label><div class="opt" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">${['social','print','web','nopr','intern'].map(u=>`<label><input type="checkbox" data-dpu="${u}" ${(dpub.use||[]).includes(u)?'checked':''}><span>${t('bp.usageTags.'+u)}</span></label>`).join('')}</div></div>${ph(2)?'':'-->'}
@@ -976,7 +983,10 @@ function viewEarn(){
 function viewSettings(){
   const mods=['dash','partners','leads','contracts','orders','dam','notif','settings'];
   const matrix={admin:[1,1,1,1,1,1,1,1],staff:[1,1,1,1,1,1,1,0],distributor:[1,1,1,0,1,1,1,0],partner:[1,0,0,0,1,1,1,0],freelancer:[1,0,1,0,0,1,1,0],leadgen:[1,0,1,0,0,1,1,0]};
-  return `<div class="card" style="margin-bottom:14px"><div class="hd"><h2>${t('acc.all')}</h2><span style="color:var(--muted);font-size:12px">${t('acc.hint')}</span></div>
+  return `<div class="card" style="margin-bottom:14px"><div class="hd"><h2>Gebuchte Module</h2><span class="sp"></span><button class="btn sm" data-act="reqmod">Weitere Module anfragen</button></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${CORE_DEF.map(([ic,n])=>`<span class="tag" style="font-size:12px">${ic} ${n}</span>`).join('')}${Object.entries(ADDON_DEF).map(([k,a])=>`<span class="tag" style="font-size:12px;${feat(k)?'border-color:var(--ok);color:var(--ok)':'opacity:.45;text-decoration:line-through'}">${a.ic} ${a.n}</span>`).join('')}</div>
+    <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">Partnertypen: ${typesOn().map(k=>t('types.'+k)).join(' · ')}</p></div>
+  <div class="card" style="margin-bottom:14px"><div class="hd"><h2>${t('acc.all')}</h2><span style="color:var(--muted);font-size:12px">${t('acc.hint')}</span></div>
     <div class="tw"><table><thead><tr><th>${t('cols.name')}</th><th>${t('cols.type')}</th><th>${t('acc.modules')}</th><th>${t('acc.brands')}</th><th></th></tr></thead><tbody>
     ${PARTNERS.map(p=>`<tr data-p="${p.id}"><td><b>${esc(p.name)}</b><br><small style="color:var(--muted)">${esc(p.contact)}</small></td><td>${t('types.'+mainType(p))}</td><td><small>${p.access.modules.filter(m=>m!=='dash').map(MOD_LABEL).join(' · ')}</small></td><td>${p.access.brands.map(brandTag).join(' ')}</td><td><span class="cred-pw" style="font-size:11px;color:var(--muted)">/${mainType(p)==='partner'?'partner':mainType(p)}</span></td></tr>`).join('')}</tbody></table></div></div>
   <div class="grid two">
@@ -985,10 +995,10 @@ function viewSettings(){
     <div style="display:grid;gap:14px;align-content:start">
       <div class="card"><div class="hd"><h2>${t('settings.tiers')}</h2><span class="sp"></span><button class="btn sm" data-act="save">${t('saved')}</button></div>
         <div class="tw"><table><thead><tr><th>${t('cols.type')}</th><th>Basic</th><th>Silver</th><th>Gold</th><th>Premium</th></tr></thead><tbody>
-          <tr><td>${t('types.leadgen')} · €/Lead</td><td>25</td><td>35</td><td>50</td><td>70</td></tr>
-          <tr><td>${t('types.freelancer')} · %</td><td>5</td><td>7</td><td>9</td><td>12</td></tr>
-          <tr><td>${t('types.partner')} · Rabatt %</td><td>10</td><td>15</td><td>20</td><td>25</td></tr>
-          <tr><td>${t('types.distributor')} · Rabatt % / Netz %</td><td>18 / 2</td><td>22 / 3</td><td>26 / 4</td><td>30 / 5</td></tr>
+          ${typeOn('leadgen')?'':'<!--'}<tr><td>${t('types.leadgen')} · €/Lead</td><td>25</td><td>35</td><td>50</td><td>70</td></tr>${typeOn('leadgen')?'':'-->'}
+          ${typeOn('freelancer')?'':'<!--'}<tr><td>${t('types.freelancer')} · %</td><td>5</td><td>7</td><td>9</td><td>12</td></tr>${typeOn('freelancer')?'':'-->'}
+          ${typeOn('partner')?'':'<!--'}<tr><td>${t('types.partner')} · Rabatt %</td><td>10</td><td>15</td><td>20</td><td>25</td></tr>${typeOn('partner')?'':'-->'}
+          ${typeOn('distributor')?'':'<!--'}<tr><td>${t('types.distributor')} · Rabatt % / Netz %</td><td>18 / 2</td><td>22 / 3</td><td>26 / 4</td><td>30 / 5</td></tr>${typeOn('distributor')?'':'-->'}
         </tbody></table></div></div>
       <div class="card"><div class="hd"><h2>${t('settings.brands')}</h2></div>${Object.entries(BRANDS).map(([k,b])=>`<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)"><span class="dot" style="background:${b.c}"></span><b>${b.name}</b><small style="color:var(--muted)">${b.site} · Shopify</small><span class="sp" style="flex:1"></span><span class="st ok">Webhook OK</span></div>`).join('')}</div>
       <div class="card"><div class="hd"><h2>${t('settings.integr')}</h2></div>${[['Shopify Admin API','ok'],['Zoho CRM','ok'],['WhatsApp Cloud API','ok'],['Resend (E-Mail)','ok'],['Claude API (KI-Assistent)','ok'],['DATEV Export','mut']].map(([n,s])=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)"><span>${n}</span><span class="st ${s}">${s==='ok'?'Verbunden':'Geplant'}</span></div>`).join('')}</div>
@@ -1219,7 +1229,7 @@ function accessCard(p){
   return `<div class="card" style="border-color:var(--accent)"><div class="hd"><h2>🔐 ${t('acc.title')}</h2><span class="sp"></span></div>
     <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">${t('acc.hint')}</p>
     <b style="font-size:12px">${t('acc.modules')}</b>
-    <div class="opt" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:6px 0 12px">${MODULES.filter(m=>m!=='dash').map(m=>`<label><input type="checkbox" data-mod="${m}" ${p.access.modules.includes(m)?'checked':''}><span>${MOD_LABEL(m)}</span></label>`).join('')}</div>
+    <div class="opt" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:6px 0 12px">${MODULES.filter(m=>m!=='dash'&&!({pricelist:1,orders:1}[m]&&!feat('orders'))&&!(m==='stock'&&!feat('stock'))&&!(m==='install'&&!feat('install'))&&!(m==='site'&&!feat('sites'))&&!(m==='projects'&&!feat('projects'))).map(m=>`<label><input type="checkbox" data-mod="${m}" ${p.access.modules.includes(m)?'checked':''}><span>${MOD_LABEL(m)}</span></label>`).join('')}</div>
     <b style="font-size:12px">${t('acc.brands')}</b>
     <div class="opt" style="margin:6px 0 12px">${Object.entries(BRANDS).map(([k,b])=>`<label><input type="checkbox" data-brand="${k}" ${p.access.brands.includes(k)?'checked':''}><span><b style="color:${b.c}">${b.name}</b></span></label>`).join('')}</div>
     <b style="font-size:12px">${t('acc.extra')}</b>
@@ -1241,7 +1251,7 @@ function viewRegister(){
     ${f('r_exp',r('exp'),'select','<option>Keine</option><option>1–3 Jahre</option><option>3–10 Jahre</option><option>10+ Jahre</option>',true)}</div>`;
   if(regStep===3) body=`<div class="frm">
     <div class="f full"><label>${r('brandsQ')}</label><div class="opt">${Object.entries(BRANDS).map(([k,b])=>`<label><input type="checkbox" ${k==='we'?'checked':''}><span><b style="color:${b.c}">${b.name}</b><small>${b.site}</small></span></label>`).join('')}</div></div>
-    <div class="f full"><label>${r('typeQ')}</label><div class="opt" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">${[['leadgen','lgD'],['freelancer','flD'],['partner','paD'],['distributor','diD']].map(([k,d],i)=>`<label><input type="radio" name="r_type" ${k==='partner'?'checked':''}><span><b>${t('types.'+k)}</b><small>${r(d)}</small></span></label>`).join('')}</div></div>
+    <div class="f full"><label>${r('typeQ')}</label><div class="opt" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">${[['leadgen','lgD'],['freelancer','flD'],['partner','paD'],['distributor','diD']].filter(([k])=>typeOn(k)).map(([k,d],i)=>`<label><input type="radio" name="r_type" ${k==='partner'?'checked':''}><span><b>${t('types.'+k)}</b><small>${r(d)}</small></span></label>`).join('')}</div></div>
     ${f('r_vol',r('vol'),'select','<option>bis 25.000 €</option><option>25.000–100.000 €</option><option>100.000–500.000 €</option><option>500.000 €+</option>')}
     ${f('r_source',r('source'),'select','<option>Google</option><option>Instagram / Facebook</option><option>Messe</option><option>Empfehlung</option><option>Anzeige</option>')}
     ${f('r_why',r('why'),'textarea','',true)}</div>`;
@@ -1592,7 +1602,7 @@ function viewHqHome(){
   if(!CREDS.list&&!CREDS.loading){hqSync()}
   const L=CREDS.list||[];const by=d=>L.filter(c=>c.doors.includes(d)).length;
   const recent=L.filter(c=>c.lastLogin).sort((a,b)=>b.lastLogin-a.lastLogin).slice(0,6);
-  return `<div class="grid kpis" style="margin-bottom:14px">${Object.entries(DOOR_META).map(([d,M])=>kpi(M.ic+' '+M.n.replace('-Portal',''),L.length?by(d):'…','')).join('')}${kpi('Gesperrt',L.filter(c=>!c.active).length,'',L.some(c=>!c.active))}${kpi('Anmeldungen',L.reduce((a,c)=>a+(c.logins||0),0),'gesamt')}</div>
+  return `<div class="grid kpis" style="margin-bottom:14px">${Object.entries(DOOR_META).filter(([d])=>typeOn(d)).map(([d,M])=>kpi(M.ic+' '+M.n.replace('-Portal',''),L.length?by(d):'…','')).join('')}${kpi('Gesperrt',L.filter(c=>!c.active).length,'',L.some(c=>!c.active))}${kpi('Anmeldungen',L.reduce((a,c)=>a+(c.logins||0),0),'gesamt')}</div>
   <div class="grid two">
     <div class="card"><div class="hd"><h2>Letzte Anmeldungen</h2><span class="sp"></span><button class="btn sm" data-goto="hqcreds">Alle Zugänge →</button></div>
       ${recent.length?`<div class="feed">${recent.map(c=>`<div class="it"><span class="dot" style="background:var(--ok);margin-top:6px"></span><span><b>${esc(c.name)}</b><br><small style="color:var(--muted)">${c.user}</small></span><small>${new Date(c.lastLogin).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</small></div>`).join('')}</div>`:'<p style="margin:0;color:var(--muted)">Noch keine Partner-Anmeldungen.</p>'}</div>
@@ -1605,7 +1615,7 @@ function viewHqCreds(){
   const L=CREDS.list.filter(c=>CREDS.door==='all'||c.doors.includes(CREDS.door));
   const fmt=ms=>ms?new Date(ms).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
   return `<div class="card"><div class="hd"><h2>Partner-Zugänge</h2><span class="pill">${L.length}</span><span class="sp"></span>
-      <div class="chips"><button class="chip ${CREDS.door==='all'?'on':''}" data-cdoor="all">Alle</button>${Object.entries(DOOR_META).map(([d,M])=>`<button class="chip ${CREDS.door===d?'on':''}" data-cdoor="${d}"><span class="dot" style="background:${M.c}"></span>${M.n.replace('-Portal','')}</button>`).join('')}</div>
+      <div class="chips"><button class="chip ${CREDS.door==='all'?'on':''}" data-cdoor="all">Alle</button>${Object.entries(DOOR_META).filter(([d])=>typeOn(d)).map(([d,M])=>`<button class="chip ${CREDS.door===d?'on':''}" data-cdoor="${d}"><span class="dot" style="background:${M.c}"></span>${M.n.replace('-Portal','')}</button>`).join('')}</div>
       <button class="btn sm" data-act="sendcreds">✉ Zugangsdaten senden</button></div>
     <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">🔒 Nur für Geschäftsführer und Technik-Verantwortliche sichtbar. Verwaltungs-Mitarbeiter und TechNS haben keinen Zugriff auf Partner-Passwörter. Jede Änderung wird protokolliert.</p>
     <div class="tw"><table><thead><tr><th>Partner</th><th>Eingang</th><th>Benutzername</th><th>Passwort</th><th>Status</th><th>Letzte Anmeldung</th><th></th></tr></thead><tbody>
@@ -1618,10 +1628,31 @@ function viewHqCreds(){
 function viewHqDoors(){
   const L=CREDS.list||[];
   const what={partner:'Preisliste & Bestellung, Bestellungen, Lager, Montage, Vertrag, Material',freelancer:'Lead-Pool, eigene Leads, Lager, Montage, Vergütung, Vertrag, Material',leadgen:'Referenzcode, Lead erfassen, eigene Leads, Vergütung, Vertrag, Material',distributor:'Netzwerk, Lead-Pool, Leads, Preisliste, Bestellungen, Lager, Montage, Vergütung'};
-  return `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:14px">${Object.entries(DOOR_META).map(([d,M])=>`<div class="card doorcard" style="--dc:${M.c}"><div class="hd" style="margin:0"><h2>${M.ic} ${M.n}</h2><span class="sp"></span><span class="pill">${L.filter(c=>c.doors.includes(d)).length||'…'} Partner</span></div>
+  return `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:14px">${Object.entries(DOOR_META).filter(([d])=>typeOn(d)).map(([d,M])=>`<div class="card doorcard" style="--dc:${M.c}"><div class="hd" style="margin:0"><h2>${M.ic} ${M.n}</h2><span class="sp"></span><span class="pill">${L.filter(c=>c.doors.includes(d)).length||'…'} Partner</span></div>
     <div class="url">${fullUrl(d)}</div><small style="color:var(--muted)">Login: Benutzername + Passwort · sieht: ${what[d]}</small>
     <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="copy" data-v="${fullUrl(d)}">⧉ Link kopieren</button><a class="btn sm" href="${doorUrl(d)}" target="_blank">Login-Seite öffnen ↗</a></div></div>`).join('')}</div>
   <div class="card"><div class="hd"><h2>Interne Eingänge</h2></div><dl class="kv"><dt>Aydemir-Portal</dt><dd><span class="cred-pw">${fullUrl('')}</span> · Team-Login (Geschäftsführer, Technik, Verwaltung)</dd><dt>Firmenzentrale</dt><dd>Bereich im Aydemir-Portal · nur Geschäftsführer & Technik</dd></dl></div>`;
+}
+
+
+/* ---------- console: modules & partner structure per tenant ---------- */
+let TCEDIT=null;
+const typesOnE=()=>['leadgen','freelancer','partner','distributor'].some(k=>TCEDIT.types[k].on);
+const PLAN_ADDONS={Starter:[],Business:['orders','stock','projects','sites'],Group:Object.keys(ADDON_DEF)};
+function modulesCard(){
+  const E=TCEDIT||(TCEDIT=JSON.parse(JSON.stringify(TCFG)));const T=TENANTS.find(x=>x.id==='t1');
+  const dirty=JSON.stringify(E)!==JSON.stringify(TCFG);
+  return `<div class="card" style="margin-top:14px;border-color:var(--accent)"><div class="hd"><h2>Module & Partnerstruktur · ${esc(T.name)}</h2><span class="sp"></span>${['Starter','Business','Group'].map(pl=>`<button class="btn sm" data-tplan="${pl}">${pl}-Vorlage</button>`).join('')}<button class="btn p sm" data-tsave ${dirty?'':'disabled'}>${dirty?'Speichern & ausrollen':'Gespeichert'}</button></div>
+    <div class="grid two">
+      <div><b style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Kern · immer enthalten</b>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px">${CORE_DEF.map(([ic,n])=>`<span class="tag" style="font-size:12px">${ic} ${n}</span>`).join('')}</div>
+        <b style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Zusatzmodule</b>
+        <div class="opt" style="grid-template-columns:1fr 1fr;margin-top:8px">${Object.entries(ADDON_DEF).map(([k,a])=>`<label><input type="checkbox" data-tfeat="${k}" ${E.features.includes(k)?'checked':''}><span><b>${a.ic} ${a.n}</b><small>${a.d}</small></span></label>`).join('')}</div></div>
+      <div><b style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Partnertypen dieses Mandanten</b>
+        <p style="margin:6px 0 8px;font-size:12px;color:var(--muted)">Welche Vertriebsrollen nutzt der Kunde – und wie nennt er sie? Leere Bezeichnung = Standardname.</p>
+        <div style="display:grid;gap:8px">${['leadgen','freelancer','partner','distributor'].map(k=>`<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)"><input type="checkbox" data-ttype="${k}" ${E.types[k].on?'checked':''} style="accent-color:var(--accent)"><span style="font-size:13px"><b>${I18N.de.types[k]}</b><br><small style="color:var(--muted)">Eingang /${k}</small></span><input data-tlabel="${k}" value="${esc(E.types[k].label||'')}" placeholder="z. B. ${({leadgen:'Tippgeber',freelancer:'Handelsvertreter',partner:'Fachhändler',distributor:'Gebietspartner'})[k]}" style="padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel)" ${E.types[k].on?'':'disabled'}></div>`).join('')}</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--muted)">Deaktivierte Typen: Eingang gesperrt, nicht im Registrierungsformular, nicht in Karte & Filtern. Bestehende Daten bleiben erhalten.</p></div>
+    </div></div>`;
 }
 
 /* ---------- TechNS console views ---------- */
@@ -1646,7 +1677,7 @@ function viewRollout(){
 /* ---------- platform views ---------- */
 function viewTenants(){
   const T=TENANTS.find(x=>x.id===curTenant);
-  return `<div class="grid kpis" style="margin-bottom:14px">${kpi('Aktive Tenants',TENANTS.length,'')}${kpi('Partner gesamt',TENANTS.reduce((a,x)=>a+x.partners(),0),'')}${kpi('MRR',eur(TENANTS.reduce((a,x)=>a+x.mrr,0)),'+599 € (neu)')}${kpi('Churn (12 Mon.)','0 %','')}</div>
+  return (CONSOLE?modulesCard():'')+`<div style="height:14px"></div>`+`<div class="grid kpis" style="margin-bottom:14px">${kpi('Aktive Tenants',TENANTS.length,'')}${kpi('Partner gesamt',TENANTS.reduce((a,x)=>a+x.partners(),0),'')}${kpi('MRR',eur(TENANTS.reduce((a,x)=>a+x.mrr,0)),'+599 € (neu)')}${kpi('Churn (12 Mon.)','0 %','')}</div>
   <div class="grid two">
     <div class="card"><div class="hd"><h2>Mandanten</h2><span class="sp"></span><button class="btn p sm" data-act="newtenant">+ Mandant anlegen</button></div>
       <div class="tw"><table><thead><tr><th>Tenant</th><th>Plan</th><th>Marken</th><th>Partner</th><th>Domain</th><th></th></tr></thead><tbody>
@@ -1725,7 +1756,7 @@ const BP=[
  {n:"0",t:{de:"Produktthese",tr:"Ürün tezi",en:"Product thesis"},lead:{de:"Bestehende PRM-Tools (Impartner, Channeltivity, PartnerStack, Kiflo, leadtributor) gehen davon aus, dass Software verkauft wird. Für produzierende KMU mit Händlern, Montage und E-Commerce fehlt diese Kombination:",tr:"Mevcut PRM araçları 'satılan şey yazılım' varsayımıyla kurulmuş. Fiziksel ürün + bayi + montaj + e-ticaret olan KOBİ üreticiler için şu birleşim yok:",en:"Existing PRM tools assume software is being sold. For manufacturing SMEs with dealers, installation and e-commerce this combination is missing:"},
   thesis:{de:"Das Partnerportal für produzierende KMU — vom Lead bis zur Montage.",tr:"Üreten KOBİ'ler için partner portalı — lead'den montaja.",en:"The partner portal for manufacturing SMEs — from lead to installation."},
   items:[["Mehrere Marken in einem Portal · 4 Partnertypen × 4 Stufen","demo"],["Lead-Pool + Referenzcode · Händlerpreis → Shopify Draft Order","demo"],["Lager & Lieferzeit · Montageteam-Kalender · DE + EU","demo"],["Co-branded Partner-Websites · zielgerichtetes DAM · Einmal-Zugangscodes","demo"],["Positionierung: nicht als „PRM“ verkaufen – sonst Vergleich mit Enterprise-Anbietern","p1"]]},
- {n:"1",t:{de:"Mandantenfähigkeit",tr:"Çok kiracılı yapı",en:"Multi-tenancy"},items:[["Tenant = Kundenfirma; eigene Marken, Partner, Regeln, Domain","p1"],["Marke ist eine Datendimension (brand_id), keine eigene App","demo"],["White-Label: Logo, Farben, Domain (partner.kunde.de), Absender","p1"],["Datenisolation in der Datenbank (Supabase RLS), nicht nur in der Oberfläche","p1"],["Pro Tenant konfigurierbar: Typen, Stufen, Provisionsregeln, Pipeline, Sprachen, Währung, Regionen","p1"]]},
+ {n:"1",t:{de:"Mandantenfähigkeit",tr:"Çok kiracılı yapı",en:"Multi-tenancy"},items:[["Tenant = Kundenfirma; eigene Marken, Partner, Regeln, Domain","p1"],["Marke ist eine Datendimension (brand_id), keine eigene App","demo"],["White-Label: Logo, Farben, Domain (partner.kunde.de), Absender","p1"],["Datenisolation in der Datenbank (Supabase RLS), nicht nur in der Oberfläche","p1"],["Pro Tenant konfigurierbar: Partnertypen (an/aus, eigene Bezeichnung), Stufen, Provisionsregeln, Pipeline, Sprachen, Währung, Regionen","p1"],["Kern = Vertriebsnetz (Leadgenerator, Freelancer, Partner, Distributor); Zusatzmodule je Mandant zuschaltbar: Bestellung, Lager, Montage, Projekte, Partner-Websites, Personal","p1"]]},
  {n:"2",t:{de:"Partnermodell",tr:"Partner modeli",en:"Partner model"},items:[["Typ ≠ Stufe: Typ sagt was, Stufe sagt wie gut","demo"],["Ein Konto, mehrere Rollen (Marke × Typ × Stufe); Rechte hängen an der Rolle","demo"],["Stufenregeln messbar und für den Partner sichtbar (z. B. Gold = ≥ 8 Abschlüsse, ≥ 60 k€); automatisch berechnet, manuell freigegeben","demo"],["Standard-Sichtbarkeit eng; Admin schaltet Module einzeln frei","demo"],["Onboarding-SLA ≤ 48 h mit Warnung im Dashboard","demo"]]},
  {n:"3",t:{de:"Lead-Management",tr:"Lead yönetimi",en:"Lead management"},items:[["Ein Eingang für alle Websites, WhatsApp, Telefon – mit brand / source / ref_code","demo"],["Referenzcode in jedem Link (?ref=), Lead landet automatisch beim Partner; Konfliktregel: Erstkontakt gewinnt, 90 Tage Schutz","demo"],["Automatische Zuweisung (PLZ + Typ + Stufe) und 24-h-Timeout → zurück in Pool","demo"],["Pipeline ≤ 5 Stufen, Verlustgrund Pflicht","demo"],["Lead-Qualität: Partner meldet „unqualifiziert“, Leadgen-Vergütung nur für qualifizierte Leads","demo"],["CRM-Sync bidirektional, Portal ist führend (Zoho/HubSpot/Pipedrive als Spiegel)","p2"]]},
  {n:"4",t:{de:"Bestellung, Lager, Montage",tr:"Sipariş, stok, montaj",en:"Orders, stock, installation"},items:[["Preis aus einer Quelle: Listenpreis aus Shop, Rabatt aus Stufenregel; keine manuellen Preise","demo"],["Bestellung = Draft Order; Zahlung & Rechnung im Shop/ERP, nicht im Portal","p2"],["Lager als „verfügbar“ (Bestand − reserviert); Schwellenwert-Alarm; Lieferzeit Pflicht bei „auf Anfrage“","demo"],["Montagekapazität im Kalender: Team × Tag; Partner fragt Slot an, Admin bestätigt; mehrtägige Blöcke, Reisetag bei EU","demo"],["Liefer-/Montageinfos auch an den Endkunden (Sendungsnummer, ETA, Termin)","p2"]]},
@@ -1817,6 +1848,7 @@ function render(){
     else if(a==='ctrpdf')toast('PDF: '+TEMPLATES[ctrOpen.tpl].name+'.pdf');
     else if(a==='take'){const l=LEADS.find(x=>x.id===b.dataset.l);l.owner=viewer.partner;l.stage='contacted';render();toast(t('pool.taken'))}
     else if(a==='invite')toast(t('net.invited'));
+    else if(a==='reqmod')toast('Anfrage an TechNS gesendet – wir melden uns innerhalb von 24 h');
     else if(a==='teamadd'){const n=$('#tm_name').value.trim();if(!n){$('#tm_name').focus();return}teamAct('team_add',{name:n,role:$('#tm_role').value})}
     else if(a==='sendcreds')toast('Zugangsdaten per E-Mail an '+((CREDS.list||[]).filter(c=>c.active&&(CREDS.door==='all'||c.doors.includes(CREDS.door))).length)+' Partner gesendet');
     else if(a==='newtenant'){TENANTS.push({id:'t'+(TENANTS.length+1),name:'Neuer Mandant '+(TENANTS.length+1),domain:'partner.neuer-mandant.de',accent:'#4b5fd6',plan:'Starter',brands:1,partners:()=>0,langs:['DE'],currency:'EUR',pipeline:['Neu','Kontaktiert','Angebot','Gewonnen','Verloren'],types:['Händler'],tiers:['Basic','Silver','Gold'],pilot:false,mrr:249});AUDIT.unshift({who:'Verwaltung',what:'Mandant angelegt: Neuer Mandant '+TENANTS.length,when:new Date().toISOString().slice(0,16).replace('T',' ')});render();toast('Mandant angelegt · Supabase-Schema + RLS-Policies erstellt')}
@@ -1858,6 +1890,12 @@ function render(){
     if(cb.dataset.sprod){s.products=cb.checked?[...new Set([...s.products,cb.dataset.sprod])]:s.products.filter(x=>x!==cb.dataset.sprod)}
     toast(t('saved'));if(cb.dataset.sflag==='enabled'||cb.dataset.skind||cb.dataset.sbrand)render()});
   ['s_logo','s_phone','s_tag'].forEach(id=>{const e=$('#'+id);if(e)e.onchange=()=>{const s=siteOf(viewer.partner);s[{s_logo:'logo',s_phone:'phone',s_tag:'tagline'}[id]]=e.value;toast(t('saved'))}});
+  /* tenant config hooks (console) */
+  v.querySelectorAll('[data-tfeat]').forEach(c=>c.onchange=()=>{const f=new Set(TCEDIT.features);c.checked?f.add(c.dataset.tfeat):f.delete(c.dataset.tfeat);TCEDIT.features=Object.keys(ADDON_DEF).filter(k=>f.has(k));render()});
+  v.querySelectorAll('[data-ttype]').forEach(c=>c.onchange=()=>{TCEDIT.types[c.dataset.ttype].on=c.checked;if(!typesOnE())TCEDIT.types[c.dataset.ttype].on=true;render()});
+  v.querySelectorAll('[data-tlabel]').forEach(i=>i.onchange=()=>{TCEDIT.types[i.dataset.tlabel].label=i.value.trim();render()});
+  v.querySelectorAll('[data-tplan]').forEach(b=>b.onclick=()=>{TCEDIT.features=PLAN_ADDONS[b.dataset.tplan].slice();render();toast(b.dataset.tplan+'-Vorlage geladen – speichern zum Ausrollen')});
+  v.querySelectorAll('[data-tsave]').forEach(b=>b.onclick=async()=>{b.disabled=true;let ok=true;if(GATE_API){try{const r=await gateApi({action:'tenant_cfg_set',token:gateToken(),cfg:TCEDIT});ok=r.ok;if(ok)TCFG=r.cfg}catch(e){ok=false}}else TCFG=JSON.parse(JSON.stringify(TCEDIT));if(ok){try{localStorage.setItem('b2b-tcfg',JSON.stringify(TCFG))}catch(e){}TCEDIT=JSON.parse(JSON.stringify(TCFG));AUDIT.unshift({who:'TechNS',what:'Module/Partnertypen für '+TENANTS[0].name+' ausgerollt: '+TCFG.features.length+' Zusatzmodule, '+typesOn().length+' Partnertypen',when:new Date().toISOString().slice(0,16).replace('T',' ')});toast('Ausgerollt – Mandanten-Portal & Partner-Eingänge aktualisiert')}else toast('Speichern fehlgeschlagen');render()});
   /* HR hooks */
   v.querySelectorAll('[data-hrtab]').forEach(b=>b.onclick=()=>{hrTab=b.dataset.hrtab;render()});
   v.querySelectorAll('tr[data-emp]').forEach(r=>r.onclick=()=>{hrSel=+r.dataset.emp;hrAdd=false;render()});
@@ -2007,7 +2045,7 @@ function saveLocalCreds(c){try{localStorage.setItem('b2b-creds',JSON.stringify(c
 $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();const user=($('#gateUser').value||'').trim().toLowerCase();if(!code||(PDOOR&&!user))return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
   try{
     if(PDOOR){
-      if(GATE_API){const r=await gateApi({action:'plogin',door:DOOR,user,pass:code});if(r.ok)enterAs('partner',r.token,r.pid);else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
+      if(GATE_API){const r=await gateApi({action:'plogin',door:DOOR,user,pass:code});if(r.ok)enterAs('partner',r.token,r.pid);else{$('#gateErr').textContent=r.error==='door_off'?'Dieser Eingang ist derzeit nicht aktiv. Bitte wenden Sie sich an Ihren Ansprechpartner.':'Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
       else{const c=localCreds().find(x=>x.user===user&&x.pass===code&&x.active&&x.doors.includes(DOOR));if(c){c.logins=(c.logins||0)+1;c.lastLogin=Date.now();saveLocalCreds(localCreds().map(x=>x.id===c.id?c:x));enterAs('partner','local:p:'+c.id+':'+DOOR,c.id)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
     }else if(!CONSOLE&&user){
       if(GATE_API){const r=await gateApi({action:'tlogin',user,pass:code});if(r.ok){setTeam(r.role,r.name,r.perms,r.roleName);enterAs('team',r.token)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
@@ -2026,6 +2064,8 @@ $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').val
     if(!r.ok||!doorAllows(kindOfSub(r.sub),r.sub)){try{sessionStorage.removeItem(GKEY)}catch(x){}showGate()}
     else{const k=kindOfSub(r.sub);setKind(k);if(k==='partner'){PID=+String(r.sub).split(':')[1]}if(k==='team'){setTeam(String(r.sub).split(':')[2],TEAMNAME,r.perms,TEAMROLENAME)}else setTeam(null);render();lockAt(k==='once'?(r.exp||tokenExp(tok)):null)}}catch(x){/* keep session on network hiccup */}}
   else showGate()})();
+async function loadTcfg(){if(!GATE_API)return;try{const r=await gateApi({action:'tenant_cfg_get'});if(r.ok&&r.cfg){TCFG=r.cfg;try{localStorage.setItem('b2b-tcfg',JSON.stringify(TCFG))}catch(e){}render()}}catch(e){}}
+loadTcfg();
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);const nd=DOOR_LIST.includes(h)?h:'';if(nd!==DOOR)location.reload()});
 render();
 </script>

@@ -19,6 +19,10 @@ const CREDS_PATH = 'gate/partners.json';
 const HQ_HASH = process.env.GATE_HQ_HASH || '';
 const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
 const TEAM_PATH = 'gate/team.json';
+const TCFG_PATH = 'gate/tenant-t1.json';
+const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr'];
+const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
+const DEFAULT_TCFG = { features: ADDONS.slice(), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
 const PERMS = ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'hr', 'creds', 'team'];
 const BUILTIN_ROLES = [
@@ -144,9 +148,28 @@ async function main(req, res) {
     const creds = (await loadJson(CREDS_PATH)) || [];
     const c = creds.find(x => x.user === user);
     if (!c || !c.active || !c.doors.includes(door) || !safeEq(c.pass, pass)) return res.status(401).json({ ok: false, error: 'invalid' });
+    const tc = (await loadJson(TCFG_PATH)) || DEFAULT_TCFG;
+    if (tc.types && tc.types[door] && tc.types[door].on === false) return res.status(403).json({ ok: false, error: 'door_off' });
     c.lastLogin = Date.now(); c.logins = (c.logins || 0) + 1; c.lastDoor = door;
     await saveJson(CREDS_PATH, creds);
     return res.status(200).json({ ok: true, token: makeToken('p:' + c.id + ':' + door), kind: 'partner', pid: c.id, door });
+  }
+
+  if (action === 'tenant_cfg_get') {
+    const c = (await loadJson(TCFG_PATH)) || DEFAULT_TCFG;
+    return res.status(200).json({ ok: true, cfg: c });
+  }
+  if (action === 'tenant_cfg_set') {
+    const d = verifyToken(body.token);
+    if (!d || d.sub !== 'master') return res.status(403).json({ ok: false, error: 'forbidden' });
+    const inp = body.cfg || {};
+    const features = (inp.features || []).filter(x => ADDONS.includes(x));
+    const types = {};
+    for (const k of PTYPES) { const t = (inp.types || {})[k] || {}; types[k] = { on: t.on !== false, label: String(t.label || '').slice(0, 30) }; }
+    if (!PTYPES.some(k => types[k].on)) return res.status(400).json({ ok: false, error: 'notype' });
+    const cfg = { features, types, updated: Date.now() };
+    await saveJson(TCFG_PATH, cfg);
+    return res.status(200).json({ ok: true, cfg });
   }
 
   if (action === 'tlogin') {
