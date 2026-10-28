@@ -324,7 +324,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
 <div id="gate" hidden>
   <form class="box" id="gateForm">
     <div class="brand"><div class="mark">B2B</div><div><b>B2B Sales Panel</b><small>Moonzelt · Euroconteiner · Wasserernte</small></div></div>
-    <div id="gateUserWrap" hidden><label for="gateUser" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Benutzername</label><input id="gateUser" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+    <div id="gateUserWrap" hidden><label for="gateUser" id="gateUserLbl" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Benutzername</label><input id="gateUser" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
     <div><label for="gatePw" id="gatePwLbl" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px" data-i="gate.pw">Zugangscode</label><input id="gatePw" type="password" autocomplete="current-password" autofocus></div>
     <div class="err" id="gateErr"></div>
     <button class="btn p" type="submit" style="justify-content:center" data-i="gate.btn">Anmelden</button>
@@ -678,7 +678,7 @@ const px=(lon,lat)=>[(lon-5.7)*62,(55.3-lat)*62*1.55];
 
 /* ---------- access model (Super Admin controls what each partner sees) ---------- */
 const MODULES=['dash','network','pool','leads','myleads','referral','pricelist','orders','stock','install','site','earn','mycontract','dam','notif'];
-const MOD_LABEL=m=>({hqhome:'Übersicht',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
+const MOD_LABEL=m=>({team:'Team & Rollen',hqhome:'Zentrale',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
 const DEFAULT_ACCESS={
  leadgen:['dash','myleads','referral','site','earn','mycontract','dam','notif'],
  freelancer:['dash','pool','myleads','stock','install','site','earn','mycontract','dam','notif'],
@@ -694,11 +694,17 @@ const mainType=p=>p.roles.slice().sort((a,b)=>TYPES.indexOf(b.t)-TYPES.indexOf(a
 const VIEWERS=[{id:"admin",label:()=>t('types.admin'),type:"admin",partner:null},
  ...PARTNERS.map(p=>({id:"p"+p.id,label:()=>t('types.'+mainType(p))+" · "+p.name,type:mainType(p),partner:p.id}))];
 /* ---------- doors: portal (/), TechNS console, Firmenzentrale, 4 partner doors ---------- */
-const DOOR_LIST=['console','zentrale','partner','freelancer','leadgen','distributor'];
+const DOOR_LIST=['console','partner','freelancer','leadgen','distributor'];
 const DOOR=(()=>{try{const seg=location.pathname.replace(/\/+$/,'').split('/').pop();if(DOOR_LIST.includes(seg))return seg;const h=location.hash.slice(1);return DOOR_LIST.includes(h)?h:''}catch(e){return ''}})();
-let CONSOLE=DOOR==='console';const HQ=DOOR==='zentrale';const PDOOR=['partner','freelancer','leadgen','distributor'].includes(DOOR)?DOOR:null;
+let CONSOLE=DOOR==='console';const HQ=false;const PDOOR=['partner','freelancer','leadgen','distributor'].includes(DOOR)?DOOR:null;
 const GKEY='b2b-gate'+(DOOR?':'+DOOR:''),KKEY='b2b-kind'+(DOOR?':'+DOOR:''),PKEY='b2b-pid'+(DOOR?':'+DOOR:'');
 let PID=(()=>{try{return +sessionStorage.getItem(PKEY)||null}catch(e){return null}})();
+const RKEY='b2b-role'+(DOOR?':'+DOOR:'');
+let TEAMROLE=(()=>{try{return sessionStorage.getItem(RKEY)||null}catch(e){return null}})();
+let TEAMNAME=(()=>{try{return sessionStorage.getItem(RKEY+':n')||null}catch(e){return null}})();
+const ROLE_LBL={gf:'Geschäftsführer',tech:'Technik-Verantwortlicher',staff:'Verwaltung'};
+const canZentrale=()=>!PDOOR&&!CONSOLE&&(TEAMROLE==='gf'||TEAMROLE==='tech');
+const isGF=()=>!PDOOR&&!CONSOLE&&TEAMROLE==='gf';
 const LIVE=(()=>{try{return location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)}catch(e){return false}})();
 function doorUrl(d){return LIVE?'/'+(d||''):(d?'#'+d:'#')}
 function portalUrl(){return doorUrl('')}
@@ -724,7 +730,7 @@ function navItems(){
     {s:'consoleOps'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),...(ph(1)?[{k:'security',ic:'🛡️'}]:[]),...(ph(3)?[{k:'billing',ic:'💳'},{k:'pilot',ic:'🎯'}]:[]),...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),
     {s:'consoleDocs'},{k:'bp',ic:'📘'}];
   if(viewer.type==='admin') return [
-    {s:'admin'},{k:'dash',ic:'▦'},{k:'partners',ic:'👥'},{k:'leads',ic:'📥'},{k:'contracts',ic:'📄'},{k:'orders',ic:'📦'},{k:'stock',ic:'🏭'},{k:'install',ic:'🔧'},{k:'sites',ic:'🌐'},{k:'dam',ic:'🗂️'},{k:'notif',ic:'🔔',badge:unread},...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),{k:'settings',ic:'⚙️'},{s:'public'},{k:'register',ic:'📝'}];
+    {s:'admin'},{k:'dash',ic:'▦'},{k:'partners',ic:'👥'},{k:'leads',ic:'📥'},{k:'contracts',ic:'📄'},{k:'orders',ic:'📦'},{k:'stock',ic:'🏭'},{k:'install',ic:'🔧'},{k:'sites',ic:'🌐'},{k:'dam',ic:'🗂️'},{k:'notif',ic:'🔔',badge:unread},...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),{k:'settings',ic:'⚙️'},...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'},...(isGF()?[{k:'team',ic:'👔'}]:[])]:[]),{s:'public'},{k:'register',ic:'📝'}];
   const p=PARTNERS.find(x=>x.id===viewer.partner);
   const ic={dash:'▦',network:'👥',pool:'🎯',leads:'📥',myleads:'📥',referral:'🔗',pricelist:'📦',orders:'🧾',stock:'🏭',install:'🔧',site:'🌐',earn:'💶',mycontract:'📄',dam:'🗂️',notif:'🔔'};
   return [{s:'me'},...MODULES.filter(m=>p.access.modules.includes(m)).map(m=>({k:m,ic:ic[m],badge:m==='notif'?unread:0}))];
@@ -1422,6 +1428,35 @@ let INVOICES=[{no:"RE-2026-1041",date:"2026-10-01",amount:1290,st:'paid'},{no:"R
 
 
 
+
+/* ---------- Team & Rollen (Geschäftsführer only) ---------- */
+let TEAM={list:null,loading:false,last:null,err:''};
+async function teamLoad(){TEAM.loading=true;try{if(GATE_API){const r=await gateApi({action:'team_list',token:gateToken()});if(r.ok)TEAM.list=r.team;else TEAM.err='Keine Berechtigung.'}else TEAM.list=localTeam()}catch(e){TEAM.err=t('gate.neterr')}TEAM.loading=false;render()}
+async function teamAct(action,extra){
+  if(GATE_API){const r=await gateApi({action,token:gateToken(),...extra});if(!r.ok){toast(r.error==='self'?'Eigenen Zugang nicht sperren':'Fehler');return}if(r.pass)TEAM.last={name:r.member.name,user:r.member.user,pass:r.pass};}
+  else{const L=localTeam();const W=['Zelt','Regen','Anker','Wolke'];const pw=()=>W[Math.floor(Math.random()*4)]+'-'+Math.floor(1000+Math.random()*9000)+'-halle';
+    if(action==='team_add'){const m={id:Math.max(...L.map(x=>x.id))+1,name:extra.name||'Mitarbeiter',role:extra.role,user:(extra.name||'user').toLowerCase().replace(/[^a-z0-9]+/g,'-'),pass:pw(),active:true,created:Date.now()};L.push(m);TEAM.last={name:m.name,user:m.user,pass:m.pass}}
+    else{const m=L.find(x=>x.id===extra.id);if(action==='team_reset'){m.pass=pw();TEAM.last={name:m.name,user:m.user,pass:m.pass}}if(action==='team_toggle')m.active=!m.active;if(action==='team_role')m.role=extra.role}
+    saveLocalTeam(L)}
+  AUDIT.unshift({who:TEAMNAME||'Geschäftsführung',what:'Team: '+({team_add:'Konto angelegt',team_reset:'Passwort neu',team_toggle:'Zugang geändert',team_role:'Rolle geändert'})[action]+(extra.name?' · '+extra.name:''),when:new Date().toISOString().slice(0,16).replace('T',' ')});
+  await teamLoad();
+}
+function viewTeam(){
+  if(!TEAM.list&&!TEAM.loading)teamLoad();
+  if(!TEAM.list)return `<div class="card"><p style="margin:0;color:var(--muted)">${TEAM.err||'Team wird geladen…'}</p></div>`;
+  const fmt=ms=>ms?new Date(ms).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+  return `<div class="grid two" style="margin-bottom:14px">
+    <div class="card"><div class="hd"><h2>Team & Rollen · ${esc(TENANTS[0].name)}</h2></div>
+      <div class="tw"><table><thead><tr><th>Name</th><th>Rolle</th><th>Benutzername</th><th>Status</th><th>Letzte Anmeldung</th><th></th></tr></thead><tbody>
+      ${TEAM.list.map(m=>`<tr style="cursor:default"><td><b>${esc(m.name)}</b></td><td><select data-trole="${m.id}" style="padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg)">${Object.entries(ROLE_LBL).map(([k,l])=>`<option value="${k}" ${m.role===k?'selected':''}>${l}</option>`).join('')}</select></td><td><span class="cred-pw">${m.user}</span></td><td>${m.active?'<span class="st ok">aktiv</span>':'<span class="st crit">gesperrt</span>'}</td><td><small>${fmt(m.lastLogin)}${m.logins?' · '+m.logins+'×':''}</small></td><td style="white-space:nowrap"><button class="btn sm" data-treset="${m.id}">↻ Passwort</button> <button class="btn sm" data-ttoggle="${m.id}">${m.active?'⏸':'▶'}</button></td></tr>`).join('')}</tbody></table></div>
+      ${TEAM.last?`<div style="margin-top:12px;background:var(--accent-soft);border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div><small style="color:var(--muted)">Zugangsdaten für ${esc(TEAM.last.name)} – nur jetzt sichtbar</small><div class="cred-pw" style="font-size:15px">${TEAM.last.user} · <b>${esc(TEAM.last.pass)}</b></div></div><button class="btn sm" data-act="copy" data-v="Benutzer: ${TEAM.last.user} · Passwort: ${esc(TEAM.last.pass)}">⧉ Kopieren</button></div>`:''}</div>
+    <div style="display:grid;gap:14px;align-content:start">
+      <div class="card"><div class="hd"><h2>Mitarbeiter hinzufügen</h2></div><div class="frm"><div class="f full"><label>Name</label><input id="tm_name" placeholder="z. B. Ayşe Demir"></div><div class="f full"><label>Rolle</label><select id="tm_role">${Object.entries(ROLE_LBL).map(([k,l])=>`<option value="${k}" ${k==='staff'?'selected':''}>${l}</option>`).join('')}</select></div><div class="f full"><button class="btn p" data-act="teamadd">Konto anlegen</button></div></div></div>
+      <div class="card"><div class="hd"><h2>Rechte je Rolle</h2></div><div class="tw"><table><thead><tr><th></th><th style="text-align:center">GF</th><th style="text-align:center">Technik</th><th style="text-align:center">Verwaltung</th></tr></thead><tbody>
+        ${[['Operativer Betrieb',1,1,1],['Partner-Zugänge & Passwörter',1,1,0],['Eingänge & Links',1,1,0],['Team & Rollen',1,0,0],['Notizen',1,1,0]].map(([l,...r])=>`<tr style="cursor:default"><td>${l}</td>${r.map(x=>`<td style="text-align:center;color:${x?'var(--ok)':'var(--line)'}">${x?'●':'○'}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+    </div></div>`;
+}
+
 /* ---------- Firmenzentrale (umbrella company) ---------- */
 let CREDS={list:null,loading:false,err:'',show:{},door:'all'};
 async function hqSync(){
@@ -1436,7 +1471,7 @@ async function hqSync(){
 async function hqAct(action,id){
   if(GATE_API){const r=await gateApi({action,token:gateToken(),id});if(r.ok){CREDS.list=CREDS.list.map(c=>c.id===id?r.cred:c)}}
   else{const L=localCreds();const c=L.find(x=>x.id===id);if(action==='pcreds_reset'){c.pass=['Zelt','Regen','Anker','Wolke'][Math.floor(Math.random()*4)]+'-'+String(Math.floor(1000+Math.random()*9000))+'-'+['halle','linde','brise'][Math.floor(Math.random()*3)]}else c.active=!c.active;saveLocalCreds(L);CREDS.list=L}
-  AUDIT.unshift({who:'Firmenzentrale',what:(action==='pcreds_reset'?'Passwort neu erzeugt: ':'Zugang '+(CREDS.list.find(c=>c.id===id).active?'entsperrt':'gesperrt')+': ')+pName(id),when:new Date().toISOString().slice(0,16).replace('T',' ')});
+  AUDIT.unshift({who:TEAMNAME||'Firmenzentrale',what:(action==='pcreds_reset'?'Passwort neu erzeugt: ':'Zugang '+(CREDS.list.find(c=>c.id===id).active?'entsperrt':'gesperrt')+': ')+pName(id),when:new Date().toISOString().slice(0,16).replace('T',' ')});
   render();
 }
 const fullUrl=d=>(LIVE?location.origin:'https://b2b-portal.foundercheck.de')+'/'+d;
@@ -1448,7 +1483,7 @@ function viewHqHome(){
   <div class="grid two">
     <div class="card"><div class="hd"><h2>Letzte Anmeldungen</h2><span class="sp"></span><button class="btn sm" data-goto="hqcreds">Alle Zugänge →</button></div>
       ${recent.length?`<div class="feed">${recent.map(c=>`<div class="it"><span class="dot" style="background:var(--ok);margin-top:6px"></span><span><b>${esc(c.name)}</b><br><small style="color:var(--muted)">${c.user}</small></span><small>${new Date(c.lastLogin).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</small></div>`).join('')}</div>`:'<p style="margin:0;color:var(--muted)">Noch keine Partner-Anmeldungen.</p>'}</div>
-    <div class="card"><div class="hd"><h2>Zuständigkeit</h2></div><dl class="kv"><dt>Firmenzentrale</dt><dd>vergibt & sperrt Partner-Zugänge, sieht alle Eingänge</dd><dt>Verwaltung</dt><dd>operativer Betrieb (Leads, Verträge, Material) – <b>kein</b> Zugriff auf Zugangsdaten</dd><dt>Partner</dt><dd>nur über den eigenen Eingang, nur eigene Daten</dd><dt>TechNS</dt><dd>Plattform-Betrieb, keine Partner-Passwörter</dd></dl></div>
+    <div class="card"><div class="hd"><h2>Zuständigkeit</h2></div><dl class="kv"><dt>Geschäftsführer</dt><dd>alles + Partner-Zugänge + Team & Rollen</dd><dt>Technik-Verantw.</dt><dd>alles + Partner-Zugänge (ohne Team-Verwaltung)</dd><dt>Verwaltung</dt><dd>operativer Betrieb (Leads, Verträge, Material) – <b>kein</b> Zugriff auf Zugangsdaten</dd><dt>Partner</dt><dd>nur über den eigenen Eingang, nur eigene Daten</dd><dt>TechNS</dt><dd>Plattform-Betrieb, keine Partner-Passwörter</dd></dl></div>
   </div>`;
 }
 function viewHqCreds(){
@@ -1459,7 +1494,7 @@ function viewHqCreds(){
   return `<div class="card"><div class="hd"><h2>Partner-Zugänge</h2><span class="pill">${L.length}</span><span class="sp"></span>
       <div class="chips"><button class="chip ${CREDS.door==='all'?'on':''}" data-cdoor="all">Alle</button>${Object.entries(DOOR_META).map(([d,M])=>`<button class="chip ${CREDS.door===d?'on':''}" data-cdoor="${d}"><span class="dot" style="background:${M.c}"></span>${M.n.replace('-Portal','')}</button>`).join('')}</div>
       <button class="btn sm" data-act="sendcreds">✉ Zugangsdaten senden</button></div>
-    <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">🔒 Nur in der Firmenzentrale sichtbar. Verwaltung und TechNS haben keinen Zugriff auf Partner-Passwörter. Jede Änderung wird protokolliert.</p>
+    <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">🔒 Nur für Geschäftsführer und Technik-Verantwortliche sichtbar. Verwaltungs-Mitarbeiter und TechNS haben keinen Zugriff auf Partner-Passwörter. Jede Änderung wird protokolliert.</p>
     <div class="tw"><table><thead><tr><th>Partner</th><th>Eingang</th><th>Benutzername</th><th>Passwort</th><th>Status</th><th>Letzte Anmeldung</th><th></th></tr></thead><tbody>
     ${L.map(c=>`<tr style="cursor:default"><td><b>${esc(c.name)}</b></td><td>${c.doors.map(d=>`<a href="${doorUrl(d)}" target="_blank" class="tag" style="color:${DOOR_META[d].c};text-decoration:none">${DOOR_META[d].ic} ${d}</a>`).join(' ')}</td>
       <td><span class="cred-pw">${c.user}</span> <button class="btn sm" data-act="copy" data-v="${c.user}" title="Kopieren">⧉</button></td>
@@ -1473,7 +1508,7 @@ function viewHqDoors(){
   return `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:14px">${Object.entries(DOOR_META).map(([d,M])=>`<div class="card doorcard" style="--dc:${M.c}"><div class="hd" style="margin:0"><h2>${M.ic} ${M.n}</h2><span class="sp"></span><span class="pill">${L.filter(c=>c.doors.includes(d)).length||'…'} Partner</span></div>
     <div class="url">${fullUrl(d)}</div><small style="color:var(--muted)">Login: Benutzername + Passwort · sieht: ${what[d]}</small>
     <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="copy" data-v="${fullUrl(d)}">⧉ Link kopieren</button><a class="btn sm" href="${doorUrl(d)}" target="_blank">Login-Seite öffnen ↗</a></div></div>`).join('')}</div>
-  <div class="card"><div class="hd"><h2>Interne Eingänge</h2></div><dl class="kv"><dt>Verwaltung</dt><dd><span class="cred-pw">${fullUrl('')}</span> · Verwaltung / Mitarbeiter</dd><dt>Firmenzentrale</dt><dd><span class="cred-pw">${fullUrl('zentrale')}</span> · Geschäftsleitung (dieser Bereich)</dd></dl></div>`;
+  <div class="card"><div class="hd"><h2>Interne Eingänge</h2></div><dl class="kv"><dt>Aydemir-Portal</dt><dd><span class="cred-pw">${fullUrl('')}</span> · Team-Login (Geschäftsführer, Technik, Verwaltung)</dd><dt>Firmenzentrale</dt><dd>Bereich im Aydemir-Portal · nur Geschäftsführer & Technik</dd></dl></div>`;
 }
 
 /* ---------- TechNS console views ---------- */
@@ -1627,17 +1662,17 @@ function render(){
   document.querySelector('.rolebox').hidden=true;if(!PDOOR&&!CONSOLE&&!HQ)viewer=VIEWERS[0];
   $('#doorBtn').textContent=CONSOLE?'↗ Mandanten-Portal':'';$('#doorBtn').hidden=!CONSOLE;$('#doorBtn').setAttribute('href',portalUrl());
   const gb=document.querySelector('#gate .brand');if(gb){const M=PDOOR?DOOR_META[DOOR]:null;gb.querySelector('b').textContent=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':M?M.n:TENANTS[0].name;gb.querySelector('small').textContent=CONSOLE?'Entwickler-Zugang · nur Master-Code':HQ?TENANTS[0].name+' · Zentrale-Code':M?TENANTS[0].name+' · Benutzername & Passwort':'Moonzelt · Euroconteiner · Wasserernte';gb.querySelector('.mark').textContent=CONSOLE?'TN':HQ?'HQ':M?M.ic:'A';if(M)gb.querySelector('.mark').style.background=M.c}
-  $('#gateUserWrap').hidden=!PDOOR;$('#gatePwLbl').textContent=PDOOR?'Passwort':HQ?'Zentrale-Code':t('gate.pw');
+  $('#gateUserWrap').hidden=!!CONSOLE;$('#gateUserLbl').textContent=PDOOR?'Benutzername':'Benutzername (Team) – leer lassen für Zugangscode';$('#gatePwLbl').textContent=PDOOR?'Passwort':CONSOLE?'Master-Code':'Passwort / Zugangscode';
   const sel=$('#roleSel');sel.innerHTML=VIEWERS.map(v=>`<option value="${v.id}" ${v===viewer?'selected':''}>${v.label()}</option>`).join('');
   const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
   $('#roleChips').innerHTML=me?me.roles.map(r=>`<span class="pill" style="font-size:11px;padding:2px 8px"><span class="dot" style="background:${BRANDS[r.b].c}"></span>${t('types.'+r.t)} ${r.tier}</span>`).join(''):`<span class="pill t" style="font-size:11px;padding:2px 8px">★ ${t('types.admin')}</span>`;
-  $('#userPill').textContent='👤 '+(CONSOLE?'TechNS · Entwickler':HQ?'Geschäftsleitung':me?me.contact:TENANTS[0].name.replace(' Gruppe','')+' · '+t('types.admin'));
-  const adminSess=((viewer.type==='admin'&&!HQ)||CONSOLE)&&isMaster();$('#notesBtn').hidden=!adminSess;if(!adminSess)$('#notes').hidden=true;
+  $('#userPill').textContent='👤 '+(CONSOLE?'TechNS · Entwickler':HQ?'Geschäftsleitung':me?me.contact:TEAMROLE?(TEAMNAME||ROLE_LBL[TEAMROLE])+' · '+ROLE_LBL[TEAMROLE]:TENANTS[0].name.replace(' Gruppe','')+' · '+t('types.admin'));
+  const adminSess=CONSOLE?isMaster():(viewer.type==='admin'&&(isMaster()||canZentrale()));$('#notesBtn').hidden=!adminSess;if(!adminSess)$('#notes').hidden=true;
   renderNav();
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
   document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':PDOOR?DOOR_META[DOOR].n:TENANTS[0].name+' · Verwaltung';
   const v=$('#view');
-  v.innerHTML=({hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
+  v.innerHTML=({team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
   /* access toggles (admin) */
   v.querySelectorAll('[data-mod],[data-brand],[data-flag]').forEach(cb=>cb.onchange=()=>{const p=PARTNERS.find(x=>x.id===selPartner);
     if(cb.dataset.mod){p.access.modules=MODULES.filter(m=>m==='dash'||(m===cb.dataset.mod?cb.checked:p.access.modules.includes(m)))}
@@ -1669,6 +1704,7 @@ function render(){
     else if(a==='ctrpdf')toast('PDF: '+TEMPLATES[ctrOpen.tpl].name+'.pdf');
     else if(a==='take'){const l=LEADS.find(x=>x.id===b.dataset.l);l.owner=viewer.partner;l.stage='contacted';render();toast(t('pool.taken'))}
     else if(a==='invite')toast(t('net.invited'));
+    else if(a==='teamadd'){const n=$('#tm_name').value.trim();if(!n){$('#tm_name').focus();return}teamAct('team_add',{name:n,role:$('#tm_role').value})}
     else if(a==='sendcreds')toast('Zugangsdaten per E-Mail an '+((CREDS.list||[]).filter(c=>c.active&&(CREDS.door==='all'||c.doors.includes(CREDS.door))).length)+' Partner gesendet');
     else if(a==='newtenant'){TENANTS.push({id:'t'+(TENANTS.length+1),name:'Neuer Mandant '+(TENANTS.length+1),domain:'partner.neuer-mandant.de',accent:'#4b5fd6',plan:'Starter',brands:1,partners:()=>0,langs:['DE'],currency:'EUR',pipeline:['Neu','Kontaktiert','Angebot','Gewonnen','Verloren'],types:['Händler'],tiers:['Basic','Silver','Gold'],pilot:false,mrr:249});AUDIT.unshift({who:'Verwaltung',what:'Mandant angelegt: Neuer Mandant '+TENANTS.length,when:new Date().toISOString().slice(0,16).replace('T',' ')});render();toast('Mandant angelegt · Supabase-Schema + RLS-Policies erstellt')}
     else if(a==='applywl'){const T=TENANTS.find(x=>x.id===curTenant);T.name=$('#wl_name').value;T.domain=$('#wl_domain').value;T.accent=$('#wl_color').value;document.documentElement.style.setProperty('--accent',T.accent);$('#t-brand').textContent=T.name;render();toast('White-Label angewendet')}
@@ -1709,6 +1745,10 @@ function render(){
     if(cb.dataset.sprod){s.products=cb.checked?[...new Set([...s.products,cb.dataset.sprod])]:s.products.filter(x=>x!==cb.dataset.sprod)}
     toast(t('saved'));if(cb.dataset.sflag==='enabled'||cb.dataset.skind||cb.dataset.sbrand)render()});
   ['s_logo','s_phone','s_tag'].forEach(id=>{const e=$('#'+id);if(e)e.onchange=()=>{const s=siteOf(viewer.partner);s[{s_logo:'logo',s_phone:'phone',s_tag:'tagline'}[id]]=e.value;toast(t('saved'))}});
+  /* team hooks */
+  v.querySelectorAll('[data-treset]').forEach(b=>b.onclick=()=>teamAct('team_reset',{id:+b.dataset.treset}));
+  v.querySelectorAll('[data-ttoggle]').forEach(b=>b.onclick=()=>teamAct('team_toggle',{id:+b.dataset.ttoggle}));
+  v.querySelectorAll('[data-trole]').forEach(sel=>sel.onchange=()=>teamAct('team_role',{id:+sel.dataset.trole,role:sel.value}));
   /* Firmenzentrale hooks */
   v.querySelectorAll('[data-cdoor]').forEach(b=>b.onclick=()=>{CREDS.door=b.dataset.cdoor;render()});
   v.querySelectorAll('[data-pwshow]').forEach(b=>b.onclick=()=>{const id=+b.dataset.pwshow;CREDS.show[id]=!CREDS.show[id];render()});
@@ -1752,7 +1792,7 @@ function render(){
 $('#roleSel').onchange=e=>{viewer=VIEWERS.find(v=>v.id===e.target.value);page='dash';selPartner=null;render()};
 $('#langs').onclick=e=>{const b=e.target.closest('button');if(!b)return;lang=b.dataset.l;try{localStorage.setItem('pp-lang',lang)}catch(x){}render()};
 $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
-$('#logoutBtn').onclick=()=>{lockAt(null);try{sessionStorage.removeItem(PKEY);sessionStorage.removeItem(GKEY);sessionStorage.removeItem(KKEY);sessionStorage.removeItem('b2b-admin')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
+$('#logoutBtn').onclick=()=>{lockAt(null);setTeam(null);try{sessionStorage.removeItem(PKEY);sessionStorage.removeItem(GKEY);sessionStorage.removeItem(KKEY);sessionStorage.removeItem('b2b-admin')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
 
 /* ---------- AI assistant (scripted demo) ---------- */
 const AI_RESP={
@@ -1806,20 +1846,28 @@ function doorAllows(kind,sub){
   if(CONSOLE)return kind==='master';
   if(HQ)return kind==='hq';
   if(PDOOR)return kind==='partner'&&String(sub||'').endsWith(':'+DOOR);
-  return kind==='master'||kind==='once';
+  return kind==='master'||kind==='once'||kind==='team';
 }
-function kindOfSub(sub){return sub==='master'?'master':sub==='hq'?'hq':String(sub||'').startsWith('p:')?'partner':'once'}
-function enterAs(kind,tok,pid){try{sessionStorage.setItem(GKEY,tok);if(pid){sessionStorage.setItem(PKEY,pid)}}catch(x){}setKind(kind);PID=pid||PID;hideGate();page=CONSOLE?'chome':HQ?'hqhome':'dash';render();lockAt(kind==='once'?tokenExp(tok):null)}
+function kindOfSub(sub){return sub==='master'?'master':sub==='hq'?'hq':String(sub||'').startsWith('p:')?'partner':String(sub||'').startsWith('t:')?'team':'once'}
+function setTeam(role,name){TEAMROLE=role||null;TEAMNAME=name||null;try{if(role){sessionStorage.setItem(RKEY,role);sessionStorage.setItem(RKEY+':n',name||'')}else{sessionStorage.removeItem(RKEY);sessionStorage.removeItem(RKEY+':n')}}catch(e){}}
+function enterAs(kind,tok,pid){try{sessionStorage.setItem(GKEY,tok);if(pid){sessionStorage.setItem(PKEY,pid)}}catch(x){}if(kind!=='team')setTeam(null);setKind(kind);PID=pid||PID;hideGate();page=CONSOLE?'chome':HQ?'hqhome':'dash';render();lockAt(kind==='once'?tokenExp(tok):null)}
 /* offline (artifact) partner credentials */
 function localCreds(){let c=null;try{c=JSON.parse(localStorage.getItem('b2b-creds')||'null')}catch(e){}
   if(!c){const W=['Zelt','Regen','Stahl','Halle','Wasser','Anker','Wolke','Linde'];c=PARTNERS.map((p,i)=>({id:p.id,name:p.name,doors:[...new Set(p.roles.map(r=>r.t))],user:p.name.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,24),pass:W[i%W.length]+'-'+String(1000+i*137%9000)+'-'+W[(i+3)%W.length].toLowerCase(),active:true,created:Date.now(),logins:0}));try{localStorage.setItem('b2b-creds',JSON.stringify(c))}catch(e){}}
   return c}
+function localTeam(){let t=null;try{t=JSON.parse(localStorage.getItem('b2b-team')||'null')}catch(e){}
+  if(!t){t=[{id:1,name:'Geschäftsführung',role:'gf',user:'geschaeftsfuehrung',pass:'Aydemir-GF-2026',active:true,created:Date.now()},{id:2,name:'Technik-Verantwortlicher',role:'tech',user:'technik',pass:'Aydemir-Tech-2026',active:true,created:Date.now()},{id:3,name:'Verwaltung',role:'staff',user:'verwaltung',pass:'Aydemir-Team-2026',active:true,created:Date.now()}];try{localStorage.setItem('b2b-team',JSON.stringify(t))}catch(e){}}
+  return t}
+function saveLocalTeam(t){try{localStorage.setItem('b2b-team',JSON.stringify(t))}catch(e){}}
 function saveLocalCreds(c){try{localStorage.setItem('b2b-creds',JSON.stringify(c))}catch(e){}}
 $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();const user=($('#gateUser').value||'').trim().toLowerCase();if(!code||(PDOOR&&!user))return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
   try{
     if(PDOOR){
       if(GATE_API){const r=await gateApi({action:'plogin',door:DOOR,user,pass:code});if(r.ok)enterAs('partner',r.token,r.pid);else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
       else{const c=localCreds().find(x=>x.user===user&&x.pass===code&&x.active&&x.doors.includes(DOOR));if(c){c.logins=(c.logins||0)+1;c.lastLogin=Date.now();saveLocalCreds(localCreds().map(x=>x.id===c.id?c:x));enterAs('partner','local:p:'+c.id+':'+DOOR,c.id)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
+    }else if(!CONSOLE&&user){
+      if(GATE_API){const r=await gateApi({action:'tlogin',user,pass:code});if(r.ok){setTeam(r.role,r.name);enterAs('team',r.token)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
+      else{const m=localTeam().find(x=>x.user===user&&x.pass===code&&x.active);if(m){m.lastLogin=Date.now();m.logins=(m.logins||0)+1;saveLocalTeam(localTeam().map(x=>x.id===m.id?m:x));setTeam(m.role,m.name);enterAs('team','local:t:'+m.id+':'+m.role)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
     }else if(GATE_API){const r=await gateApi({action:'login',code});
       if(r.ok&&doorAllows(r.kind))enterAs(r.kind,r.token);
       else if(r.ok){$('#gateErr').textContent=CONSOLE?DENY.console:HQ?DENY.zentrale:DENY.root;$('#gatePw').select()}
@@ -1829,10 +1877,10 @@ $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').val
   }catch(x){$('#gateErr').textContent=t('gate.neterr')}
   btn.disabled=false;btn.textContent=t('gate.btn')};
 (async()=>{const tok=gateToken();if(!tok){showGate();return}
-  if(tok.startsWith('local:')){const sub=tok.slice(6);if(!doorAllows(kindOfSub(sub),sub)){showGate()}return}
+  if(tok.startsWith('local:')){const sub=tok.slice(6);if(!doorAllows(kindOfSub(sub),sub)){showGate()}else if(kindOfSub(sub)==='team'){setTeam(sub.split(':')[2],TEAMNAME);render()}return}
   if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});
     if(!r.ok||!doorAllows(kindOfSub(r.sub),r.sub)){try{sessionStorage.removeItem(GKEY)}catch(x){}showGate()}
-    else{const k=kindOfSub(r.sub);setKind(k);if(k==='partner'){PID=+String(r.sub).split(':')[1]}render();lockAt(k==='once'?(r.exp||tokenExp(tok)):null)}}catch(x){/* keep session on network hiccup */}}
+    else{const k=kindOfSub(r.sub);setKind(k);if(k==='partner'){PID=+String(r.sub).split(':')[1]}if(k==='team'){setTeam(String(r.sub).split(':')[2],TEAMNAME)}else setTeam(null);render();lockAt(k==='once'?(r.exp||tokenExp(tok)):null)}}catch(x){/* keep session on network hiccup */}}
   else showGate()})();
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);const nd=DOOR_LIST.includes(h)?h:'';if(nd!==DOOR)location.reload()});
 render();

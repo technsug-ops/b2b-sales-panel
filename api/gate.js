@@ -18,6 +18,22 @@ const NOTES_PATH = 'gate/notes.json';
 const CREDS_PATH = 'gate/partners.json';
 const HQ_HASH = process.env.GATE_HQ_HASH || '';
 const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
+const TEAM_PATH = 'gate/team.json';
+const ROLES = ['gf', 'tech', 'staff'];
+const SEED_TEAM = [
+  { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Aydemir-GF-2026' },
+  { id: 2, name: 'Technik-Verantwortlicher', role: 'tech', user: 'technik', pass: 'Aydemir-Tech-2026' },
+  { id: 3, name: 'Verwaltung', role: 'staff', user: 'verwaltung', pass: 'Aydemir-Team-2026' },
+];
+async function loadTeam() {
+  let t = await loadJson(TEAM_PATH);
+  if (!t) { t = SEED_TEAM.map(x => ({ id: x.id, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() })); await saveJson(TEAM_PATH, t); }
+  return t;
+}
+const publicMember = m => ({ id: m.id, name: m.name, role: m.role, user: m.user, active: m.active, created: m.created, lastLogin: m.lastLogin || null, logins: m.logins || 0 });
+// who may manage partner credentials: Geschäftsführung + Technik
+const canCreds = sub => sub === 'hq' || /^t:\d+:(gf|tech)$/.test(String(sub || ''));
+const isGF = sub => sub === 'hq' || /^t:\d+:gf$/.test(String(sub || ''));
 const MASTER_HASH = process.env.GATE_MASTER_HASH || '';
 const ADMIN_SECRET = process.env.GATE_ADMIN_SECRET || '';
 const SESSION_HOURS = 12;
@@ -109,9 +125,39 @@ async function main(req, res) {
     return res.status(200).json({ ok: true, token: makeToken('p:' + c.id + ':' + door), kind: 'partner', pid: c.id, door });
   }
 
+  if (action === 'tlogin') {
+    const user = String(body.user || '').trim().toLowerCase(); const pass = String(body.pass || '');
+    if (!user || !pass) return res.status(400).json({ ok: false, error: 'empty' });
+    const team = await loadTeam();
+    const m = team.find(x => x.user === user);
+    if (!m || !m.active || !safeEq(m.hash, sha(pass))) return res.status(401).json({ ok: false, error: 'invalid' });
+    m.lastLogin = Date.now(); m.logins = (m.logins || 0) + 1; await saveJson(TEAM_PATH, team);
+    return res.status(200).json({ ok: true, token: makeToken('t:' + m.id + ':' + m.role), kind: 'team', role: m.role, name: m.name });
+  }
+
+  if (action && action.startsWith('team_')) {
+    const d = verifyToken(body.token);
+    if (!d || !isGF(d.sub)) return res.status(403).json({ ok: false, error: 'forbidden' });
+    const team = await loadTeam();
+    if (action === 'team_list') return res.status(200).json({ ok: true, team: team.map(publicMember) });
+    if (action === 'team_add') {
+      const role = ROLES.includes(body.role) ? body.role : 'staff'; const name = String(body.name || '').trim().slice(0, 60) || 'Mitarbeiter';
+      let u = slug(body.user || name) || 'user'; let k = u; let n = 2; while (team.some(x => x.user === k)) k = u + '-' + n++;
+      const pass = genPassword(); const m = { id: Math.max(0, ...team.map(x => x.id)) + 1, name, role, user: k, hash: sha(pass), active: true, created: Date.now() };
+      team.push(m); await saveJson(TEAM_PATH, team);
+      return res.status(200).json({ ok: true, member: publicMember(m), pass });
+    }
+    const m = team.find(x => x.id === Number(body.id));
+    if (!m) return res.status(404).json({ ok: false, error: 'not found' });
+    if (action === 'team_reset') { const pass = genPassword(); m.hash = sha(pass); await saveJson(TEAM_PATH, team); return res.status(200).json({ ok: true, member: publicMember(m), pass }); }
+    if (action === 'team_toggle') { if (d.sub === 't:' + m.id + ':' + m.role) return res.status(400).json({ ok: false, error: 'self' }); m.active = !m.active; await saveJson(TEAM_PATH, team); return res.status(200).json({ ok: true, member: publicMember(m) }); }
+    if (action === 'team_role') { m.role = ROLES.includes(body.role) ? body.role : m.role; await saveJson(TEAM_PATH, team); return res.status(200).json({ ok: true, member: publicMember(m) }); }
+    return res.status(400).json({ ok: false, error: 'unknown action' });
+  }
+
   if (action && action.startsWith('pcreds_')) {
     const d = verifyToken(body.token);
-    if (!d || d.sub !== 'hq') return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (!d || !canCreds(d.sub)) return res.status(403).json({ ok: false, error: 'forbidden' });
     let creds = (await loadJson(CREDS_PATH)) || [];
     if (action === 'pcreds_sync') {
       const list = Array.isArray(body.partners) ? body.partners.slice(0, 500) : [];
