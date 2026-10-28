@@ -2688,7 +2688,7 @@ $('#notesBtn').onclick=()=>{const n=$('#notes');n.hidden=!n.hidden;if(!n.hidden)
 $('#notesClose').onclick=()=>{$('#notes').hidden=true};
 $('#notesTa').oninput=notesSave;
 /* ---------- access gate (server-checked: master code + one-time codes via /api/gate) ---------- */
-const GATE_HASH="70ecb282a5f0e87bc2396479c072c93726ff16f5d0abbbc855a556a80178c2a5";
+const GATE_HASH="30415f62a7cad8168d63df278031fcedae4fc6a20f3cecb908ddabfa898b37f2";
 const GATE_API=location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)?'/api/gate':null;
 async function sha256(str){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function gateApi(payload){const r=await fetch(GATE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tenant:TENANT,...payload})});return r.json()}
