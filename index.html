@@ -158,6 +158,12 @@ tr:last-child td{border:0}tbody tr{cursor:pointer}tbody tr:hover td{background:v
 .perm>div{padding:7px 6px;border-bottom:1px solid var(--line)}
 .perm .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center}
 .perm .c{text-align:center}
+/* admin notes */
+.notes{position:fixed;right:0;top:0;bottom:0;width:380px;max-width:100%;background:var(--panel);border-left:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;z-index:21;padding-right:env(safe-area-inset-right,0px);padding-top:env(safe-area-inset-top,0px)}
+.notes .hd{padding:14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.notes textarea{flex:1;border:0;resize:none;padding:14px;background:var(--bg);font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--fg);outline:none}
+.notes .ft{padding:8px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;padding-bottom:max(8px,env(safe-area-inset-bottom,0px))}
+@media (max-width:760px){.notes{width:100%}}
 /* login gate */
 #gate{position:fixed;inset:0;z-index:5000;background:var(--bg);display:grid;place-items:center;padding:16px}
 body.locked .app,body.locked .fab,body.locked .ai{visibility:hidden}
@@ -291,7 +297,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
     <span class="demo" data-i="demoNote">Demo · Beispieldaten</span>
     <span class="sp"></span>
     <div class="langs" id="langs"><button data-l="de">DE</button><button data-l="tr">TR</button><button data-l="en">EN</button></div>
-    <span class="pill" id="userPill">👤 —</span><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
+    <span class="pill" id="userPill">👤 —</span><button class="btn sm" id="notesBtn" hidden title="Notizen">📝</button><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
   </div>
   <div id="view"></div>
 </main>
@@ -302,6 +308,11 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
   <div class="hd"><b>✦ <span data-i="aiTitle">KI-Assistent</span></b><span class="sp" style="flex:1"></span><button class="btn sm" id="aiClose">✕</button></div>
   <div class="log" id="aiLog"></div>
   <form id="aiForm"><input id="aiIn" autocomplete="off"><button class="btn p" type="submit">→</button></form>
+</aside>
+<aside class="notes" id="notes" hidden>
+  <div class="hd"><b>📝 <span data-i="notes.title">Meine Notizen</span></b><span style="flex:1"></span><button class="btn sm" id="notesClose">✕</button></div>
+  <textarea id="notesTa" spellcheck="false"></textarea>
+  <div class="ft"><span id="notesState"></span><span id="notesMode"></span></div>
 </aside>
 <div class="toast" id="toast"></div>
 <div id="siteOverlay" hidden></div>
@@ -352,6 +363,7 @@ de:{nav:{dash:"Dashboard",partners:"Partner",contracts:"Verträge",leads:"Leads"
  net:{invite:"+ Partner einladen",invited:"Einladung gesendet",sub:"Ihr Netzwerk",comm:"Netzwerkprovision (Monat)"},
  support:{title:"Ihr Ansprechpartner",msg:"Nachricht senden"},
  gate:{pw:"Zugangscode",btn:"Anmelden",hint:"Demo-Zugang · nur für eingeladene Personen",err:"Zugangscode ist falsch oder bereits verwendet.",neterr:"Server nicht erreichbar – bitte erneut versuchen.",logout:"Abmelden",wait:"Prüfe…"},
+ notes:{title:"Meine Notizen",hint:"Nur für Super Admin sichtbar. Wird automatisch gespeichert.",ph:"Kurze Notizen, To-dos, Gesprächsnotizen …\n- [ ] Grünwerk Vertrag verlängern\n- Messe Stuttgart 03/2027",saved:"Gespeichert",saving:"Speichere…",local:"lokal (dieser Browser)",cloud:"synchronisiert"},
  codes:{title:"Zugangscodes (einmalig)",hint:"Jeder Code funktioniert genau einmal und läuft danach ab. Der Master-Code bleibt dauerhaft gültig.",admin:"Admin-Schlüssel",label:"Für wen / Notiz",ttl:"Gültig (Stunden)",create:"Code erzeugen",created:"Neuer Code",copy:"Kopieren",list:"Alle Codes",unused:"Offen",used:"Verwendet",expired:"Abgelaufen",revoked:"Widerrufen",revoke:"Widerrufen",none:"Noch keine Codes.",unlock:"Entsperren",locked:"Admin-Schlüssel eingeben, um Codes zu verwalten."},
  dpub:{btn:"+ Veröffentlichen",title:"Dokument / Video veröffentlichen",who:"Wer darf veröffentlichen: Super Admin · Inhaber · Sekretariat",file:"Datei",name:"Titel",kind:"Typ",brand:"Marke",audTypes:"Partnertypen",audTier:"Mindeststufe",audStates:"Bundesländer (optional)",audPartners:"Nur bestimmte Partner (optional)",notify:"Benachrichtigen",reach:"Erreicht",partners:"Partner",publish:"Jetzt veröffentlichen",published:"Veröffentlicht an {n} Partner",cancel:"Abbrechen",all:"Alle",pubBy:"veröffentlicht von"},
  ctr:{new:"+ Vertrag aus Vorlage",template:"Vorlage",brand:"Marke",term:"Laufzeit",note:"Felder werden automatisch aus der Partnerkarte (CRM) gefüllt.",preview:"Vorschau",pdf:"PDF erzeugen",sign:"Zur Unterschrift senden",cancel:"Abbrechen",sent:"Vertrag erzeugt und zur Unterschrift gesendet"}},
@@ -398,6 +410,7 @@ tr:{nav:{dash:"Panel",partners:"Partnerler",contracts:"Sözleşmeler",leads:"Lea
  net:{invite:"+ Partner davet et",invited:"Davet gönderildi",sub:"Ağınız",comm:"Ağ komisyonu (ay)"},
  support:{title:"Yetkiliniz",msg:"Mesaj gönder"},
  gate:{pw:"Erişim kodu",btn:"Giriş",hint:"Demo erişimi · yalnızca davetliler için",err:"Kod hatalı veya daha önce kullanılmış.",neterr:"Sunucuya ulaşılamadı – tekrar deneyin.",logout:"Çıkış",wait:"Kontrol ediliyor…"},
+ notes:{title:"Notlarım",hint:"Yalnızca Süper Admin görür. Otomatik kaydedilir.",ph:"Kısa notlar, yapılacaklar, görüşme notları …\n- [ ] Grünwerk sözleşmesini uzat\n- Stuttgart fuarı 03/2027",saved:"Kaydedildi",saving:"Kaydediliyor…",local:"yerel (bu tarayıcı)",cloud:"senkron"},
  codes:{title:"Erişim kodları (tek seferlik)",hint:"Her kod tam bir kez çalışır, sonra yanar. Ana kod kalıcı olarak geçerli kalır.",admin:"Admin anahtarı",label:"Kime / not",ttl:"Geçerlilik (saat)",create:"Kod üret",created:"Yeni kod",copy:"Kopyala",list:"Tüm kodlar",unused:"Açık",used:"Kullanıldı",expired:"Süresi doldu",revoked:"İptal edildi",revoke:"İptal et",none:"Henüz kod yok.",unlock:"Kilidi aç",locked:"Kodları yönetmek için admin anahtarını girin."},
  dpub:{btn:"+ Yayınla",title:"Doküman / video yayınla",who:"Yayınlayabilen: Süper Admin · Patron · Sekreterya",file:"Dosya",name:"Başlık",kind:"Tür",brand:"Marka",audTypes:"Partner türleri",audTier:"Minimum seviye",audStates:"Eyaletler (isteğe bağlı)",audPartners:"Sadece belirli partnerler (isteğe bağlı)",notify:"Bildirim gönder",reach:"Ulaşır",partners:"partner",publish:"Şimdi yayınla",published:"{n} partnere yayınlandı",cancel:"İptal",all:"Tümü",pubBy:"yayınlayan"},
  ctr:{new:"+ Şablondan sözleşme",template:"Şablon",brand:"Marka",term:"Süre",note:"Alanlar partner kartından (CRM) otomatik doldurulur.",preview:"Önizleme",pdf:"PDF oluştur",sign:"İmzaya gönder",cancel:"İptal",sent:"Sözleşme oluşturuldu ve imzaya gönderildi"}},
@@ -444,6 +457,7 @@ en:{nav:{dash:"Dashboard",partners:"Partners",contracts:"Contracts",leads:"Leads
  net:{invite:"+ Invite partner",invited:"Invitation sent",sub:"Your network",comm:"Network commission (month)"},
  support:{title:"Your contact",msg:"Send message"},
  gate:{pw:"Access code",btn:"Sign in",hint:"Demo access · invited people only",err:"Code is wrong or already used.",neterr:"Server unreachable – please retry.",logout:"Sign out",wait:"Checking…"},
+ notes:{title:"My notes",hint:"Visible to Super Admin only. Saved automatically.",ph:"Short notes, to-dos, call notes …\n- [ ] Renew Grünwerk contract\n- Stuttgart fair 03/2027",saved:"Saved",saving:"Saving…",local:"local (this browser)",cloud:"synced"},
  codes:{title:"Access codes (one-time)",hint:"Each code works exactly once and then expires. The master code stays valid permanently.",admin:"Admin key",label:"For whom / note",ttl:"Valid (hours)",create:"Create code",created:"New code",copy:"Copy",list:"All codes",unused:"Open",used:"Used",expired:"Expired",revoked:"Revoked",revoke:"Revoke",none:"No codes yet.",unlock:"Unlock",locked:"Enter the admin key to manage codes."},
  dpub:{btn:"+ Publish",title:"Publish document / video",who:"May publish: Super admin · Owner · Secretariat",file:"File",name:"Title",kind:"Type",brand:"Brand",audTypes:"Partner types",audTier:"Minimum tier",audStates:"States (optional)",audPartners:"Specific partners only (optional)",notify:"Notify",reach:"Reaches",partners:"partners",publish:"Publish now",published:"Published to {n} partners",cancel:"Cancel",all:"All",pubBy:"published by"},
  ctr:{new:"+ Contract from template",template:"Template",brand:"Brand",term:"Term",note:"Fields are filled automatically from the partner card (CRM).",preview:"Preview",pdf:"Generate PDF",sign:"Send for signature",cancel:"Cancel",sent:"Contract generated and sent for signature"}}
@@ -1180,6 +1194,7 @@ function render(){
   const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
   $('#roleChips').innerHTML=me?me.roles.map(r=>`<span class="pill" style="font-size:11px;padding:2px 8px"><span class="dot" style="background:${BRANDS[r.b].c}"></span>${t('types.'+r.t)} ${r.tier}</span>`).join(''):`<span class="pill t" style="font-size:11px;padding:2px 8px">★ ${t('types.admin')}</span>`;
   $('#userPill').textContent='👤 '+(me?me.contact:t('types.admin'));
+  $('#notesBtn').hidden=viewer.type!=='admin';if(viewer.type!=='admin')$('#notes').hidden=true;
   renderNav();
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
   const v=$('#view');
@@ -1277,6 +1292,16 @@ function aiAsk(q,key){aiMsg('u',q);const k=key||(/vertr|sözleş|contract/i.test
 $('#aiFab').onclick=aiOpen;$('#aiClose').onclick=()=>{$('#ai').hidden=true;$('#aiFab').hidden=false};
 $('#aiForm').onsubmit=e=>{e.preventDefault();const v=$('#aiIn').value.trim();if(!v)return;$('#aiIn').value='';aiAsk(v)};
 
+
+/* ---------- super admin notes ---------- */
+const NOTES={loaded:false,mode:'local',timer:null};
+async function notesLoad(){const ta=$('#notesTa');ta.placeholder=t('notes.ph');let txt='';try{txt=localStorage.getItem('b2b-notes')||''}catch(e){}
+  const tok=gateToken();if(GATE_API&&tok&&!tok.startsWith('local:')){try{const r=await gateApi({action:'notes_get',token:tok});if(r.ok){NOTES.mode='cloud';if(r.notes!==undefined&&r.notes!==null&&(r.updated||!txt))txt=r.notes}}catch(e){}}
+  ta.value=txt;NOTES.loaded=true;$('#notesMode').textContent=NOTES.mode==='cloud'?'☁ '+t('notes.cloud'):'💾 '+t('notes.local');$('#notesState').textContent=t('notes.hint')}
+function notesSave(){const v=$('#notesTa').value;try{localStorage.setItem('b2b-notes',v)}catch(e){}$('#notesState').textContent=t('notes.saving');clearTimeout(NOTES.timer);NOTES.timer=setTimeout(async()=>{if(NOTES.mode==='cloud'){try{await gateApi({action:'notes_set',token:gateToken(),notes:v})}catch(e){}}$('#notesState').textContent=t('notes.saved')+' · '+new Date().toLocaleTimeString(lang==='tr'?'tr-TR':lang==='en'?'en-GB':'de-DE',{hour:'2-digit',minute:'2-digit'})},600)}
+$('#notesBtn').onclick=()=>{const n=$('#notes');n.hidden=!n.hidden;if(!n.hidden){if(!NOTES.loaded)notesLoad();$('#notesTa').focus()}};
+$('#notesClose').onclick=()=>{$('#notes').hidden=true};
+$('#notesTa').oninput=notesSave;
 /* ---------- access gate (server-checked: master code + one-time codes via /api/gate) ---------- */
 const GATE_HASH="70ecb282a5f0e87bc2396479c072c93726ff16f5d0abbbc855a556a80178c2a5";
 const GATE_API=location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)?'/api/gate':null;

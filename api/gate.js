@@ -12,6 +12,7 @@ import { put, get } from '@vercel/blob';
 import { createHash, createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 
 const BLOB_PATH = 'gate/codes.json';
+const NOTES_PATH = 'gate/notes.json';
 const MASTER_HASH = process.env.GATE_MASTER_HASH || '';
 const ADMIN_SECRET = process.env.GATE_ADMIN_SECRET || '';
 const SESSION_HOURS = 12;
@@ -61,6 +62,18 @@ async function main(req, res) {
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   body = body || {};
   const { action } = body;
+
+  if (action === 'notes_get' || action === 'notes_set') {
+    const d = verifyToken(body.token);
+    if (!d || d.sub !== 'master') return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (action === 'notes_get') {
+      try { const r = await get(NOTES_PATH, { access: 'private', useCache: false }); if (!r) return res.status(200).json({ ok: true, notes: '', updated: null }); const j = JSON.parse(await new Response(r.stream).text()); return res.status(200).json({ ok: true, ...j }); }
+      catch (e) { if (e && e.name === 'BlobNotFoundError') return res.status(200).json({ ok: true, notes: '', updated: null }); throw e; }
+    }
+    const notes = String(body.notes || '').slice(0, 50000);
+    await put(NOTES_PATH, JSON.stringify({ notes, updated: Date.now() }), { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' });
+    return res.status(200).json({ ok: true, updated: Date.now() });
+  }
 
   if (action === 'verify') {
     const d = verifyToken(body.token);
