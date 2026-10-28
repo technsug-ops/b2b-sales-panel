@@ -33,19 +33,22 @@ const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install'
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // a token's tenant (tokens minted before tenancy belong to aydemir)
 const tokTenant = d => d && (d.ten || 'aydemir');
-const PERMS = ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'hr', 'creds', 'team'];
+const PERMS = ['partners', 'leads', 'projects', 'orders', 'install', 'dam', 'settings', 'hr', 'creds', 'team'];
 const BUILTIN_ROLES = [
   { key: 'gf', name: 'Geschäftsführer', perms: PERMS.slice(), builtin: true, locked: true },
   { key: 'tech', name: 'Technik-Verantwortlicher', perms: ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'creds'], builtin: true },
   { key: 'staff', name: 'Verwaltung', perms: ['partners', 'leads', 'projects', 'orders', 'dam'], builtin: true },
   { key: 'mitarbeiter', name: 'Mitarbeiter (nur Mein Bereich)', perms: [], builtin: true },
+  { key: 'monteur', name: 'Monteur (nur Montage)', perms: ['install'], builtin: true },
+  { key: 'hr', name: 'Personalabteilung', perms: ['hr'], builtin: true },
 ];
 async function loadRoles(T = 'aydemir') {
   const RP = pth(T, 'roles');
   let r = await loadJson(RP);
   if (!r) { r = BUILTIN_ROLES.map(x => ({ ...x, fixMa: true, migratedProjects: true })); await saveJson(RP, r); }
   let changed = false;
-  if (!r.some(x => x.key === 'mitarbeiter')) { r.push({ ...BUILTIN_ROLES[3] }); changed = true; }
+  for (const b of BUILTIN_ROLES) if (!r.some(x => x.key === b.key)) { r.push({ ...b, fixMa: true, migratedProjects: true, migratedInstall: true }); changed = true; }
+  for (const x of r) if (!x.migratedInstall) { if (x.perms.includes('orders') && !x.perms.includes('install')) x.perms.push('install'); x.migratedInstall = true; changed = true; }
   for (const x of r) { if (x.key === 'gf' && x.perms.length !== PERMS.length) { x.perms = PERMS.slice(); changed = true; } if (x.key === 'mitarbeiter' && !x.fixMa) { x.perms = x.perms.filter(p => p !== 'projects'); x.fixMa = true; changed = true; }
     if (x.builtin && x.key !== 'mitarbeiter' && !x.migratedProjects) { if (!x.perms.includes('projects')) x.perms.push('projects'); x.migratedProjects = true; changed = true; } }
   if (changed) await saveJson(RP, r);
@@ -64,12 +67,13 @@ const SEED_TEAM = [
   { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Aydemir-GF-2026' },
   { id: 2, name: 'Technik-Verantwortlicher', role: 'tech', user: 'technik', pass: 'Aydemir-Tech-2026' },
   { id: 3, name: 'Verwaltung', role: 'staff', user: 'verwaltung', pass: 'Aydemir-Team-2026' },
-  { id: 4, name: 'Mehmet K.', role: 'mitarbeiter', user: 'mehmet', pass: 'Aydemir-Mont-2026' },
+  { id: 4, name: 'Mehmet K.', role: 'monteur', user: 'mehmet', pass: 'Aydemir-Mont-2026' },
+  { id: 5, name: 'Selin A. (Personal)', role: 'hr', user: 'personal', pass: 'Aydemir-HR-2026' },
 ];
 const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
   { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'UGAlu-GF-2026' },
   { id: 2, name: 'Vertrieb', role: 'staff', user: 'vertrieb', pass: 'UGAlu-Team-2026' },
-  { id: 3, name: 'Montageleitung', role: 'mitarbeiter', user: 'montage', pass: 'UGAlu-Mont-2026' },
+  { id: 3, name: 'Montageleitung', role: 'monteur', user: 'montage', pass: 'UGAlu-Mont-2026' },
 ], sirius: [
   { id: 1, name: 'Directie', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Sirius-GF-2026' },
   { id: 2, name: 'Verkoop binnendienst', role: 'staff', user: 'verkoop', pass: 'Sirius-Team-2026' },
@@ -78,6 +82,10 @@ async function loadTeam(T = 'aydemir') {
   const TP = pth(T, 'team');
   let t = await loadJson(TP);
   if (!t) { t = SEEDS[T].map(x => ({ id: x.id, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() })); await saveJson(TP, t); }
+  let tc = false;
+  for (const x of t) if ((x.user === 'mehmet' || x.user === 'montage') && x.role === 'mitarbeiter' && !x.roleMig) { x.role = 'monteur'; x.roleMig = true; tc = true; }
+  if (T === 'aydemir' && !t.some(x => x.user === 'personal')) { const x = SEED_TEAM[4]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
+  if (tc) await saveJson(TP, t);
   if (T === 'aydemir' && !t.some(x => x.user === 'mehmet')) { const x = SEED_TEAM[3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); await saveJson(TP, t); }
   return t;
 }

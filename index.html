@@ -754,7 +754,7 @@ const TENANT_DATA={
  'ug-alu':{name:"UG-Alu GmbH",sub:"Überdachungen nach Maß",mark:"UA",accent:"#2f5d7c",model:'start',
   domain:"b2b.ug-alu.de",partnerHost:"partner.ug-alu.de",teamHost:"team.ug-alu.de",site:"ug-alu.de",
   features:['orders','stock','install','sites','hr'],
-  team:[{id:1,name:'Geschäftsführung',role:'gf',user:'geschaeftsfuehrung',pass:'UGAlu-GF-2026'},{id:2,name:'Vertrieb',role:'staff',user:'vertrieb',pass:'UGAlu-Team-2026'},{id:3,name:'Montageleitung',role:'mitarbeiter',user:'montage',pass:'UGAlu-Mont-2026'}],
+  team:[{id:1,name:'Geschäftsführung',role:'gf',user:'geschaeftsfuehrung',pass:'UGAlu-GF-2026'},{id:2,name:'Vertrieb',role:'staff',user:'vertrieb',pass:'UGAlu-Team-2026'},{id:3,name:'Montageleitung',role:'monteur',user:'montage',pass:'UGAlu-Mont-2026'}],
   brands:{ua:{name:"UG-Alu",site:"b2b.ug-alu.de",c:"#2f5d7c"}},
   partners:[
    {id:101,name:"Montagebau Krüger GmbH",city:"Düsseldorf",lon:6.78,lat:51.23,ind:["Montage","Terrassendächer"],roles:[{b:"ua",t:"partner",tier:"gold"}],status:"active",contact:"Thomas Krüger",mail:"krueger@montagebau-krueger.de",tel:"+49 211 44 10 20",addr:"Kölner Str. 120, 40227 Düsseldorf",closings:14,revenue:88000,state:"Nordrhein-Westfalen"},
@@ -1004,7 +1004,7 @@ const ROLE_LBL={gf:'Geschäftsführer',tech:'Technik-Verantwortlicher',staff:'Ve
 let TEAMUSER=(()=>{try{return sessionStorage.getItem(RKEY+':u')||null}catch(e){return null}})();
 let TEAMPERMS=(()=>{try{return JSON.parse(sessionStorage.getItem(RKEY+':p')||'null')}catch(e){return null}})();
 let TEAMROLENAME=(()=>{try{return sessionStorage.getItem(RKEY+':r')||null}catch(e){return null}})();
-const PERM_LBL={partners:'Partner & Verträge',leads:'Leads',projects:'Projekte',orders:'Bestellungen, Lager & Montage',dam:'Material & Partner-Websites',settings:'Einstellungen & Audit',hr:'Personal (HR)',creds:'Partner-Zugänge (Passwörter)',team:'Team & Rollen verwalten'};
+const PERM_LBL={partners:'Partner & Verträge',leads:'Leads',projects:'Projekte',orders:'Bestellungen & Lager',install:'Montage-Termine',dam:'Material & Partner-Websites',settings:'Einstellungen & Audit',hr:'Personal (HR)',creds:'Partner-Zugänge (Passwörter)',team:'Team & Rollen verwalten'};
 const PERM_KEYS=Object.keys(PERM_LBL);
 const hasP=x=>TEAMROLE?(TEAMPERMS||[]).includes(x):!['creds','team','hr'].includes(x);
 const canZentrale=()=>!NET&&!CONSOLE&&!!TEAMROLE&&hasP('creds');
@@ -1248,7 +1248,7 @@ function navItems(){
   const meItem=TEAMROLE&&feat('hr')?[{k:'me',ic:'🙋'}]:[];
   if(viewer.type==='admin'&&TEAMROLE&&!(TEAMPERMS||[]).length) return [{s:'mine'},...meItem,{k:'notif',ic:'🔔',badge:unread}];
   if(viewer.type==='admin') return [
-    ...(meItem.length?[{s:'mine'},...meItem]:[]),{s:'admin'},{k:'dash',ic:'▦'},...(hasP('partners')?[{k:'partners',ic:'👥'}]:[]),...(hasP('leads')?[{k:'leads',ic:'📥'}]:[]),...(hasP('projects')&&feat('projects')?[{k:'projects',ic:'🗂'}]:[]),...(hasP('partners')?[{k:'contracts',ic:'📄'}]:[]),...(hasP('orders')?[...(feat('orders')?[{k:'orders',ic:'📦'}]:[]),...(feat('stock')?[{k:'stock',ic:'🏭'}]:[]),...(feat('install')?[{k:'install',ic:'🔧'}]:[])]:[]),...(hasP('dam')?[...(feat('sites')?[{k:'sites',ic:'🌐'}]:[]),{k:'dam',ic:'🗂️'}]:[]),{k:'notif',ic:'🔔',badge:unread},...(hasP('settings')&&ph(1)?[{k:'audit',ic:'🧾'}]:[]),...(hasP('hr')&&feat('hr')?[{k:'hr',ic:'🧑‍💼'}]:[]),...(hasP('settings')?[{k:'settings',ic:'⚙️'}]:[]),...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}]:[]),...(isGF()?[...(canZentrale()?[]:[{s:'hq'}]),{k:'team',ic:'👔'}]:[]),{s:'public'},{k:'register',ic:'📝'}];
+    ...(meItem.length?[{s:'mine'},...meItem]:[]),{s:'admin'},...(hasP('partners')||hasP('leads')||hasP('orders')?[{k:'dash',ic:'▦'}]:[]),...(hasP('partners')?[{k:'partners',ic:'👥'}]:[]),...(hasP('leads')?[{k:'leads',ic:'📥'}]:[]),...(hasP('projects')&&feat('projects')?[{k:'projects',ic:'🗂'}]:[]),...(hasP('partners')?[{k:'contracts',ic:'📄'}]:[]),...(hasP('orders')?[...(feat('orders')?[{k:'orders',ic:'📦'}]:[]),...(feat('stock')?[{k:'stock',ic:'🏭'}]:[])]:[]),...(hasP('install')&&feat('install')?[{k:'install',ic:'🔧'}]:[]),...(hasP('dam')?[...(feat('sites')?[{k:'sites',ic:'🌐'}]:[]),{k:'dam',ic:'🗂️'}]:[]),{k:'notif',ic:'🔔',badge:unread},...(hasP('settings')&&ph(1)?[{k:'audit',ic:'🧾'}]:[]),...(hasP('hr')&&feat('hr')?[{k:'hr',ic:'🧑‍💼'}]:[]),...(hasP('settings')?[{k:'settings',ic:'⚙️'}]:[]),...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}]:[]),...(isGF()?[...(canZentrale()?[]:[{s:'hq'}]),{k:'team',ic:'👔'}]:[]),...(hasP('partners')?[{s:'public'},{k:'register',ic:'📝'}]:[])];
   const p=PARTNERS.find(x=>x.id===viewer.partner);
   const ic={projects:'🗂',dash:'▦',network:'👥',pool:'🎯',leads:'📥',myleads:'📥',referral:'🔗',pricelist:'📦',orders:'🧾',stock:'🏭',install:'🔧',site:'🌐',earn:'💶',mycontract:'📄',dam:'🗂️',notif:'🔔'};
   const FM={pricelist:'orders',orders:'orders',stock:'stock',install:'install',site:'sites',projects:'projects'};
@@ -1257,7 +1257,7 @@ function navItems(){
 function renderNav(){
   const items=navItems();
   if(PENDING&&!document.body.classList.contains('locked')&&gateToken()&&(!NET||PDOOR)){const x=routeFromRest(PENDING,items);if(x){page=x.k;selPartner=x.sel;selDetail=x.det||null}else{page='notfound';selDetail=null}PENDING=null}
-  if(!items.some(i=>i.k===page)&&page!=='notfound'&&!(page==='register'&&document.body.classList.contains('public'))) page=CONSOLE?'chome':HQ?'hqhome':items.some(i=>i.k==='dash')?'dash':(items.find(i=>i.k)||{k:'dash'}).k;
+  if(!items.some(i=>i.k===page)&&page!=='notfound'&&!(page==='register'&&document.body.classList.contains('public'))) page=CONSOLE?'chome':HQ?'hqhome':items.some(i=>i.k==='dash')?'dash':(items.find(i=>i.k&&i.k!=='me'&&i.k!=='notif')||items.find(i=>i.k)||{k:'dash'}).k;
   $('#nav').innerHTML=deco(items.map(i=>i.s?`<div class="navlabel">${i.s==='public'?'Website':i.s==='mine'?'Mein Bereich':i.s==='hq'?'Firmenzentrale':i.s==='console'?'Plattform':i.s==='consoleOps'?'Betrieb':i.s==='consoleDocs'?'Produkt':t('sec.'+i.s)}</div>`:
     `<button class="${i.k===page?'on':''}" data-k="${i.k}"><span class="ic">${i.ic}</span>${i.k==='register'?t('reg.nav'):MOD_LABEL(i.k)}${i.badge?`<span class="badge">${i.badge}</span>`:''}</button>`).join(''));
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{PENDING=null;page=b.dataset.k;selPartner=null;selDetail=null;render();$('#side').classList.remove('open')});
@@ -1648,8 +1648,13 @@ let calMonth=new Date(2026,10,1), calSel="2026-11-04", calTeam="all";
 let bookTeam='t1', bookRegion='Baden-Württemberg';
 function nextFree(k){let d=new Date(2026,9,28);for(let i=0;i<90;i++){const ds=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())).toISOString().slice(0,10);const dow=(d.getDay()+6)%7;if(dow<5&&JOBS.filter(j=>j.d===ds&&j.team===k).length<TEAMS[k].cap)return ds;d.setDate(d.getDate()+1)}return null}
 function regionSelect(id,val){return `<select id="${id}"><optgroup label="Deutschland">${DE_STATE_LIST.map(x=>`<option ${x===val?'selected':''}>${x}</option>`).join('')}</optgroup><optgroup label="Europa">${EU_LIST.map(x=>`<option ${x===val?'selected':''}>${x}</option>`).join('')}</optgroup></select>`}
+function monteurTeam(){if(!TEAMROLE||viewer.partner||hasP('orders')||!hasP('install'))return null;const e=EMP.find(x=>x.user===TEAMUSER);return (e&&e.team)||'t1'}
 function viewInstall(){
   const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
+  const myTeam=monteurTeam();if(myTeam)calTeam=myTeam;
+  const myCard=myTeam?(()=>{const L=JOBS.filter(j=>j.team===myTeam&&j.d>='2026-10-27').sort((a,b)=>a.d<b.d?-1:1);const loc2=lang==='tr'?'tr-TR':lang==='en'?'en-GB':'de-DE';
+    return `<div class="card" style="margin-bottom:14px"><div class="hd"><h2>Meine Einsätze · ${TEAMS[myTeam].n}</h2><span class="sp"></span><span class="pill">${L.length}</span></div><p style="margin:0 0 10px;font-size:12.5px;color:var(--muted)">Sie sehen nur die Montage-Termine Ihres Teams. Preise, Kunden-Umsätze, Partner und Verträge sind für Ihre Rolle nicht freigegeben.</p>
+    <div class="tw"><table><thead><tr><th>Datum</th><th>Auftrag</th><th>Kunde / Partner</th><th>Region</th></tr></thead><tbody>${L.map(j=>`<tr style="cursor:default"><td style="white-space:nowrap">${new Date(j.d).toLocaleDateString(loc2,{weekday:'short',day:'2-digit',month:'2-digit'})}</td><td><b>${esc(j.what)}</b><br><small style="color:var(--muted)">${j.o}</small></td><td>${esc(pName(j.p))}</td><td>${esc(j.region)}</td></tr>`).join('')}</tbody></table></div></div>`})():'';
   const fmt=d=>d.toISOString().slice(0,10);
   const loc=lang==='tr'?'tr-TR':lang==='en'?'en-GB':'de-DE';
   const y=calMonth.getFullYear(),m=calMonth.getMonth();
@@ -1666,15 +1671,15 @@ function viewInstall(){
   const freeTeams=Object.keys(TEAMS).filter(k=>JOBS.filter(j=>j.d===calSel&&j.team===k).length<TEAMS[k].cap);
   const title=calMonth.toLocaleDateString(loc,{month:'long',year:'numeric'});
   const meRegion=me?me.state:'Baden-Württemberg';
-  return `<div class="grid two" style="grid-template-columns:minmax(0,2fr) minmax(300px,1fr)">
+  return myCard+`<div class="grid two" style="grid-template-columns:minmax(0,2fr) minmax(300px,1fr)">
     <div class="card"><div class="hd"><button class="btn sm" id="calPrev">‹</button><h2 style="min-width:150px;text-align:center">${title}</h2><button class="btn sm" id="calNext">›</button><span class="sp"></span>
-      <div class="chips"><button class="chip ${calTeam==='all'?'on':''}" data-team="all">${lang==='tr'?'Her iki ekip':lang==='en'?'Both teams':'Beide Teams'}</button>${Object.entries(TEAMS).map(([k,tm])=>`<button class="chip ${calTeam===k?'on':''}" data-team="${k}"><span class="dot" style="background:${tm.c}"></span>${tm.n}</button>`).join('')}</div></div>
+      <div class="chips" ${myTeam?'hidden':''}><button class="chip ${calTeam==='all'?'on':''}" data-team="all">${lang==='tr'?'Her iki ekip':lang==='en'?'Both teams':'Beide Teams'}</button>${Object.entries(TEAMS).map(([k,tm])=>`<button class="chip ${calTeam===k?'on':''}" data-team="${k}"><span class="dot" style="background:${tm.c}"></span>${tm.n}</button>`).join('')}</div></div>
       <div class="cal">${cells}</div>
       <div class="legend">${Object.values(TEAMS).map(tm=>`<span><span class="dot" style="background:${tm.c}"></span>${tm.n} · Basis ${tm.base} · ${tm.cap}/Tag · DE + EU</span>`).join('')}</div></div>
     <div style="display:grid;gap:14px;align-content:start">
       <div class="card"><div class="hd"><h2>${new Date(calSel).toLocaleDateString(loc,{weekday:'long',day:'2-digit',month:'long'})}</h2><span class="pill ${selCap-selJobs.length>0?'t':''}">${selCap-selJobs.length} / ${selCap} ${t('stk.free')}</span></div>
         ${selJobs.length?`<div class="feed">${selJobs.map(j=>`<div class="it"><span class="dot" style="background:${TEAMS[j.team].c};margin-top:6px"></span><span><b>${esc(j.what)}</b><br><small style="color:var(--muted)">${esc(pName(j.p))} · ${j.o} · ${TEAMS[j.team].n} · ${j.region}</small></span><span>${brandTag(j.b)}</span></div>`).join('')}</div>`:`<p style="color:var(--muted);margin:0">—</p>`}
-        ${freeTeams.length&&(me||viewer.type==='admin')?`<div class="frm" style="margin-top:12px"><div class="f"><label>${t('stk.team')}</label><select id="bookTeam">${freeTeams.map(k=>`<option value="${k}" ${k===bookTeam?'selected':''}>${TEAMS[k].n} (${TEAMS[k].base})</option>`).join('')}</select></div><div class="f"><label>${t('stk.region')}</label>${regionSelect('bookRegion',me?meRegion:bookRegion)}</div><div class="f full"><button class="btn p" data-act="${me?'book':'plan'}" style="width:100%">${me?t('stk.book'):'+ Montage planen'} · ${new Date(calSel).toLocaleDateString(loc,{day:'2-digit',month:'2-digit'})}</button></div></div>`:''}</div>
+        ${freeTeams.length&&(me||viewer.type==='admin')&&!myTeam?`<div class="frm" style="margin-top:12px"><div class="f"><label>${t('stk.team')}</label><select id="bookTeam">${freeTeams.map(k=>`<option value="${k}" ${k===bookTeam?'selected':''}>${TEAMS[k].n} (${TEAMS[k].base})</option>`).join('')}</select></div><div class="f"><label>${t('stk.region')}</label>${regionSelect('bookRegion',me?meRegion:bookRegion)}</div><div class="f full"><button class="btn p" data-act="${me?'book':'plan'}" style="width:100%">${me?t('stk.book'):'+ Montage planen'} · ${new Date(calSel).toLocaleDateString(loc,{day:'2-digit',month:'2-digit'})}</button></div></div>`:''}</div>
       <div class="card"><div class="hd"><h2>${t('stk.slot')}</h2></div>${Object.entries(TEAMS).map(([k,tm])=>{const found=nextFree(k);return `<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px"><span class="dot" style="background:${tm.c}"></span><span style="flex:1"><b>${tm.n}</b><br><small style="color:var(--muted)">Basis ${tm.base} · ${JOBS.filter(j=>j.team===k&&j.d>='2026-10-27').length} ${t('stk.booked')}</small></span><button class="btn sm" data-jump="${found}" style="font-variant-numeric:tabular-nums">${new Date(found).toLocaleDateString(loc,{day:'2-digit',month:'2-digit'})} →</button></div>`}).join('')}</div>
     </div></div>`;
 }
@@ -2013,9 +2018,10 @@ let EMP=[
  {id:4,name:'Kazım',pos:'Logistik & Lager',dept:'Innendienst',brand:'mz',loc:'Essen',type:'Vollzeit',start:'2021-09-01',hours:40,vac:28,used:24,probation:null,mail:'kazim@aydemir-gruppe.de',tel:'+49 176 111 2203',access:null,status:'Urlaub',docs:['Arbeitsvertrag.pdf']},
  {id:5,name:'N.N. (Außendienst BW)',pos:'Außendienst Stuttgart (Teilzeit)',dept:'Außendienst',brand:'all',loc:'Stuttgart',type:'Teilzeit',start:'2026-11-15',hours:20,vac:14,used:0,probation:'2027-05-14',mail:'',tel:'',access:null,status:'Einstellung',docs:['Stellenanzeige.pdf']},
  {id:6,name:'Benjamin',pos:'Vertrieb (geplant)',dept:'Vertrieb & Marketing',brand:'mz',loc:'Essen',type:'Vollzeit',start:'2027-01-01',hours:40,vac:28,used:0,probation:'2027-06-30',mail:'',tel:'',access:null,status:'Einstellung',docs:[]},
- {id:7,name:'Mehmet K.',pos:'Monteur · Team 1 (Leitung)',dept:'Montage',brand:'all',loc:'Stuttgart',type:'Vollzeit',start:'2022-04-01',hours:40,vac:28,used:15,probation:null,mail:'mehmet@aydemir-gruppe.de',tel:'+49 176 111 2207',access:'Mitarbeiter',user:'mehmet',status:'aktiv',docs:['Arbeitsvertrag.pdf','Führerschein C1E.pdf','Höhenarbeit-Schulung.pdf']},
+ {id:7,name:'Mehmet K.',pos:'Monteur · Team 1 (Leitung)',dept:'Montage',brand:'all',loc:'Stuttgart',type:'Vollzeit',start:'2022-04-01',hours:40,vac:28,used:15,probation:null,mail:'mehmet@aydemir-gruppe.de',tel:'+49 176 111 2207',access:'Monteur (nur Montage)',user:'mehmet',team:'t1',status:'aktiv',docs:['Arbeitsvertrag.pdf','Führerschein C1E.pdf','Höhenarbeit-Schulung.pdf']},
  {id:8,name:'Jonas W.',pos:'Monteur · Team 1',dept:'Montage',brand:'all',loc:'Stuttgart',type:'Vollzeit',start:'2026-08-01',hours:40,vac:28,used:3,probation:'2027-01-31',mail:'',tel:'+49 176 111 2208',access:null,status:'aktiv',docs:['Arbeitsvertrag.pdf']},
  {id:9,name:'Ali R.',pos:'Monteur · Team 2 (Leitung)',dept:'Montage',brand:'all',loc:'Essen',type:'Vollzeit',start:'2020-06-01',hours:40,vac:28,used:22,probation:null,mail:'',tel:'+49 176 111 2209',access:null,status:'aktiv',docs:['Arbeitsvertrag.pdf','Führerschein C1E.pdf']},
+ {id:11,name:'Selin A.',pos:'Personalreferentin',dept:'Innendienst',brand:'all',loc:'Essen',type:'Teilzeit',start:'2025-09-01',hours:30,vac:25,used:9,probation:null,mail:'personal@aydemir-gruppe.de',tel:'+49 176 111 2211',access:'Personalabteilung',user:'personal',status:'aktiv',docs:['Arbeitsvertrag.pdf','Datenschutz-Verpflichtung.pdf']},
  {id:10,name:'Piotr N.',pos:'Monteur · Team 2',dept:'Montage',brand:'all',loc:'Essen',type:'Minijob',start:'2025-03-01',hours:10,vac:8,used:4,probation:null,mail:'',tel:'+49 176 111 2210',access:null,status:'aktiv',docs:['Arbeitsvertrag.pdf']},
 ];
 let LEAVE=[
@@ -2716,10 +2722,14 @@ function localCreds(){let c=null;try{c=JSON.parse(localStorage.getItem(LSK('b2b-
   return c}
 function localTeam(){let t=null;try{t=JSON.parse(localStorage.getItem(LSK('b2b-team'))||'null')}catch(e){}
   if(!t&&TD){t=TD.team.map(x=>({...x,active:true,created:Date.now()}))}
-  if(!t){t=[{id:1,name:'Geschäftsführung',role:'gf',user:'geschaeftsfuehrung',pass:'Aydemir-GF-2026',active:true,created:Date.now()},{id:2,name:'Technik-Verantwortlicher',role:'tech',user:'technik',pass:'Aydemir-Tech-2026',active:true,created:Date.now()},{id:3,name:'Verwaltung',role:'staff',user:'verwaltung',pass:'Aydemir-Team-2026',active:true,created:Date.now()},{id:4,name:'Mehmet K.',role:'mitarbeiter',user:'mehmet',pass:'Aydemir-Mont-2026',active:true,created:Date.now()}];try{localStorage.setItem(LSK('b2b-team'),JSON.stringify(t))}catch(e){}}
+  if(!t){t=[{id:1,name:'Geschäftsführung',role:'gf',user:'geschaeftsfuehrung',pass:'Aydemir-GF-2026',active:true,created:Date.now()},{id:2,name:'Technik-Verantwortlicher',role:'tech',user:'technik',pass:'Aydemir-Tech-2026',active:true,created:Date.now()},{id:3,name:'Verwaltung',role:'staff',user:'verwaltung',pass:'Aydemir-Team-2026',active:true,created:Date.now()},{id:4,name:'Mehmet K.',role:'monteur',user:'mehmet',pass:'Aydemir-Mont-2026',active:true,created:Date.now()},{id:5,name:'Selin A. (Personal)',role:'hr',user:'personal',pass:'Aydemir-HR-2026',active:true,created:Date.now()}];}
+  let ch=false;t.forEach(x=>{if((x.user==='mehmet'||x.user==='montage')&&x.role==='mitarbeiter'&&!x.roleMig){x.role='monteur';x.roleMig=true;ch=true}});if(TENANT==='aydemir'&&!t.some(x=>x.user==='personal')){t.push({id:Math.max(0,...t.map(m=>m.id))+1,name:'Selin A. (Personal)',role:'hr',user:'personal',pass:'Aydemir-HR-2026',active:true,created:Date.now()});ch=true}
+  if(ch)try{localStorage.setItem(LSK('b2b-team'),JSON.stringify(t))}catch(e){}
   return t}
 function localRoles(){let r=null;try{r=JSON.parse(localStorage.getItem(LSK('b2b-roles'))||'null')}catch(e){}
-  if(!r){r=[{key:'gf',name:'Geschäftsführer',perms:PERM_KEYS.slice(),builtin:true,locked:true},{key:'tech',name:'Technik-Verantwortlicher',perms:['partners','leads','projects','orders','dam','settings','creds'],builtin:true},{key:'staff',name:'Verwaltung',perms:['partners','leads','projects','orders','dam'],builtin:true},{key:'mitarbeiter',name:'Mitarbeiter (nur Mein Bereich)',perms:[],builtin:true}];try{localStorage.setItem(LSK('b2b-roles'),JSON.stringify(r))}catch(e){}}
+  if(!r){r=[{key:'gf',name:'Geschäftsführer',perms:PERM_KEYS.slice(),builtin:true,locked:true},{key:'tech',name:'Technik-Verantwortlicher',perms:['partners','leads','projects','orders','dam','settings','creds'],builtin:true},{key:'staff',name:'Verwaltung',perms:['partners','leads','projects','orders','dam'],builtin:true},{key:'mitarbeiter',name:'Mitarbeiter (nur Mein Bereich)',perms:[],builtin:true}];}
+  const B=[{key:'monteur',name:'Monteur (nur Montage)',perms:['install'],builtin:true},{key:'hr',name:'Personalabteilung',perms:['hr'],builtin:true}];let ch=false;B.forEach(b=>{if(!r.some(x=>x.key===b.key)){r.push(b);ch=true}});r.forEach(x=>{if(!x.migInst){if(x.perms.includes('orders')&&!x.perms.includes('install'))x.perms.push('install');if(x.key==='gf')x.perms=PERM_KEYS.slice();x.migInst=true;ch=true}});
+  if(ch)try{localStorage.setItem(LSK('b2b-roles'),JSON.stringify(r))}catch(e){}
   return r}
 function saveLocalRoles(r){try{localStorage.setItem(LSK('b2b-roles'),JSON.stringify(r))}catch(e){}}
 function saveLocalTeam(t){try{localStorage.setItem(LSK('b2b-team'),JSON.stringify(t))}catch(e){}}
