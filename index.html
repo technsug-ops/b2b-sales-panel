@@ -327,6 +327,7 @@ body.locked .app,body.locked .fab,body.locked .ai{visibility:hidden}
 .ws-sec{max-width:1100px;margin:0 auto;padding-block:30px;border-top:1px solid var(--wsline)}.ws-sec h2{font-size:22px;margin-bottom:16px}
 .ws-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
 .ws-card{border:1px solid var(--wsline);border-radius:12px;overflow:hidden;display:grid;grid-template-rows:auto 1fr}.ws-card>div:last-child{padding:14px;display:grid;gap:6px;align-content:start}
+.ws-thumb img{width:100%;height:100%;object-fit:cover;display:block}.ws-thumb:has(img){padding:0;overflow:hidden}
 .ws-thumb{height:120px;display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:700;letter-spacing:.06em;opacity:.9}
 .ws-brandtag{color:var(--wsmut);font-size:11px;text-transform:uppercase;letter-spacing:.06em}.ws-card h3{font-size:15px}.ws-card p{margin:0;font-size:13px;color:var(--wsmut)}
 .ws-price{font-family:var(--display);font-size:18px;font-weight:600;margin:4px 0}.ws-price small{font-size:11px;color:var(--wsmut);font-weight:400}
@@ -885,13 +886,22 @@ const TENANT_DATA={
   content:{ua:{claim:"Überdachungen nach Maß",hero:"Überdachungen nach Maß – direkt vom Alu-Spezialisten",sub:"Terrassen- und Balkonüberdachungen, Carports, Vordächer und Solardächer aus massiven Aluminiumprofilen. Tiefe, Breite, Eindeckung und Farbe frei wählbar.",
    facts:[["Alu","massive Profile"],["nach Maß","Tiefe, Breite, Farbe"],["DE-weit","Lieferung per Spedition"],["Montage","auf Wunsch mit Aufmaß"]],
    usps:["Konfiguration nach Maß","Lieferung deutschlandweit per Spedition","Aufmaß und Montage auf Wunsch","Persönliche Beratung Mo–Fr 9–16 Uhr"],
-   products:[{sku:"UA-CP-300",n:"Carport",d:"Aluminium, nach Maß",price:1399},{sku:"UA-BU-300",n:"Balkonüberdachung",d:"Aluminium, Polycarbonat oder VSG-Glas",price:1310},{sku:"UA-SOL-500",n:"Solarüberdachung",d:"Photovoltaik-Dach auf Alu-Unterkonstruktion",price:2478},{sku:"UA-VD-HM",n:"Haustürvordach Holzminden",d:"Aluminium, nach Maß",price:1395},{sku:"UA-VD-LB",n:"Edelstahlvordach Lübeck",d:"Edelstahl mit Glas",price:649}],
+   products:[{sku:"UA-CP-300",img:"https://www.ug-alu.de/_uploads/home/terrassenueberdachung.webp",n:"Carport",d:"Aluminium, nach Maß",price:1399},{sku:"UA-BU-300",img:"https://images.ug-alu.de/products/8/balkonuberdachung_stegplatte_klar_anthrazit_6m_lvFVyggl1XYEPd.jpg",n:"Balkonüberdachung",d:"Aluminium, Polycarbonat oder VSG-Glas",price:1310},{sku:"UA-SOL-500",img:"https://www.ug-alu.de/_uploads/home/solardach.webp",n:"Solarüberdachung",d:"Photovoltaik-Dach auf Alu-Unterkonstruktion",price:2478},{sku:"UA-VD-HM",img:"https://www.ug-alu.de/_uploads/home/vordaecher.webp",n:"Haustürvordach Holzminden",d:"Aluminium, nach Maß",price:1395},{sku:"UA-VD-LB",img:"https://www.ug-alu.de/_uploads/home/vordaecher.webp",n:"Edelstahlvordach Lübeck",d:"Edelstahl mit Glas",price:649}],
    apps:["Terrasse","Balkon","Carport","Hauseingang","Solar","Wintergarten"],color:"#2f5d7c",dark:"#1e3d52",
    steps:[["Anfrage","Maße und Wunschausführung angeben"],["Aufmaß","Auf Wunsch vor Ort"],["Angebot","Festpreis inkl. Lieferung"],["Montage","Durch Fachpartner in Ihrer Region"]],
    refs:[["Einfamilienhaus, Ratingen","Terrassendach 6,0 × 3,5 m","VSG-Glas, Anthrazit"],["Café Seeterrasse, Essen","2× Terrassendach","Gastronomie-Außenbereich"],["Wohnanlage, Neuss","12 Balkonüberdachungen","Einheitliches Fassadenbild"]],
    quotes:[["„Aufmaß, Lieferung und Montage aus einer Hand – unsere Kunden merken den Unterschied.“","Montagebau Krüger, Düsseldorf"]],
    faq:[["Liefern Sie bundesweit?","Ja, per Spedition in ganz Deutschland."],["Gibt es Montage?","Auf Wunsch über unsere Fachpartner, inklusive Aufmaß."]],
-   badges:["Aluminium","Nach Maß","Fachpartner-Montage"]}},
+   badges:["Aluminium","Nach Maß","Fachpartner-Montage"],
+   refImgs:["https://images.ug-alu.de/products/1/terrassenuberdachung_anthrazit_stegplatte_7m_4.jpg","https://images.ug-alu.de/products/6/kaltwintergarten_anthrazit_stegplatte_klar_6m_1.jpg","https://images.ug-alu.de/products/8/balkonuberdachung_stegplatte_klar_anthrazit_6m_lvFVyggl1XYEPd.jpg"],
+   aboutMini:"berät Sie persönlich zu Überdachungen, Carports und Vordächern von UG-Alu – vom Aufmaß vor Ort über das Angebot bis zur Montage durch einen Fachpartner in Ihrer Region."}},
+  siteBase:"fachpartner.ug-alu.de",
+  sites:{
+   101:{enabled:true,kind:'cobrand',status:'live',slug:"krueger",brands:['ua'],products:['UA-CP-300','UA-BU-300','UA-SOL-500','UA-VD-HM'],logo:"Montagebau Krüger",tagline:"Terrassendächer und Carports aus Aluminium – Aufmaß und Montage in Düsseldorf",phone:"+49 211 44 10 20",prices:true},
+   102:{enabled:true,kind:'cobrand',status:'live',slug:"schulte",brands:['ua'],products:['UA-BU-300','UA-VD-HM','UA-VD-LB'],logo:"Fensterbau Schulte",tagline:"Balkon- und Haustürüberdachungen passend zu Ihren Fenstern – aus Essen",phone:"+49 201 33 20 11",prices:false},
+   108:{enabled:true,kind:'cobrand',status:'live',slug:"rhein-main",brands:['ua'],products:['UA-CP-300','UA-BU-300','UA-SOL-500','UA-VD-HM','UA-VD-LB'],logo:"Überdachungscenter Rhein-Main",tagline:"Ausstellung, Beratung und Montage für das ganze Rhein-Main-Gebiet",phone:"+49 69 80 90 55",prices:true},
+   104:{enabled:true,kind:'mini',status:'live',slug:"ali-demir",brands:['ua'],products:['UA-CP-300','UA-SOL-500'],logo:"Ali Demir",tagline:"Ihr Berater für Überdachungen im Ruhrgebiet",phone:"+49 176 22 41 18 0",prices:false},
+   109:{enabled:true,kind:'cobrand',status:'review',slug:"nowak",brands:['ua'],products:['UA-CP-300','UA-VD-LB'],logo:"Metallbau Nowak",tagline:"Metallbau und Alu-Überdachungen aus Hannover",phone:"+49 511 44 92 0",prices:false}},
   jobs:[{d:"2026-11-03",team:"t1",o:"DO-2107",p:101,b:"ua",what:"Terrassendach 6,0 × 3,5 m",region:"Nordrhein-Westfalen"},{d:"2026-11-04",team:"t1",o:"DO-2107",p:101,b:"ua",what:"Terrassendach (Tag 2/2)",region:"Nordrhein-Westfalen"},{d:"2026-11-10",team:"t2",o:"DO-2106",p:108,b:"ua",what:"4× Carport",region:"Hessen"},{d:"2026-11-12",team:"t1",o:"P-0410",p:102,b:"ua",what:"Balkonüberdachung 3,0 m",region:"Nordrhein-Westfalen"}],
   teams:{t1:{n:"Montageteam Ratingen",base:"Ratingen"},t2:{n:"Partnermontage Rhein-Main",base:"Frankfurt"}},
   emp:[
@@ -987,7 +997,7 @@ function applyTenantLate(){
   TENANTS[0].domain='partner.aydemir-gruppe.de';
   if(!TD)return;
   const i=TENANTS.findIndex(t=>t.name===TD.name);if(i>0){const [r]=TENANTS.splice(i,1);TENANTS.unshift(r)}
-  replaceObj(BRAND_CONTENT,TD.content);replaceObj(SITES,{});replaceArr(JOBS,TD.jobs);
+  replaceObj(BRAND_CONTENT,TD.content);replaceObj(SITES,TD.sites||{});replaceArr(JOBS,TD.jobs);
   if(TD.teams){TEAMS.t1.n=TD.teams.t1.n;TEAMS.t1.base=TD.teams.t1.base;TEAMS.t2.n=TD.teams.t2.n;TEAMS.t2.base=TD.teams.t2.base}
   EMP=TD.emp.map(e=>({...e}));LEAVE=TD.leave.map(e=>({...e}));PROJECTS=[];
 }
@@ -1614,7 +1624,7 @@ const SITES={
  4:{enabled:true,kind:'cobrand',status:'review',slug:"nordcontainer",brands:['ec'],products:['FP-20','FP-SAN','FP-40'],logo:"Nordcontainer",tagline:"Flat-Pack Container für Norddeutschland – ab Lager Hamburg",phone:"+49 40 300 55 1",prices:false},
 };
 const siteOf=id=>SITES[id]||(SITES[id]={enabled:false,kind:mainType(PARTNERS.find(p=>p.id===id))==='freelancer'||mainType(PARTNERS.find(p=>p.id===id))==='leadgen'?'mini':'cobrand',status:'off',slug:PARTNERS.find(p=>p.id===id).name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),brands:PARTNERS.find(p=>p.id===id).access.brands.slice(),products:[],logo:PARTNERS.find(p=>p.id===id).name,tagline:"",phone:PARTNERS.find(p=>p.id===id).tel,prices:false});
-const siteHost=(s)=>`${s.slug}.partner.${BRANDS[s.brands[0]].site}`;
+const siteHost=(s)=>TD&&TD.siteBase?`${s.slug}.${TD.siteBase}`:`${s.slug}.partner.${BRANDS[s.brands[0]].site}`;
 const siteStatus=s=>!s.enabled?['mut',t('site.off')]:s.status==='live'?['ok',t('site.live')]:['warn',t('site.review')];
 
 function siteAdminCard(p){const s=siteOf(p.id);const st=siteStatus(s);
@@ -1649,25 +1659,26 @@ function viewMySite(){
 }
 /* ---------- the partner website itself (full-screen preview) ---------- */
 let siteOpenId=null;
+const SIMG=u=>IS_HTTP&&/^https:\/\/(www|images|static)\.ug-alu\.de\//.test(u)?'/api/img?u='+encodeURIComponent(u):u;
 function renderSite(){
   const ov=$('#siteOverlay');if(!siteOpenId){ov.hidden=true;ov.innerHTML='';document.body.style.overflow='';return}
   const p=PARTNERS.find(x=>x.id===siteOpenId);const s=siteOf(p.id);const main=BRAND_CONTENT[s.brands[0]];const code=`${p.contact.split(' ')[0].toUpperCase().slice(0,3)}-${1000+p.id}`;
   const prods=s.brands.flatMap(b=>BRAND_CONTENT[b].products.filter(x=>s.products.includes(x.sku)).map(x=>({...x,b})));
   const multi=s.brands.length>1;
   const initials=s.logo.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  const logoBlock=s.kind==='cobrand'?`<div class="ws-logo"><span class="ws-mark" style="background:${main.dark}">${initials}</span><span><b>${esc(s.logo)}</b><small>${t('site.authorised')} · ${s.brands.map(b=>BRANDS[b].name).join(' · ')}</small></span></div>`:`<div class="ws-logo"><span class="ws-mark" style="background:${main.dark}">${BRANDS[s.brands[0]].name[0]}</span><span><b>${BRANDS[s.brands[0]].name}</b><small>${esc(s.logo)} · ${t('site.authorised')}</small></span></div>`;
+  const logoBlock=s.kind==='cobrand'?`<div class="ws-logo"><span class="ws-mark" style="background:${main.dark}">${initials}</span><span><b>${esc(s.logo)}</b><small>${tDE('site.authorised')} · ${s.brands.map(b=>BRANDS[b].name).join(' · ')}</small></span></div>`:`<div class="ws-logo"><span class="ws-mark" style="background:${main.dark}">${BRANDS[s.brands[0]].name[0]}</span><span><b>${BRANDS[s.brands[0]].name}</b><small>${esc(s.logo)} · ${tDE('site.authorised')}</small></span></div>`;
   ov.innerHTML=`<div class="ws-bar"><span>👁 ${t('site.bar')} · <b>${siteHost(s)}</b> · ${s.kind==='mini'?t('site.mini'):t('site.cobrand')}</span><button class="btn sm" id="siteClose">← ${t('site.back')}</button></div>
   <div class="ws" data-notr style="--wb:${main.color};--wd:${main.dark}">
     <header class="ws-head">${logoBlock}<nav class="ws-nav"><a href="#ws-prod">Produkte</a><a href="#ws-apps">Anwendungen</a><a href="#ws-kontakt">Kontakt</a><a class="ws-cta" href="#ws-kontakt">${tDE('site.ask')}</a></nav></header>
     <section class="ws-hero"><div><div class="ws-eyebrow">${multi?s.brands.map(b=>BRANDS[b].name).join(' · '):BRANDS[s.brands[0]].name}${s.kind==='cobrand'?' × '+esc(s.logo):''}</div><h1>${s.tagline?esc(s.tagline):main.hero}</h1><p>${main.sub}</p><div class="ws-actions"><a class="ws-btn" href="#ws-kontakt">${tDE('site.ask')}</a><a class="ws-btn ghost" href="#ws-prod">Produkte ansehen</a></div><p class="ws-contact">📞 ${esc(s.phone)} · ${esc(p.contact)} · ${esc(p.city)}</p></div>
       <div class="ws-facts">${main.facts.map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join('')}</div></section>
     ${multi?`<section class="ws-brands">${s.brands.map(b=>`<div><span class="ws-pill" style="background:${BRAND_CONTENT[b].color}">${BRANDS[b].name}</span><b>${BRAND_CONTENT[b].claim}</b><small>${BRAND_CONTENT[b].sub}</small></div>`).join('')}</section>`:''}
-    <section id="ws-prod" class="ws-sec"><h2>Produkte</h2><div class="ws-grid">${prods.map(x=>`<article class="ws-card"><div class="ws-thumb" style="background:${BRAND_CONTENT[x.b].color}"><span>${x.sku}</span></div><div><small class="ws-brandtag">${BRANDS[x.b].name}</small><h3>${esc(x.n)}</h3><p>${esc(x.d)}</p><div class="ws-price">${s.prices&&x.price?eur(x.price)+' <small>netto</small>':tDE('site.priceOnReq')}</div><a href="#ws-kontakt" class="ws-btn sm">${tDE('site.ask')}</a></div></article>`).join('')}</div></section>
+    <section id="ws-prod" class="ws-sec"><h2>Produkte</h2><div class="ws-grid">${prods.map(x=>`<article class="ws-card"><div class="ws-thumb" style="background:${BRAND_CONTENT[x.b].color}">${x.img?`<img src="${SIMG(x.img)}" alt="${esc(x.n)}" loading="lazy" onerror="this.remove()">`:`<span>${x.sku}</span>`}</div><div><small class="ws-brandtag">${BRANDS[x.b].name}</small><h3>${esc(x.n)}</h3><p>${esc(x.d)}</p><div class="ws-price">${s.prices&&x.price?eurDE(x.price)+' <small>netto</small>':tDE('site.priceOnReq')}</div><a href="#ws-kontakt" class="ws-btn sm">${tDE('site.ask')}</a></div></article>`).join('')}</div></section>
     <section class="ws-sec ws-usp"><h2>Warum ${s.kind==='cobrand'?esc(s.logo):BRANDS[s.brands[0]].name}?</h2><ul>${[...new Set(s.brands.flatMap(b=>BRAND_CONTENT[b].usps))].slice(0,6).map(u=>`<li>${u}</li>`).join('')}</ul>${main.extra?`<div class="ws-extra">${main.extra.map(([a,b])=>`<div><b>${a}</b><span>${b}</span></div>`).join('')}</div>`:''}</section>
     <section id="ws-apps" class="ws-sec"><h2>Anwendungen</h2><div class="ws-apps">${[...new Set(s.brands.flatMap(b=>BRAND_CONTENT[b].apps))].map(a=>`<span>${a}</span>`).join('')}</div></section>
     <section class="ws-sec"><h2>So funktioniert's</h2><div class="ws-steps">${main.steps.map(([h,d],i)=>`<div><span class="ws-num" style="background:${main.color}">${i+1}</span><b>${h}</b><small>${d}</small></div>`).join('')}</div></section>
-    <section class="ws-sec"><h2>Referenzen${multi?'':' · '+BRANDS[s.brands[0]].name}</h2><div class="ws-grid">${s.brands.flatMap(b=>BRAND_CONTENT[b].refs.map(r=>[b,...r])).slice(0,multi?6:3).map(([b,ti,wh,res])=>`<article class="ws-card"><div class="ws-thumb ws-ref" style="background:linear-gradient(135deg,${BRAND_CONTENT[b].color},${BRAND_CONTENT[b].dark})"><span>${BRANDS[b].name}</span></div><div><small class="ws-brandtag">${wh}</small><h3>${ti}</h3><div class="ws-result" style="color:${BRAND_CONTENT[b].color}">${res}</div></div></article>`).join('')}</div></section>
-    <section class="ws-sec ws-about"><div><h2>Über ${s.kind==='cobrand'?esc(s.logo):esc(p.contact)}</h2><p>${s.kind==='cobrand'?`${esc(s.logo)} ist ${tDE('site.authorised').toLowerCase()} für ${s.brands.map(b=>BRANDS[b].name).join(', ')} in ${esc(p.state)}. Beratung, Lieferung und Montage aus einer Hand – mit dem Service und den Garantien der Gruppe.`:`${esc(p.contact)} berät Sie persönlich zu ${BRANDS[s.brands[0]].name} in ${esc(p.state)} – von der ersten Anfrage über den 3D-Vorentwurf bis zur Montage durch das Werksteam.`}</p>
+    <section class="ws-sec"><h2>Referenzen${multi?'':' · '+BRANDS[s.brands[0]].name}</h2><div class="ws-grid">${s.brands.flatMap(b=>BRAND_CONTENT[b].refs.map((r,i)=>[b,...r,(BRAND_CONTENT[b].refImgs||[])[i]])).slice(0,multi?6:3).map(([b,ti,wh,res,im])=>`<article class="ws-card"><div class="ws-thumb ws-ref" style="background:linear-gradient(135deg,${BRAND_CONTENT[b].color},${BRAND_CONTENT[b].dark})">${im?`<img src="${SIMG(im)}" alt="" loading="lazy" onerror="this.remove()">`:`<span>${BRANDS[b].name}</span>`}</div><div><small class="ws-brandtag">${wh}</small><h3>${ti}</h3><div class="ws-result" style="color:${BRAND_CONTENT[b].color}">${res}</div></div></article>`).join('')}</div></section>
+    <section class="ws-sec ws-about"><div><h2>Über ${s.kind==='cobrand'?esc(s.logo):esc(p.contact)}</h2><p>${s.kind==='cobrand'?`${esc(s.logo)} ist ${tDE('site.authorised').toLowerCase()} für ${s.brands.map(b=>BRANDS[b].name).join(', ')} in ${esc(p.state)}. Beratung, Lieferung und Montage aus einer Hand – mit dem Service und den Garantien der Gruppe.`:main.aboutMini?`${esc(p.contact)} ${main.aboutMini}`:`${esc(p.contact)} berät Sie persönlich zu ${BRANDS[s.brands[0]].name} in ${esc(p.state)} – von der ersten Anfrage über den 3D-Vorentwurf bis zur Montage durch das Werksteam.`}</p>
         <div class="ws-tags">${p.ind.map(i=>`<span>${esc(i)}</span>`).join('')}</div>
         <dl class="ws-kv"><dt>Einsatzgebiet</dt><dd>${esc(p.city)} + 100 km · ${esc(p.state)}</dd><dt>Erreichbar</dt><dd>Mo–Fr 9–18 Uhr · ${esc(s.phone)}</dd><dt>Referenz</dt><dd>${code}</dd></dl></div>
       <div class="ws-badges">${[...new Set(s.brands.flatMap(b=>BRAND_CONTENT[b].badges))].map(b=>`<span>✓ ${b}</span>`).join('')}</div></section>
