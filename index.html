@@ -158,6 +158,18 @@ tr:last-child td{border:0}tbody tr{cursor:pointer}tbody tr:hover td{background:v
 .perm>div{padding:7px 6px;border-bottom:1px solid var(--line)}
 .perm .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center}
 .perm .c{text-align:center}
+/* Firmenzentrale look */
+body.hq{--accent:#1d4e89;--accent-soft:#e6eef8;--accent-fg:#ffffff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.hq{--accent:#7fb0ea;--accent-soft:#16283d;--accent-fg:#0b1624}}
+:root[data-theme="dark"] body.hq{--accent:#7fb0ea;--accent-soft:#16283d;--accent-fg:#0b1624}
+body.hq .side{background:#0f2238;color:#e3ecf7;border-right-color:#0f2238}
+body.hq .side .nav button{color:#cddbee}body.hq .side .nav button:hover{background:#18324f}
+body.hq .side .nav button.on{background:#1d4e89;color:#fff}
+body.hq .side .navlabel,body.hq .side .brand small{color:#8fa7c4}
+body.hq .brand .mark{background:#b8862b;color:#fff}
+.cred-pw{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;letter-spacing:.02em}
+.doorcard{display:grid;gap:8px;border-top:4px solid var(--dc)}
+.doorcard .url{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;word-break:break-all}
 /* TechNS console look */
 body.console{--accent:#5b4fd6;--accent-soft:#ecebfb;--accent-fg:#ffffff}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.console{--accent:#a69df5;--accent-soft:#25234a;--accent-fg:#14122b}}
@@ -312,7 +324,8 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
 <div id="gate" hidden>
   <form class="box" id="gateForm">
     <div class="brand"><div class="mark">B2B</div><div><b>B2B Sales Panel</b><small>Moonzelt · Euroconteiner · Wasserernte</small></div></div>
-    <div><label for="gatePw" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px" data-i="gate.pw">Zugangscode</label><input id="gatePw" type="password" autocomplete="current-password" autofocus></div>
+    <div id="gateUserWrap" hidden><label for="gateUser" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Benutzername</label><input id="gateUser" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+    <div><label for="gatePw" id="gatePwLbl" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px" data-i="gate.pw">Zugangscode</label><input id="gatePw" type="password" autocomplete="current-password" autofocus></div>
     <div class="err" id="gateErr"></div>
     <button class="btn p" type="submit" style="justify-content:center" data-i="gate.btn">Anmelden</button>
     <small class="hint" data-i="gate.hint">Demo-Zugang · nur für eingeladene Personen</small>
@@ -665,7 +678,7 @@ const px=(lon,lat)=>[(lon-5.7)*62,(55.3-lat)*62*1.55];
 
 /* ---------- access model (Super Admin controls what each partner sees) ---------- */
 const MODULES=['dash','network','pool','leads','myleads','referral','pricelist','orders','stock','install','site','earn','mycontract','dam','notif'];
-const MOD_LABEL=m=>({chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
+const MOD_LABEL=m=>({hqhome:'Übersicht',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
 const DEFAULT_ACCESS={
  leadgen:['dash','myleads','referral','site','earn','mycontract','dam','notif'],
  freelancer:['dash','pool','myleads','stock','install','site','earn','mycontract','dam','notif'],
@@ -680,12 +693,19 @@ const mainType=p=>p.roles.slice().sort((a,b)=>TYPES.indexOf(b.t)-TYPES.indexOf(a
 /* ---------- state ---------- */
 const VIEWERS=[{id:"admin",label:()=>"★ "+t('types.admin'),type:"admin",partner:null},
  ...PARTNERS.map(p=>({id:"p"+p.id,label:()=>t('types.'+mainType(p))+" · "+p.name,type:mainType(p),partner:p.id}))];
-/* ---------- two doors: tenant portal vs. TechNS console ---------- */
-let CONSOLE=(()=>{try{return location.pathname.replace(/\/+$/,'')==='/console'||location.hash==='#console'}catch(e){return false}})();
-function portalUrl(){return location.pathname.replace(/\/+$/,'')==='/console'?'/':'#'}
-function consoleUrl(){return location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)?'/console':'#console'}
+/* ---------- doors: portal (/), TechNS console, Firmenzentrale, 4 partner doors ---------- */
+const DOOR_LIST=['console','zentrale','partner','freelancer','leadgen','distributor'];
+const DOOR=(()=>{try{const seg=location.pathname.replace(/\/+$/,'').split('/').pop();if(DOOR_LIST.includes(seg))return seg;const h=location.hash.slice(1);return DOOR_LIST.includes(h)?h:''}catch(e){return ''}})();
+let CONSOLE=DOOR==='console';const HQ=DOOR==='zentrale';const PDOOR=['partner','freelancer','leadgen','distributor'].includes(DOOR)?DOOR:null;
+const GKEY='b2b-gate'+(DOOR?':'+DOOR:''),KKEY='b2b-kind'+(DOOR?':'+DOOR:''),PKEY='b2b-pid'+(DOOR?':'+DOOR:'');
+let PID=(()=>{try{return +sessionStorage.getItem(PKEY)||null}catch(e){return null}})();
+const LIVE=(()=>{try{return location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)}catch(e){return false}})();
+function doorUrl(d){return LIVE?'/'+(d||''):(d?'#'+d:'#')}
+function portalUrl(){return doorUrl('')}
+function consoleUrl(){return doorUrl('console')}
+const DOOR_META={partner:{n:'Händler-Portal',c:'#0f6f8c',ic:'🏪',type:'partner'},freelancer:{n:'Freelancer-Portal',c:'#b07a0e',ic:'🧭',type:'freelancer'},leadgen:{n:'Leadgenerator-Portal',c:'#4f6b7d',ic:'📣',type:'leadgen'},distributor:{n:'Distributor-Portal',c:'#b23535',ic:'🛰',type:'distributor'}};
 
-let viewer=VIEWERS[0], page=CONSOLE?"chome":"dash", brandF="all", selPartner=null;
+let viewer=VIEWERS[0], page=CONSOLE?"chome":HQ?"hqhome":"dash", brandF="all", selPartner=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const eur=n=>new Intl.NumberFormat(lang==='tr'?'tr-TR':lang==='en'?'en-IE':'de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
@@ -698,6 +718,7 @@ function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');se
 /* ---------- navigation ---------- */
 function navItems(){
   const unread=NOTIFS.filter(n=>n.un).length;
+  if(HQ) return [{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}];
   if(CONSOLE) return [
     {s:'console'},{k:'chome',ic:'◆'},{k:'tenants',ic:'🏢'},{k:'rollout',ic:'🚀'},{k:'codes',ic:'🔑'},
     {s:'consoleOps'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),...(ph(1)?[{k:'security',ic:'🛡️'}]:[]),...(ph(3)?[{k:'billing',ic:'💳'},{k:'pilot',ic:'🎯'}]:[]),...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),
@@ -710,8 +731,8 @@ function navItems(){
 }
 function renderNav(){
   const items=navItems();
-  if(!items.some(i=>i.k===page)) page=CONSOLE?'chome':'dash';
-  $('#nav').innerHTML=items.map(i=>i.s?`<div class="navlabel">${i.s==='public'?'Website':i.s==='console'?'Plattform':i.s==='consoleOps'?'Betrieb':i.s==='consoleDocs'?'Produkt':t('sec.'+i.s)}</div>`:
+  if(!items.some(i=>i.k===page)) page=CONSOLE?'chome':HQ?'hqhome':'dash';
+  $('#nav').innerHTML=items.map(i=>i.s?`<div class="navlabel">${i.s==='public'?'Website':i.s==='hq'?'Firmenzentrale':i.s==='console'?'Plattform':i.s==='consoleOps'?'Betrieb':i.s==='consoleDocs'?'Produkt':t('sec.'+i.s)}</div>`:
     `<button class="${i.k===page?'on':''}" data-k="${i.k}"><span class="ic">${i.ic}</span>${i.k==='register'?t('reg.nav'):MOD_LABEL(i.k)}${i.badge?`<span class="badge">${i.badge}</span>`:''}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{page=b.dataset.k;selPartner=null;render();$('#side').classList.remove('open')});
 }
@@ -1400,6 +1421,61 @@ let INVOICES=[{no:"RE-2026-1041",date:"2026-10-01",amount:1290,st:'paid'},{no:"R
 
 
 
+
+/* ---------- Firmenzentrale (umbrella company) ---------- */
+let CREDS={list:null,loading:false,err:'',show:{},door:'all'};
+async function hqSync(){
+  CREDS.loading=true;
+  const payload=PARTNERS.map(p=>({id:p.id,name:p.name,doors:[...new Set(p.roles.map(r=>r.t))]}));
+  try{
+    if(GATE_API){const r=await gateApi({action:'pcreds_sync',token:gateToken(),partners:payload});if(r.ok){CREDS.list=r.creds;CREDS.err=''}else CREDS.err='Keine Berechtigung – bitte neu anmelden.'}
+    else CREDS.list=localCreds();
+  }catch(e){CREDS.err=t('gate.neterr')}
+  CREDS.loading=false;render();
+}
+async function hqAct(action,id){
+  if(GATE_API){const r=await gateApi({action,token:gateToken(),id});if(r.ok){CREDS.list=CREDS.list.map(c=>c.id===id?r.cred:c)}}
+  else{const L=localCreds();const c=L.find(x=>x.id===id);if(action==='pcreds_reset'){c.pass=['Zelt','Regen','Anker','Wolke'][Math.floor(Math.random()*4)]+'-'+String(Math.floor(1000+Math.random()*9000))+'-'+['halle','linde','brise'][Math.floor(Math.random()*3)]}else c.active=!c.active;saveLocalCreds(L);CREDS.list=L}
+  AUDIT.unshift({who:'Firmenzentrale',what:(action==='pcreds_reset'?'Passwort neu erzeugt: ':'Zugang '+(CREDS.list.find(c=>c.id===id).active?'entsperrt':'gesperrt')+': ')+pName(id),when:new Date().toISOString().slice(0,16).replace('T',' ')});
+  render();
+}
+const fullUrl=d=>(LIVE?location.origin:'https://b2b-portal.foundercheck.de')+'/'+d;
+function viewHqHome(){
+  if(!CREDS.list&&!CREDS.loading){hqSync()}
+  const L=CREDS.list||[];const by=d=>L.filter(c=>c.doors.includes(d)).length;
+  const recent=L.filter(c=>c.lastLogin).sort((a,b)=>b.lastLogin-a.lastLogin).slice(0,6);
+  return `<div class="grid kpis" style="margin-bottom:14px">${Object.entries(DOOR_META).map(([d,M])=>kpi(M.ic+' '+M.n.replace('-Portal',''),L.length?by(d):'…','')).join('')}${kpi('Gesperrt',L.filter(c=>!c.active).length,'',L.some(c=>!c.active))}${kpi('Anmeldungen',L.reduce((a,c)=>a+(c.logins||0),0),'gesamt')}</div>
+  <div class="grid two">
+    <div class="card"><div class="hd"><h2>Letzte Anmeldungen</h2><span class="sp"></span><button class="btn sm" data-goto="hqcreds">Alle Zugänge →</button></div>
+      ${recent.length?`<div class="feed">${recent.map(c=>`<div class="it"><span class="dot" style="background:var(--ok);margin-top:6px"></span><span><b>${esc(c.name)}</b><br><small style="color:var(--muted)">${c.user}</small></span><small>${new Date(c.lastLogin).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</small></div>`).join('')}</div>`:'<p style="margin:0;color:var(--muted)">Noch keine Partner-Anmeldungen.</p>'}</div>
+    <div class="card"><div class="hd"><h2>Zuständigkeit</h2></div><dl class="kv"><dt>Firmenzentrale</dt><dd>vergibt & sperrt Partner-Zugänge, sieht alle Eingänge</dd><dt>Super Admin</dt><dd>operativer Betrieb (Leads, Verträge, Material) – <b>kein</b> Zugriff auf Zugangsdaten</dd><dt>Partner</dt><dd>nur über den eigenen Eingang, nur eigene Daten</dd><dt>TechNS</dt><dd>Plattform-Betrieb, keine Partner-Passwörter</dd></dl></div>
+  </div>`;
+}
+function viewHqCreds(){
+  if(!CREDS.list&&!CREDS.loading){hqSync()}
+  if(!CREDS.list)return `<div class="card"><p style="margin:0;color:var(--muted)">${CREDS.err||'Zugänge werden geladen…'}</p></div>`;
+  const L=CREDS.list.filter(c=>CREDS.door==='all'||c.doors.includes(CREDS.door));
+  const fmt=ms=>ms?new Date(ms).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+  return `<div class="card"><div class="hd"><h2>Partner-Zugänge</h2><span class="pill">${L.length}</span><span class="sp"></span>
+      <div class="chips"><button class="chip ${CREDS.door==='all'?'on':''}" data-cdoor="all">Alle</button>${Object.entries(DOOR_META).map(([d,M])=>`<button class="chip ${CREDS.door===d?'on':''}" data-cdoor="${d}"><span class="dot" style="background:${M.c}"></span>${M.n.replace('-Portal','')}</button>`).join('')}</div>
+      <button class="btn sm" data-act="sendcreds">✉ Zugangsdaten senden</button></div>
+    <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">🔒 Nur in der Firmenzentrale sichtbar. Super Admin und TechNS haben keinen Zugriff auf Partner-Passwörter. Jede Änderung wird protokolliert.</p>
+    <div class="tw"><table><thead><tr><th>Partner</th><th>Eingang</th><th>Benutzername</th><th>Passwort</th><th>Status</th><th>Letzte Anmeldung</th><th></th></tr></thead><tbody>
+    ${L.map(c=>`<tr style="cursor:default"><td><b>${esc(c.name)}</b></td><td>${c.doors.map(d=>`<a href="${doorUrl(d)}" target="_blank" class="tag" style="color:${DOOR_META[d].c};text-decoration:none">${DOOR_META[d].ic} ${d}</a>`).join(' ')}</td>
+      <td><span class="cred-pw">${c.user}</span> <button class="btn sm" data-act="copy" data-v="${c.user}" title="Kopieren">⧉</button></td>
+      <td><span class="cred-pw">${CREDS.show[c.id]?esc(c.pass):'••••••••••'}</span> <button class="btn sm" data-pwshow="${c.id}" title="Anzeigen">${CREDS.show[c.id]?'🙈':'👁'}</button> <button class="btn sm" data-act="copy" data-v="${esc(c.pass)}" title="Kopieren">⧉</button></td>
+      <td>${c.active?'<span class="st ok">aktiv</span>':'<span class="st crit">gesperrt</span>'}</td><td style="font-variant-numeric:tabular-nums"><small>${fmt(c.lastLogin)}${c.logins?` · ${c.logins}×`:''}</small></td>
+      <td style="white-space:nowrap"><button class="btn sm" data-preset="${c.id}" title="Neues Passwort">↻ neu</button> <button class="btn sm" data-ptoggle="${c.id}">${c.active?'⏸ sperren':'▶ entsperren'}</button></td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function viewHqDoors(){
+  const L=CREDS.list||[];
+  const what={partner:'Preisliste & Bestellung, Bestellungen, Lager, Montage, Vertrag, Material',freelancer:'Lead-Pool, eigene Leads, Lager, Montage, Vergütung, Vertrag, Material',leadgen:'Referenzcode, Lead erfassen, eigene Leads, Vergütung, Vertrag, Material',distributor:'Netzwerk, Lead-Pool, Leads, Preisliste, Bestellungen, Lager, Montage, Vergütung'};
+  return `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:14px">${Object.entries(DOOR_META).map(([d,M])=>`<div class="card doorcard" style="--dc:${M.c}"><div class="hd" style="margin:0"><h2>${M.ic} ${M.n}</h2><span class="sp"></span><span class="pill">${L.filter(c=>c.doors.includes(d)).length||'…'} Partner</span></div>
+    <div class="url">${fullUrl(d)}</div><small style="color:var(--muted)">Login: Benutzername + Passwort · sieht: ${what[d]}</small>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="copy" data-v="${fullUrl(d)}">⧉ Link kopieren</button><a class="btn sm" href="${doorUrl(d)}" target="_blank">Login-Seite öffnen ↗</a></div></div>`).join('')}</div>
+  <div class="card"><div class="hd"><h2>Interne Eingänge</h2></div><dl class="kv"><dt>Verwaltung</dt><dd><span class="cred-pw">${fullUrl('')}</span> · Super Admin / Mitarbeiter</dd><dt>Firmenzentrale</dt><dd><span class="cred-pw">${fullUrl('zentrale')}</span> · Geschäftsleitung (dieser Bereich)</dd></dl></div>`;
+}
+
 /* ---------- TechNS console views ---------- */
 function viewConsoleHome(){
   const mrr=TENANTS.reduce((a,x)=>a+x.mrr,0);const failed=QUEUE.filter(j=>j.st==='failed').length;
@@ -1541,22 +1617,27 @@ function render(){
   document.documentElement.lang=lang;
   $('#langs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));
   document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
-  document.body.classList.toggle('console',CONSOLE);
-  if(CONSOLE){viewer=VIEWERS[0];$('#t-brand').textContent='TechNS Console';document.querySelector('.brand small').textContent='B2B Sales Panel · Plattform';document.querySelector('.brand .mark').textContent='TN';}
-  else{const T=TENANTS.find(x=>x.id===curTenant);$('#t-brand').textContent='B2B Sales Panel';document.querySelector('.brand small').textContent=T&&T.id!=='t1'?T.name:'Moonzelt · Euroconteiner · Wasserernte';document.querySelector('.brand .mark').textContent='B2B';}
-  document.querySelector('.rolebox').hidden=CONSOLE;
+  document.body.classList.toggle('console',CONSOLE);document.body.classList.toggle('hq',HQ);
+  const bm=document.querySelector('.brand .mark'),bs=document.querySelector('.brand small');
+  if(PDOOR&&PID){viewer=VIEWERS.find(x=>x.partner===PID)||viewer}
+  if(CONSOLE){viewer=VIEWERS[0];$('#t-brand').textContent='TechNS Console';bs.textContent='B2B Sales Panel · Plattform';bm.textContent='TN';}
+  else if(HQ){viewer=VIEWERS[0];$('#t-brand').textContent='Firmenzentrale';bs.textContent=TENANTS[0].name+' · Partner-Zugänge';bm.textContent='HQ';}
+  else if(PDOOR){const M=DOOR_META[DOOR];$('#t-brand').textContent=M.n;bs.textContent=viewer.partner?pName(viewer.partner):'';bm.textContent=M.ic;document.body.style.setProperty('--accent',M.c)}
+  else{const T=TENANTS.find(x=>x.id===curTenant);$('#t-brand').textContent='B2B Sales Panel';bs.textContent=T&&T.id!=='t1'?T.name:'Moonzelt · Euroconteiner · Wasserernte';bm.textContent='B2B';}
+  document.querySelector('.rolebox').hidden=CONSOLE||HQ||!!PDOOR;
   $('#doorBtn').textContent=CONSOLE?'↗ Mandanten-Portal':'';$('#doorBtn').hidden=!CONSOLE;$('#doorBtn').setAttribute('href',portalUrl());
-  const gb=document.querySelector('#gate .brand');if(gb){gb.querySelector('b').textContent=CONSOLE?'TechNS Console':'B2B Sales Panel';gb.querySelector('small').textContent=CONSOLE?'Entwickler-Zugang · nur Master-Code':'Moonzelt · Euroconteiner · Wasserernte';gb.querySelector('.mark').textContent=CONSOLE?'TN':'B2B'}
+  const gb=document.querySelector('#gate .brand');if(gb){const M=PDOOR?DOOR_META[DOOR]:null;gb.querySelector('b').textContent=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':M?M.n:'B2B Sales Panel';gb.querySelector('small').textContent=CONSOLE?'Entwickler-Zugang · nur Master-Code':HQ?TENANTS[0].name+' · Zentrale-Code':M?TENANTS[0].name+' · Benutzername & Passwort':'Moonzelt · Euroconteiner · Wasserernte';gb.querySelector('.mark').textContent=CONSOLE?'TN':HQ?'HQ':M?M.ic:'B2B';if(M)gb.querySelector('.mark').style.background=M.c}
+  $('#gateUserWrap').hidden=!PDOOR;$('#gatePwLbl').textContent=PDOOR?'Passwort':HQ?'Zentrale-Code':t('gate.pw');
   const sel=$('#roleSel');sel.innerHTML=VIEWERS.map(v=>`<option value="${v.id}" ${v===viewer?'selected':''}>${v.label()}</option>`).join('');
   const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
   $('#roleChips').innerHTML=me?me.roles.map(r=>`<span class="pill" style="font-size:11px;padding:2px 8px"><span class="dot" style="background:${BRANDS[r.b].c}"></span>${t('types.'+r.t)} ${r.tier}</span>`).join(''):`<span class="pill t" style="font-size:11px;padding:2px 8px">★ ${t('types.admin')}</span>`;
-  $('#userPill').textContent='👤 '+(CONSOLE?'TechNS · Entwickler':me?me.contact:t('types.admin'));
-  const adminSess=(viewer.type==='admin'||CONSOLE)&&isMaster();$('#notesBtn').hidden=!adminSess;if(!adminSess)$('#notes').hidden=true;
+  $('#userPill').textContent='👤 '+(CONSOLE?'TechNS · Entwickler':HQ?'Geschäftsleitung':me?me.contact:t('types.admin'));
+  const adminSess=((viewer.type==='admin'&&!HQ)||CONSOLE)&&isMaster();$('#notesBtn').hidden=!adminSess;if(!adminSess)$('#notes').hidden=true;
   renderNav();
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
-  document.title=CONSOLE?'TechNS Console':'B2B Sales Panel';
+  document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':PDOOR?DOOR_META[DOOR].n:'B2B Sales Panel';
   const v=$('#view');
-  v.innerHTML=({chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
+  v.innerHTML=({hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
   /* access toggles (admin) */
   v.querySelectorAll('[data-mod],[data-brand],[data-flag]').forEach(cb=>cb.onchange=()=>{const p=PARTNERS.find(x=>x.id===selPartner);
     if(cb.dataset.mod){p.access.modules=MODULES.filter(m=>m==='dash'||(m===cb.dataset.mod?cb.checked:p.access.modules.includes(m)))}
@@ -1588,6 +1669,7 @@ function render(){
     else if(a==='ctrpdf')toast('PDF: '+TEMPLATES[ctrOpen.tpl].name+'.pdf');
     else if(a==='take'){const l=LEADS.find(x=>x.id===b.dataset.l);l.owner=viewer.partner;l.stage='contacted';render();toast(t('pool.taken'))}
     else if(a==='invite')toast(t('net.invited'));
+    else if(a==='sendcreds')toast('Zugangsdaten per E-Mail an '+((CREDS.list||[]).filter(c=>c.active&&(CREDS.door==='all'||c.doors.includes(CREDS.door))).length)+' Partner gesendet');
     else if(a==='newtenant'){TENANTS.push({id:'t'+(TENANTS.length+1),name:'Neuer Mandant '+(TENANTS.length+1),domain:'partner.neuer-mandant.de',accent:'#4b5fd6',plan:'Starter',brands:1,partners:()=>0,langs:['DE'],currency:'EUR',pipeline:['Neu','Kontaktiert','Angebot','Gewonnen','Verloren'],types:['Händler'],tiers:['Basic','Silver','Gold'],pilot:false,mrr:249});AUDIT.unshift({who:'Super Admin',what:'Mandant angelegt: Neuer Mandant '+TENANTS.length,when:new Date().toISOString().slice(0,16).replace('T',' ')});render();toast('Mandant angelegt · Supabase-Schema + RLS-Policies erstellt')}
     else if(a==='applywl'){const T=TENANTS.find(x=>x.id===curTenant);T.name=$('#wl_name').value;T.domain=$('#wl_domain').value;T.accent=$('#wl_color').value;document.documentElement.style.setProperty('--accent',T.accent);$('#t-brand').textContent=T.name;render();toast('White-Label angewendet')}
     else if(a==='sync'){SYNC.running=true;render();setTimeout(()=>{SYNC.running=false;SYNC.last=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});SYNC.log=['14 Leads → '+ADAPTERS.crm.sel+' aktualisiert','3 Deals ← '+ADAPTERS.crm.sel+' übernommen','1 Konflikt (L-2039): Portal gewinnt'];QUEUE.unshift({id:'j-'+(8826+QUEUE.length),type:'zoho.full_sync',ref:'manuell',st:'done',tries:1,at:SYNC.last});render();toast('Sync abgeschlossen')},1200)}
@@ -1627,6 +1709,11 @@ function render(){
     if(cb.dataset.sprod){s.products=cb.checked?[...new Set([...s.products,cb.dataset.sprod])]:s.products.filter(x=>x!==cb.dataset.sprod)}
     toast(t('saved'));if(cb.dataset.sflag==='enabled'||cb.dataset.skind||cb.dataset.sbrand)render()});
   ['s_logo','s_phone','s_tag'].forEach(id=>{const e=$('#'+id);if(e)e.onchange=()=>{const s=siteOf(viewer.partner);s[{s_logo:'logo',s_phone:'phone',s_tag:'tagline'}[id]]=e.value;toast(t('saved'))}});
+  /* Firmenzentrale hooks */
+  v.querySelectorAll('[data-cdoor]').forEach(b=>b.onclick=()=>{CREDS.door=b.dataset.cdoor;render()});
+  v.querySelectorAll('[data-pwshow]').forEach(b=>b.onclick=()=>{const id=+b.dataset.pwshow;CREDS.show[id]=!CREDS.show[id];render()});
+  v.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{hqAct('pcreds_reset',+b.dataset.preset).then(()=>{CREDS.show[+b.dataset.preset]=true;render();toast('Neues Passwort erzeugt')})});
+  v.querySelectorAll('[data-ptoggle]').forEach(b=>b.onclick=()=>hqAct('pcreds_toggle',+b.dataset.ptoggle));
   /* phase hooks */
   v.querySelectorAll('[data-phase]').forEach(b=>b.onclick=()=>installPhase(+b.dataset.phase));
   v.querySelectorAll('[data-phase-reset]').forEach(b=>b.onclick=()=>{PHASE=0;try{localStorage.setItem('b2b-phase',0)}catch(e){}page=CONSOLE?'rollout':'dash';render();toast('Demo auf Basis-Version zurückgesetzt')});
@@ -1665,7 +1752,7 @@ function render(){
 $('#roleSel').onchange=e=>{viewer=VIEWERS.find(v=>v.id===e.target.value);page='dash';selPartner=null;render()};
 $('#langs').onclick=e=>{const b=e.target.closest('button');if(!b)return;lang=b.dataset.l;try{localStorage.setItem('pp-lang',lang)}catch(x){}render()};
 $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
-$('#logoutBtn').onclick=()=>{lockAt(null);try{sessionStorage.removeItem('b2b-gate');sessionStorage.removeItem('b2b-kind');sessionStorage.removeItem('b2b-admin')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
+$('#logoutBtn').onclick=()=>{lockAt(null);try{sessionStorage.removeItem(PKEY);sessionStorage.removeItem(GKEY);sessionStorage.removeItem(KKEY);sessionStorage.removeItem('b2b-admin')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
 
 /* ---------- AI assistant (scripted demo) ---------- */
 const AI_RESP={
@@ -1682,7 +1769,6 @@ function aiMsg(who,txt){const d=document.createElement('div');d.className='msg '
 function aiSugg(){const w=document.createElement('div');w.className='chips';w.innerHTML=`<button class="chip" data-q="contract">${t('aiQ1')}</button><button class="chip" data-q="leads">${t('aiQ2')}</button>`;w.querySelectorAll('button').forEach(b=>b.onclick=()=>{w.remove();aiAsk(b.textContent,b.dataset.q)});$('#aiLog').appendChild(w)}
 function aiAsk(q,key){aiMsg('u',q);const k=key||(/vertr|sözleş|contract/i.test(q)?'contract':/lead|württ/i.test(q)?'leads':'other');setTimeout(()=>{aiMsg('a',AI_RESP[k][lang]());if(k==='other')aiSugg()},500)}
 $('#aiFab').onclick=aiOpen;$('#aiClose').onclick=()=>{$('#ai').hidden=true;$('#aiFab').hidden=false};
-window.addEventListener('hashchange',()=>{const c=location.hash==='#console';if(c!==CONSOLE){CONSOLE=c;page=c?'chome':'dash';selPartner=null;if(c&&!isMaster())showGate();render()}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const tok=gateToken();const e=tokenExp(tok);if(e&&!isMaster()&&e<=Date.now())lockAt(e)}});
 $('#aiForm').onsubmit=e=>{e.preventDefault();const v=$('#aiIn').value.trim();if(!v)return;$('#aiIn').value='';aiAsk(v)};
 
@@ -1701,28 +1787,54 @@ const GATE_HASH="70ecb282a5f0e87bc2396479c072c93726ff16f5d0abbbc855a556a80178c2a
 const GATE_API=location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)?'/api/gate':null;
 async function sha256(str){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function gateApi(payload){const r=await fetch(GATE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});return r.json()}
-function gateToken(){try{return sessionStorage.getItem('b2b-gate')}catch(e){return null}}
+function gateToken(){try{return sessionStorage.getItem(GKEY)}catch(e){return null}}
 function tokenExp(tok){try{if(!tok||tok.startsWith('local:'))return null;const p=JSON.parse(atob(tok.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));return p.exp||null}catch(e){return null}}
 let expTimer=null,expTick=null;
 function lockAt(exp){clearTimeout(expTimer);clearInterval(expTick);const pill=$('#expPill');if(!exp){if(pill)pill.hidden=true;return}
-  const lock=()=>{try{sessionStorage.removeItem('b2b-gate');sessionStorage.removeItem('b2b-kind')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent=t('gate.expired');$('#notes').hidden=true;$('#ai').hidden=true;showGate()};
+  const lock=()=>{try{sessionStorage.removeItem(GKEY);sessionStorage.removeItem(KKEY)}catch(e){}$('#gatePw').value='';$('#gateErr').textContent=t('gate.expired');$('#notes').hidden=true;$('#ai').hidden=true;showGate()};
   const ms=exp-Date.now();if(ms<=0){lock();return}
   expTimer=setTimeout(lock,ms);
   const upd=()=>{const r=exp-Date.now();if(r<=0)return;const h=Math.floor(r/3600e3),m=Math.floor(r%3600e3/60e3),sec=Math.floor(r%60e3/1e3);if(pill){pill.hidden=false;pill.textContent='⏱ '+t('gate.left')+' '+(h?h+' h ':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')}};
   upd();expTick=setInterval(upd,1000)}
-function isMaster(){try{return sessionStorage.getItem('b2b-kind')==='master'}catch(e){return false}}
-function setKind(k){try{sessionStorage.setItem('b2b-kind',k)}catch(e){}}
+function isMaster(){try{return sessionStorage.getItem(KKEY)==='master'}catch(e){return false}}
+function setKind(k){try{sessionStorage.setItem(KKEY,k)}catch(e){}}
 function showGate(){$('#gate').hidden=false;document.body.classList.add('locked');document.body.style.overflow='hidden';setTimeout(()=>$('#gatePw').focus(),50)}
 function hideGate(){$('#gate').hidden=true;document.body.classList.remove('locked');document.body.style.overflow='';MAPS.forEach(({map})=>{try{map.invalidateSize()}catch(e){}})}
-$('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();if(!code)return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
+const HQ_HASH="452c0761ac11cd00638eaff6d2b1e4e08da7c46e071092f4b8bd16dc2009b00b";
+const DENY={console:'Die Konsole ist nur mit dem Master-Code zugänglich.',zentrale:'Die Firmenzentrale ist nur mit dem Zentrale-Code zugänglich.',root:'Bitte den Eingang der Firmenzentrale bzw. Ihr Partner-Portal verwenden.'};
+function doorAllows(kind,sub){
+  if(CONSOLE)return kind==='master';
+  if(HQ)return kind==='hq';
+  if(PDOOR)return kind==='partner'&&String(sub||'').endsWith(':'+DOOR);
+  return kind==='master'||kind==='once';
+}
+function kindOfSub(sub){return sub==='master'?'master':sub==='hq'?'hq':String(sub||'').startsWith('p:')?'partner':'once'}
+function enterAs(kind,tok,pid){try{sessionStorage.setItem(GKEY,tok);if(pid){sessionStorage.setItem(PKEY,pid)}}catch(x){}setKind(kind);PID=pid||PID;hideGate();page=CONSOLE?'chome':HQ?'hqhome':'dash';render();lockAt(kind==='once'?tokenExp(tok):null)}
+/* offline (artifact) partner credentials */
+function localCreds(){let c=null;try{c=JSON.parse(localStorage.getItem('b2b-creds')||'null')}catch(e){}
+  if(!c){const W=['Zelt','Regen','Stahl','Halle','Wasser','Anker','Wolke','Linde'];c=PARTNERS.map((p,i)=>({id:p.id,name:p.name,doors:[...new Set(p.roles.map(r=>r.t))],user:p.name.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,24),pass:W[i%W.length]+'-'+String(1000+i*137%9000)+'-'+W[(i+3)%W.length].toLowerCase(),active:true,created:Date.now(),logins:0}));try{localStorage.setItem('b2b-creds',JSON.stringify(c))}catch(e){}}
+  return c}
+function saveLocalCreds(c){try{localStorage.setItem('b2b-creds',JSON.stringify(c))}catch(e){}}
+$('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();const user=($('#gateUser').value||'').trim().toLowerCase();if(!code||(PDOOR&&!user))return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
   try{
-    if(GATE_API){const r=await gateApi({action:'login',code});if(r.ok&&CONSOLE&&r.kind!=='master'){$('#gateErr').textContent='Die Konsole ist nur mit dem Master-Code zugänglich.';$('#gatePw').select()}else if(r.ok){try{sessionStorage.setItem('b2b-gate',r.token)}catch(x){}setKind(r.kind||'once');hideGate();render();lockAt(r.kind==='once'?tokenExp(r.token):null)}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
-    else{const h=await sha256(code);if(h===GATE_HASH){try{sessionStorage.setItem('b2b-gate','local:'+h)}catch(x){}setKind('master');hideGate();render()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
+    if(PDOOR){
+      if(GATE_API){const r=await gateApi({action:'plogin',door:DOOR,user,pass:code});if(r.ok)enterAs('partner',r.token,r.pid);else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
+      else{const c=localCreds().find(x=>x.user===user&&x.pass===code&&x.active&&x.doors.includes(DOOR));if(c){c.logins=(c.logins||0)+1;c.lastLogin=Date.now();saveLocalCreds(localCreds().map(x=>x.id===c.id?c:x));enterAs('partner','local:p:'+c.id+':'+DOOR,c.id)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
+    }else if(GATE_API){const r=await gateApi({action:'login',code});
+      if(r.ok&&doorAllows(r.kind))enterAs(r.kind,r.token);
+      else if(r.ok){$('#gateErr').textContent=CONSOLE?DENY.console:HQ?DENY.zentrale:DENY.root;$('#gatePw').select()}
+      else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
+    else{const h=await sha256(code);const kind=h===GATE_HASH?'master':h===HQ_HASH?'hq':null;
+      if(kind&&doorAllows(kind))enterAs(kind,'local:'+kind);else{$('#gateErr').textContent=kind?(CONSOLE?DENY.console:HQ?DENY.zentrale:DENY.root):t('gate.err');$('#gatePw').select()}}
   }catch(x){$('#gateErr').textContent=t('gate.neterr')}
   btn.disabled=false;btn.textContent=t('gate.btn')};
-(async()=>{const tok=gateToken();if(!tok||(CONSOLE&&!isMaster()&&!GATE_API)){showGate();return}
-  if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});if(!r.ok){try{sessionStorage.removeItem('b2b-gate')}catch(x){}showGate()}else if(CONSOLE&&r.sub!=='master'){showGate();$('#gateErr').textContent='Die Konsole ist nur mit dem Master-Code zugänglich.'}else{setKind(r.sub==='master'?'master':'once');render();lockAt(r.sub==='master'?null:(r.exp||tokenExp(tok)))}}catch(x){/* keep session on network hiccup */}}
-  else if(tok!=='local:'+GATE_HASH)showGate()})();
+(async()=>{const tok=gateToken();if(!tok){showGate();return}
+  if(tok.startsWith('local:')){const sub=tok.slice(6);if(!doorAllows(kindOfSub(sub),sub)){showGate()}return}
+  if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});
+    if(!r.ok||!doorAllows(kindOfSub(r.sub),r.sub)){try{sessionStorage.removeItem(GKEY)}catch(x){}showGate()}
+    else{const k=kindOfSub(r.sub);setKind(k);if(k==='partner'){PID=+String(r.sub).split(':')[1]}render();lockAt(k==='once'?(r.exp||tokenExp(tok)):null)}}catch(x){/* keep session on network hiccup */}}
+  else showGate()})();
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);const nd=DOOR_LIST.includes(h)?h:'';if(nd!==DOOR)location.reload()});
 render();
 </script>
 
