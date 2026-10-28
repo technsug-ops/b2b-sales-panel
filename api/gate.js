@@ -6,6 +6,7 @@
 //   It only works at that company's entrance and lands with exactly those rights.
 // POST /api/gate  { action: "list", admin }                 -> { ok, codes: [...] }
 // POST /api/gate  { action: "revoke", admin, id }           -> { ok }
+// POST /api/gate  { action: "tpass", token, old, pass }      -> team member changes own password (old sessions end)
 // POST /api/gate  { action: "plogin", door:"network", user, pass } -> partner login (type from account)
 // POST /api/gate  { action: "pcreds_sync|pcreds_reset|pcreds_toggle", token(hq) } -> partner credentials (Firmenzentrale only)
 //
@@ -106,7 +107,7 @@ const safeEq = (a, b) => { const x = Buffer.from(String(a)); const y = Buffer.fr
 function makeToken(sub, expCap, ten, extra) {
   let exp = Date.now() + SESSION_HOURS * 3600e3;
   if (expCap && expCap < exp) exp = expCap;
-  const payload = Buffer.from(JSON.stringify({ sub, exp, ...(ten ? { ten } : {}), ...(extra || {}) })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ sub, exp, iat: Date.now(), ...(ten ? { ten } : {}), ...(extra || {}) })).toString('base64url');
   const sig = createHmac('sha256', ADMIN_SECRET + MASTER_HASH).update(payload).digest('base64url');
   return `${payload}.${sig}`;
 }
@@ -178,6 +179,7 @@ async function main(req, res) {
     const d = scoped(verifyToken(body.token));
     const perms = d && String(d.sub).startsWith('t:') ? await permsOf(d.sub, T) : undefined;
     if (d && String(d.sub).startsWith('t:') && perms === null) return res.status(200).json({ ok: false });
+    { const mm = d && /^t:(\d+):/.exec(String(d.sub)); if (mm) { const mem = (await loadTeam(T)).find(x => x.id === Number(mm[1])); if (mem && mem.pwAt && !(d.iat >= mem.pwAt)) return res.status(200).json({ ok: false, error: 'pw_changed' }); } }
     return res.status(200).json({ ok: !!d, sub: d?.sub || null, exp: d?.exp || null, once: !!(d && d.once), perms, tenant: d ? (d.ten || (/^[tp]:/.test(String(d.sub)) ? 'aydemir' : null)) : null });
   }
 
@@ -225,6 +227,22 @@ async function main(req, res) {
     return res.status(200).json({ ok: true, token: makeToken('t:' + m.id + ':' + m.role, null, T), kind: 'team', tenant: T, role: m.role, roleName: role.name, perms: role.perms, name: m.name, user: m.user });
   }
 
+  if (action === 'tpass') {
+    // own password: needs the current one; sessions issued before the change are ended
+    const d = scoped(verifyToken(body.token));
+    const mm = d && /^t:(\d+):/.exec(String(d.sub));
+    if (!mm) return res.status(403).json({ ok: false, error: 'forbidden' });
+    const team = await loadTeam(T); const m = team.find(x => x.id === Number(mm[1]));
+    if (!m || !m.active) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (m.pwAt && !(d.iat >= m.pwAt)) return res.status(403).json({ ok: false, error: 'pw_changed' });
+    const old = String(body.old || ''), nw = String(body.pass || '');
+    if (!safeEq(m.hash, sha(old))) return res.status(401).json({ ok: false, error: 'old' });
+    if (nw.length < 10 || nw.length > 128 || !/[A-Za-zÄÖÜäöüß]/.test(nw) || !/\d/.test(nw)) return res.status(400).json({ ok: false, error: 'weak' });
+    if (nw === old) return res.status(400).json({ ok: false, error: 'same' });
+    m.hash = sha(nw); m.pwAt = Date.now(); await saveJson(pth(T, 'team'), team);
+    return res.status(200).json({ ok: true, token: makeToken(d.sub, null, T) });
+  }
+
   if (action && action.startsWith('team_')) {
     const d = scoped(verifyToken(body.token));
     if (!d || !((await permsOf(d.sub, T)) || []).includes('team')) return res.status(403).json({ ok: false, error: 'forbidden' });
@@ -255,7 +273,7 @@ async function main(req, res) {
     }
     const m = team.find(x => x.id === Number(body.id));
     if (!m) return res.status(404).json({ ok: false, error: 'not found' });
-    if (action === 'team_reset') { const pass = genPassword(); m.hash = sha(pass); await saveJson(TEAMP, team); return res.status(200).json({ ok: true, member: publicMember(m), pass }); }
+    if (action === 'team_reset') { const pass = genPassword(); m.hash = sha(pass); m.pwAt = Date.now(); await saveJson(TEAMP, team); return res.status(200).json({ ok: true, member: publicMember(m), pass }); }
     if (action === 'team_toggle') { if (d.sub === 't:' + m.id + ':' + m.role) return res.status(400).json({ ok: false, error: 'self' }); m.active = !m.active; await saveJson(TEAMP, team); return res.status(200).json({ ok: true, member: publicMember(m) }); }
     if (action === 'team_role') { m.role = roleKeys.includes(body.role) ? body.role : m.role; await saveJson(TEAMP, team); return res.status(200).json({ ok: true, member: publicMember(m) }); }
     return res.status(400).json({ ok: false, error: 'unknown action' });

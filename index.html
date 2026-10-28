@@ -1530,7 +1530,7 @@ function viewEarn(){
 function viewSettings(){
   const mods=['dash','partners','leads','contracts','orders','dam','notif','settings'];
   const matrix={admin:[1,1,1,1,1,1,1,1],staff:[1,1,1,1,1,1,1,0],distributor:[1,1,1,0,1,1,1,0],partner:[1,0,0,0,1,1,1,0],freelancer:[1,0,1,0,0,1,1,0],leadgen:[1,0,1,0,0,1,1,0]};
-  return `<div class="card" style="margin-bottom:14px"><div class="hd"><h2>Gebuchte Module</h2><span class="sp"></span><button class="btn sm" data-act="reqmod">Weitere Module anfragen</button></div>
+  return pwCard()+`<div class="card" style="margin-bottom:14px"><div class="hd"><h2>Gebuchte Module</h2><span class="sp"></span><button class="btn sm" data-act="reqmod">Weitere Module anfragen</button></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${CORE_DEF.map(([ic,n])=>`<span class="tag" style="font-size:12px">${ic} ${n}</span>`).join('')}${Object.entries(ADDON_DEF).map(([k,a])=>`<span class="tag" style="font-size:12px;${feat(k)?'border-color:var(--ok);color:var(--ok)':'opacity:.45;text-decoration:line-through'}">${a.ic} ${a.n}</span>`).join('')}</div>
     <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">${L4('Partnertypen','Partner türleri','Partner types','Partnertypes')}: ${typesOn().map(k=>t('types.'+k)).join(' · ')}</p></div>
   <div class="card" style="margin-bottom:14px"><div class="hd"><h2>${t('acc.all')}</h2><span style="color:var(--muted);font-size:12px">${t('acc.hint')}</span></div>
@@ -2011,7 +2011,29 @@ let INVOICES=[{no:"RE-2026-1041",date:"2026-10-01",amount:1290,st:'paid'},{no:"R
 
 /* ---------- Mein Bereich (employee self-service) ---------- */
 let meTab='profil',meClock=null,meLog=[['Mo 26.10.','07:58','16:41'],['Di 27.10.','08:03','16:35']],meReq=false,meProfileEdit=false;
-function viewMe(){
+/* ---------- own password (every team login with a personal account) ---------- */
+let PW={msg:'',ok:false,busy:false};
+const pwAllowed=()=>!!TEAMROLE&&TEAMUSER&&TEAMUSER!=='code';
+function pwCard(){if(!pwAllowed())return '';
+  const f=(id,l,ac)=>`<div class="f"><label for="${id}">${l}</label><input id="${id}" type="password" autocomplete="${ac}" spellcheck="false"></div>`;
+  return `<div class="card" style="margin-bottom:14px"><div class="hd"><h2>${ico('lock')} ${L4('Passwort ändern','Şifre değiştir','Change password','Wachtwoord wijzigen')}</h2><span class="sp"></span><span class="pill">${esc(TEAMUSER)}</span></div>
+    <p style="margin:0 0 10px;color:var(--muted);font-size:13px">${L4('Mindestens 10 Zeichen, mit Buchstaben und Ziffern. Nach der Änderung werden alle anderen Sitzungen dieses Kontos beendet.','En az 10 karakter, harf ve rakam içermeli. Değişiklikten sonra bu hesabın diğer tüm oturumları kapanır.','At least 10 characters, with letters and digits. After the change, all other sessions of this account are ended.','Minimaal 10 tekens, met letters en cijfers. Na de wijziging worden alle andere sessies van dit account beëindigd.')}</p>
+    <div class="frm">${f('pwOld',L4('Aktuelles Passwort','Mevcut şifre','Current password','Huidig wachtwoord'),'current-password')}<div class="f"></div>${f('pwNew',L4('Neues Passwort','Yeni şifre','New password','Nieuw wachtwoord'),'new-password')}${f('pwNew2',L4('Neues Passwort wiederholen','Yeni şifre (tekrar)','Repeat new password','Nieuw wachtwoord herhalen'),'new-password')}
+    <div class="f full" style="display:flex;gap:10px;align-items:center"><button class="btn p" id="pwSave" ${PW.busy?'disabled':''}>${L4('Passwort speichern','Şifreyi kaydet','Save password','Wachtwoord opslaan')}</button><span id="pwMsg" style="font-size:13px;color:${PW.ok?'var(--ok)':'var(--crit)'}">${esc(PW.msg)}</span></div></div></div>`}
+async function pwSave(){const o=$('#pwOld').value,n=$('#pwNew').value,n2=$('#pwNew2').value;const say=(m,ok)=>{PW.msg=m;PW.ok=!!ok;PW.busy=false;render()};
+  if(!o||!n)return say(L4('Bitte alle Felder ausfüllen.','Lütfen tüm alanları doldurun.','Please fill in all fields.','Vul alle velden in.'));
+  if(n!==n2)return say(L4('Die neuen Passwörter stimmen nicht überein.','Yeni şifreler eşleşmiyor.','The new passwords do not match.','De nieuwe wachtwoorden komen niet overeen.'));
+  const weak=n.length<10||!/[A-Za-zÄÖÜäöüß]/.test(n)||!/\d/.test(n);if(weak)return say(L4('Zu schwach: mindestens 10 Zeichen, Buchstaben und Ziffern.','Çok zayıf: en az 10 karakter, harf ve rakam.','Too weak: at least 10 characters, letters and digits.','Te zwak: minimaal 10 tekens, letters en cijfers.'));
+  if(n===o)return say(L4('Das neue Passwort muss sich vom alten unterscheiden.','Yeni şifre eskisinden farklı olmalı.','The new password must differ from the old one.','Het nieuwe wachtwoord moet anders zijn dan het oude.'));
+  PW.busy=true;
+  if(GATE_API){try{const r=await gateApi({action:'tpass',token:gateToken(),old:o,pass:n});
+      if(r.ok){try{sessionStorage.setItem(GKEY,r.token)}catch(e){}return say(L4('Passwort geändert. Andere Sitzungen wurden beendet.','Şifre değiştirildi. Diğer oturumlar kapatıldı.','Password changed. Other sessions were ended.','Wachtwoord gewijzigd. Andere sessies zijn beëindigd.'),1)}
+      return say(r.error==='old'?L4('Aktuelles Passwort ist falsch.','Mevcut şifre yanlış.','Current password is wrong.','Huidig wachtwoord is onjuist.'):r.error==='weak'?L4('Zu schwach: mindestens 10 Zeichen, Buchstaben und Ziffern.','Çok zayıf: en az 10 karakter, harf ve rakam.','Too weak: at least 10 characters, letters and digits.','Te zwak: minimaal 10 tekens, letters en cijfers.'):L4('Änderung nicht möglich.','Değişiklik yapılamadı.','Change not possible.','Wijzigen niet mogelijk.'))}
+    catch(e){return say(t('gate.neterr'))}}
+  const T=localTeam();const m=T.find(x=>x.user===TEAMUSER);if(!m||m.pass!==o)return say(L4('Aktuelles Passwort ist falsch.','Mevcut şifre yanlış.','Current password is wrong.','Huidig wachtwoord is onjuist.'));
+  m.pass=n;saveLocalTeam(T);say(L4('Passwort geändert.','Şifre değiştirildi.','Password changed.','Wachtwoord gewijzigd.'),1)}
+function viewMe(){return viewMe0()+(pwAllowed()?'<div style="height:14px"></div>'+pwCard():'')}
+function viewMe0(){
   const E=EMP.find(e=>e.user&&e.user===TEAMUSER);
   if(!E)return `<div class="card" style="text-align:center;padding:36px"><div style="font-size:32px">🙋</div><h2 style="margin:8px 0">Mein Bereich</h2><p style="color:var(--muted);max-width:52ch;margin:0 auto">Ihr Konto ist noch keinem Personaldatensatz zugeordnet. Bitte wenden Sie sich an die Personalabteilung.</p></div>`;
   const d=s=>s?new Date(s).toLocaleDateString(LOC()):'—';
@@ -2690,6 +2712,7 @@ function render(){
   const cu=$('#codesUnlock');if(cu)cu.onclick=()=>{codesState.admin=$('#codesAdmin').value.trim();try{sessionStorage.setItem('b2b-admin',codesState.admin)}catch(e){}codesLoad()};
   const ca=$('#codesAdmin');if(ca)ca.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();cu.click()}};
   const cl=$('#codesLock');if(cl)cl.onclick=()=>{codesState={admin:'',list:null,last:null,busy:false,err:''};try{sessionStorage.removeItem('b2b-admin')}catch(e){}render()};
+  const pws=$('#pwSave');if(pws)pws.onclick=pwSave;
   const cten=$('#codeTen');if(cten)cten.onchange=()=>{codesState.ten=cten.value;if(codesState.acc.startsWith('partner:'))codesState.acc='team:staff';render()};
   const cacc=$('#codeAcc');if(cacc)cacc.onchange=()=>{codesState.acc=cacc.value;render()};
   const cc2=$('#codeCreate');if(cc2)cc2.onclick=async()=>{const tg=codeTarget();if(!tg)return;const lbl=$('#codeLabel').value,ttl=+$('#codeTtl').value;codesState.busy=true;render();try{const r=await gateApi({action:'create',admin:codesState.admin,label:lbl,ttlHours:ttl,target:tg});if(r.ok){codesState.last=r;codesState.err=''}else codesState.err=t('gate.err')}catch(e){codesState.err=t('gate.neterr')}codesState.busy=false;await codesLoad()};
