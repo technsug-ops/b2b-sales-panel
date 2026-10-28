@@ -1581,7 +1581,7 @@ function viewTeam(){
 }
 
 /* ---------- Firmenzentrale (umbrella company) ---------- */
-let CREDS={list:null,loading:false,err:'',show:{},door:'all'};
+let CREDS={list:null,loading:false,err:'',show:{},door:'all',sel:new Set(),sent:{}};
 async function hqSync(){
   CREDS.loading=true;
   const payload=PARTNERS.map(p=>({id:p.id,name:p.name,doors:[...new Set(p.roles.map(r=>r.t))]}));
@@ -1616,14 +1616,14 @@ function viewHqCreds(){
   const fmt=ms=>ms?new Date(ms).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
   return `<div class="card"><div class="hd"><h2>Partner-Zugänge</h2><span class="pill">${L.length}</span><span class="sp"></span>
       <div class="chips"><button class="chip ${CREDS.door==='all'?'on':''}" data-cdoor="all">Alle</button>${Object.entries(DOOR_META).filter(([d])=>typeOn(d)).map(([d,M])=>`<button class="chip ${CREDS.door===d?'on':''}" data-cdoor="${d}"><span class="dot" style="background:${M.c}"></span>${M.n.replace('-Portal','')}</button>`).join('')}</div>
-      <button class="btn sm" data-act="sendcreds">✉ Zugangsdaten senden</button></div>
+      <button class="btn ${CREDS.sel.size?'p':''} sm" data-act="sendcreds" ${CREDS.sel.size?'':'disabled'}>✉ ${CREDS.sel.size?CREDS.sel.size+' ausgewählte senden':'Auswählen zum Senden'}</button></div>
     <p style="margin:0 0 10px;font-size:12px;color:var(--muted)">🔒 Nur für Geschäftsführer und Technik-Verantwortliche sichtbar. Verwaltungs-Mitarbeiter und TechNS haben keinen Zugriff auf Partner-Passwörter. Jede Änderung wird protokolliert.</p>
-    <div class="tw"><table><thead><tr><th>Partner</th><th>Eingang</th><th>Benutzername</th><th>Passwort</th><th>Status</th><th>Letzte Anmeldung</th><th></th></tr></thead><tbody>
-    ${L.map(c=>`<tr style="cursor:default"><td><b>${esc(c.name)}</b></td><td>${c.doors.map(d=>`<a href="${doorUrl(d)}" target="_blank" class="tag" style="color:${DOOR_META[d].c};text-decoration:none">${DOOR_META[d].ic} ${d}</a>`).join(' ')}</td>
+    <div class="tw"><table><thead><tr><th style="width:28px"><input type="checkbox" data-csall ${L.length&&L.every(c=>CREDS.sel.has(c.id))?'checked':''} title="Alle auswählen" style="accent-color:var(--accent)"></th><th>Partner</th><th>Eingang</th><th>Benutzername</th><th>Passwort</th><th>Status</th><th>Letzte Anmeldung</th><th></th></tr></thead><tbody>
+    ${L.map(c=>`<tr style="cursor:default;${CREDS.sel.has(c.id)?'background:var(--accent-soft)':''}"><td><input type="checkbox" data-csel="${c.id}" ${CREDS.sel.has(c.id)?'checked':''} ${c.active?'':'disabled'} style="accent-color:var(--accent)"></td><td><b>${esc(c.name)}</b>${CREDS.sent[c.id]?`<br><small style="color:var(--ok)">✉ gesendet ${CREDS.sent[c.id]}</small>`:''}</td><td>${c.doors.map(d=>`<a href="${doorUrl(d)}" target="_blank" class="tag" style="color:${DOOR_META[d].c};text-decoration:none">${DOOR_META[d].ic} ${d}</a>`).join(' ')}</td>
       <td><span class="cred-pw">${c.user}</span> <button class="btn sm" data-act="copy" data-v="${c.user}" title="Kopieren">⧉</button></td>
       <td><span class="cred-pw">${CREDS.show[c.id]?esc(c.pass):'••••••••••'}</span> <button class="btn sm" data-pwshow="${c.id}" title="Anzeigen">${CREDS.show[c.id]?'🙈':'👁'}</button> <button class="btn sm" data-act="copy" data-v="${esc(c.pass)}" title="Kopieren">⧉</button></td>
       <td>${c.active?'<span class="st ok">aktiv</span>':'<span class="st crit">gesperrt</span>'}</td><td style="font-variant-numeric:tabular-nums"><small>${fmt(c.lastLogin)}${c.logins?` · ${c.logins}×`:''}</small></td>
-      <td style="white-space:nowrap"><button class="btn sm" data-preset="${c.id}" title="Neues Passwort">↻ neu</button> <button class="btn sm" data-ptoggle="${c.id}">${c.active?'⏸ sperren':'▶ entsperren'}</button></td></tr>`).join('')}</tbody></table></div></div>`;
+      <td style="white-space:nowrap"><button class="btn sm" data-csend="${c.id}" ${c.active?'':'disabled'} title="Zugangsdaten an diesen Partner senden">✉</button> <button class="btn sm" data-preset="${c.id}" title="Neues Passwort">↻ neu</button> <button class="btn sm" data-ptoggle="${c.id}">${c.active?'⏸ sperren':'▶ entsperren'}</button></td></tr>`).join('')}</tbody></table></div></div>`;
 }
 function viewHqDoors(){
   const L=CREDS.list||[];
@@ -1850,7 +1850,7 @@ function render(){
     else if(a==='invite')toast(t('net.invited'));
     else if(a==='reqmod')toast('Anfrage an TechNS gesendet – wir melden uns innerhalb von 24 h');
     else if(a==='teamadd'){const n=$('#tm_name').value.trim();if(!n){$('#tm_name').focus();return}teamAct('team_add',{name:n,role:$('#tm_role').value})}
-    else if(a==='sendcreds')toast('Zugangsdaten per E-Mail an '+((CREDS.list||[]).filter(c=>c.active&&(CREDS.door==='all'||c.doors.includes(CREDS.door))).length)+' Partner gesendet');
+    else if(a==='sendcreds'){const ids=[...CREDS.sel];const now=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});ids.forEach(id=>CREDS.sent[id]=now);AUDIT.unshift({who:TEAMNAME||'Geschäftsführung',what:'Zugangsdaten per E-Mail gesendet an: '+ids.map(pName).join(', '),when:new Date().toISOString().slice(0,16).replace('T',' ')});CREDS.sel=new Set();render();toast('Zugangsdaten an '+ids.length+' Partner gesendet')}
     else if(a==='newtenant'){TENANTS.push({id:'t'+(TENANTS.length+1),name:'Neuer Mandant '+(TENANTS.length+1),domain:'partner.neuer-mandant.de',accent:'#4b5fd6',plan:'Starter',brands:1,partners:()=>0,langs:['DE'],currency:'EUR',pipeline:['Neu','Kontaktiert','Angebot','Gewonnen','Verloren'],types:['Händler'],tiers:['Basic','Silver','Gold'],pilot:false,mrr:249});AUDIT.unshift({who:'Verwaltung',what:'Mandant angelegt: Neuer Mandant '+TENANTS.length,when:new Date().toISOString().slice(0,16).replace('T',' ')});render();toast('Mandant angelegt · Supabase-Schema + RLS-Policies erstellt')}
     else if(a==='applywl'){const T=TENANTS.find(x=>x.id===curTenant);T.name=$('#wl_name').value;T.domain=$('#wl_domain').value;T.accent=$('#wl_color').value;document.documentElement.style.setProperty('--accent',T.accent);$('#t-brand').textContent=T.name;render();toast('White-Label angewendet')}
     else if(a==='sync'){SYNC.running=true;render();setTimeout(()=>{SYNC.running=false;SYNC.last=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});SYNC.log=['14 Leads → '+ADAPTERS.crm.sel+' aktualisiert','3 Deals ← '+ADAPTERS.crm.sel+' übernommen','1 Konflikt (L-2039): Portal gewinnt'];QUEUE.unshift({id:'j-'+(8826+QUEUE.length),type:'zoho.full_sync',ref:'manuell',st:'done',tries:1,at:SYNC.last});render();toast('Sync abgeschlossen')},1200)}
@@ -1929,6 +1929,9 @@ function render(){
   v.querySelectorAll('[data-trole]').forEach(sel=>sel.onchange=()=>teamAct('team_role',{id:+sel.dataset.trole,role:sel.value}));
   /* Firmenzentrale hooks */
   v.querySelectorAll('[data-cdoor]').forEach(b=>b.onclick=()=>{CREDS.door=b.dataset.cdoor;render()});
+  v.querySelectorAll('[data-csel]').forEach(c=>c.onchange=()=>{const id=+c.dataset.csel;c.checked?CREDS.sel.add(id):CREDS.sel.delete(id);render()});
+  v.querySelectorAll('[data-csall]').forEach(c=>c.onchange=()=>{const ids=(CREDS.list||[]).filter(x=>x.active&&(CREDS.door==='all'||x.doors.includes(CREDS.door))).map(x=>x.id);c.checked?ids.forEach(i=>CREDS.sel.add(i)):ids.forEach(i=>CREDS.sel.delete(i));render()});
+  v.querySelectorAll('[data-csend]').forEach(b=>b.onclick=()=>{const id=+b.dataset.csend;const cr=CREDS.list.find(x=>x.id===id);const P=PARTNERS.find(x=>x.id===id);CREDS.sent[id]=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});AUDIT.unshift({who:TEAMNAME||'Geschäftsführung',what:'Zugangsdaten per E-Mail gesendet an: '+cr.name,when:new Date().toISOString().slice(0,16).replace('T',' ')});render();toast('Zugangsdaten gesendet an '+cr.name+(P?' ('+P.mail+')':''))});
   v.querySelectorAll('[data-pwshow]').forEach(b=>b.onclick=()=>{const id=+b.dataset.pwshow;CREDS.show[id]=!CREDS.show[id];render()});
   v.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{hqAct('pcreds_reset',+b.dataset.preset).then(()=>{CREDS.show[+b.dataset.preset]=true;render();toast('Neues Passwort erzeugt')})});
   v.querySelectorAll('[data-ptoggle]').forEach(b=>b.onclick=()=>hqAct('pcreds_toggle',+b.dataset.ptoggle));
