@@ -29,11 +29,13 @@ const BUILTIN_ROLES = [
   { key: 'gf', name: 'Geschäftsführer', perms: PERMS.slice(), builtin: true, locked: true },
   { key: 'tech', name: 'Technik-Verantwortlicher', perms: ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'creds'], builtin: true },
   { key: 'staff', name: 'Verwaltung', perms: ['partners', 'leads', 'projects', 'orders', 'dam'], builtin: true },
+  { key: 'mitarbeiter', name: 'Mitarbeiter (nur Mein Bereich)', perms: [], builtin: true },
 ];
 async function loadRoles() {
   let r = await loadJson(ROLES_PATH);
   if (!r) { r = BUILTIN_ROLES.map(x => ({ ...x })); await saveJson(ROLES_PATH, r); }
   let changed = false;
+  if (!r.some(x => x.key === 'mitarbeiter')) { r.push({ ...BUILTIN_ROLES[3] }); changed = true; }
   for (const x of r) { if (x.key === 'gf' && x.perms.length !== PERMS.length) { x.perms = PERMS.slice(); changed = true; } if (x.builtin && !x.migratedProjects) { if (!x.perms.includes('projects')) x.perms.push('projects'); x.migratedProjects = true; changed = true; } }
   if (changed) await saveJson(ROLES_PATH, r);
   return r;
@@ -41,9 +43,9 @@ async function loadRoles() {
 async function permsOf(sub) {
   if (sub === 'hq') return PERMS.slice();
   const m = /^t:(\d+):([a-z0-9-]+)$/.exec(String(sub || ''));
-  if (!m) return [];
+  if (!m) return null;
   const team = await loadTeam(); const mem = team.find(x => x.id === Number(m[1]));
-  if (!mem || !mem.active) return [];
+  if (!mem || !mem.active) return null;
   const roles = await loadRoles(); const role = roles.find(x => x.key === mem.role);
   return role ? role.perms : [];
 }
@@ -51,10 +53,12 @@ const SEED_TEAM = [
   { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Aydemir-GF-2026' },
   { id: 2, name: 'Technik-Verantwortlicher', role: 'tech', user: 'technik', pass: 'Aydemir-Tech-2026' },
   { id: 3, name: 'Verwaltung', role: 'staff', user: 'verwaltung', pass: 'Aydemir-Team-2026' },
+  { id: 4, name: 'Mehmet K.', role: 'mitarbeiter', user: 'mehmet', pass: 'Aydemir-Mont-2026' },
 ];
 async function loadTeam() {
   let t = await loadJson(TEAM_PATH);
   if (!t) { t = SEED_TEAM.map(x => ({ id: x.id, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() })); await saveJson(TEAM_PATH, t); }
+  if (!t.some(x => x.user === 'mehmet')) { const x = SEED_TEAM[3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); await saveJson(TEAM_PATH, t); }
   return t;
 }
 const publicMember = m => ({ id: m.id, name: m.name, role: m.role, user: m.user, active: m.active, created: m.created, lastLogin: m.lastLogin || null, logins: m.logins || 0 });
@@ -138,7 +142,7 @@ async function main(req, res) {
   if (action === 'verify') {
     const d = verifyToken(body.token);
     const perms = d && String(d.sub).startsWith('t:') ? await permsOf(d.sub) : undefined;
-    if (d && String(d.sub).startsWith('t:') && !perms.length) return res.status(200).json({ ok: false });
+    if (d && String(d.sub).startsWith('t:') && perms === null) return res.status(200).json({ ok: false });
     return res.status(200).json({ ok: !!d, sub: d?.sub || null, exp: d?.exp || null, perms });
   }
 
@@ -180,12 +184,12 @@ async function main(req, res) {
     if (!m || !m.active || !safeEq(m.hash, sha(pass))) return res.status(401).json({ ok: false, error: 'invalid' });
     m.lastLogin = Date.now(); m.logins = (m.logins || 0) + 1; await saveJson(TEAM_PATH, team);
     const roles = await loadRoles(); const role = roles.find(x => x.key === m.role) || { name: m.role, perms: [] };
-    return res.status(200).json({ ok: true, token: makeToken('t:' + m.id + ':' + m.role), kind: 'team', role: m.role, roleName: role.name, perms: role.perms, name: m.name });
+    return res.status(200).json({ ok: true, token: makeToken('t:' + m.id + ':' + m.role), kind: 'team', role: m.role, roleName: role.name, perms: role.perms, name: m.name, user: m.user });
   }
 
   if (action && action.startsWith('team_')) {
     const d = verifyToken(body.token);
-    if (!d || !(await permsOf(d.sub)).includes('team')) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (!d || !((await permsOf(d.sub)) || []).includes('team')) return res.status(403).json({ ok: false, error: 'forbidden' });
     const team = await loadTeam(); const roles = await loadRoles(); const roleKeys = roles.map(x => x.key);
     if (action === 'team_list') return res.status(200).json({ ok: true, team: team.map(publicMember), roles, perms: PERMS });
     if (action === 'team_role_save') {
@@ -221,7 +225,7 @@ async function main(req, res) {
 
   if (action && action.startsWith('pcreds_')) {
     const d = verifyToken(body.token);
-    if (!d || !(await permsOf(d.sub)).includes('creds')) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (!d || !((await permsOf(d.sub)) || []).includes('creds')) return res.status(403).json({ ok: false, error: 'forbidden' });
     let creds = (await loadJson(CREDS_PATH)) || [];
     if (action === 'pcreds_sync') {
       const list = Array.isArray(body.partners) ? body.partners.slice(0, 500) : [];
