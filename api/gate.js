@@ -35,6 +35,10 @@ const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TC
 const pth = (T, kind) => T === 'aydemir' ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
 const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
+// packages: partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override in cfg.limits
+const PLAN_LIMITS = { Starter: { partners: 25, users: 5 }, Business: { partners: 100, users: 15 }, Group: { partners: 0, users: 0 } };
+const PLAN_DEFAULT = { aydemir: 'Group', 'ug-alu': 'Starter', sirius: 'Business' };
+function limitsOf(cfg, T) { const plan = PLAN_LIMITS[cfg && cfg.plan] ? cfg.plan : (PLAN_DEFAULT[T] || 'Starter'); const o = (cfg && cfg.limits) || {}; return { plan, partners: Number.isFinite(+o.partners) && o.partners !== '' && o.partners != null ? +o.partners : PLAN_LIMITS[plan].partners, users: Number.isFinite(+o.users) && o.users !== '' && o.users != null ? +o.users : PLAN_LIMITS[plan].users }; }
 // a token's tenant (tokens minted before tenancy belong to aydemir)
 const tokTenant = d => d && (d.ten || 'aydemir');
 const PERMS = ['partners', 'leads', 'projects', 'orders', 'install', 'dam', 'settings', 'hr', 'creds', 'team', 'acct', 'prices'];
@@ -221,7 +225,9 @@ async function main(req, res) {
     const types = {};
     for (const k of PTYPES) { const t = (inp.types || {})[k] || {}; types[k] = { on: t.on !== false, label: String(t.label || '').slice(0, 30) }; }
     if (!PTYPES.some(k => types[k].on)) return res.status(400).json({ ok: false, error: 'notype' });
-    const cfg = { features, types, updated: Date.now(), migInv: true, migPP: true, migF2: true };
+    const plan = PLAN_LIMITS[inp.plan] ? inp.plan : (PLAN_DEFAULT[T] || 'Starter');
+    const lim = {}; for (const k of ['partners', 'users']) { const v = inp.limits && inp.limits[k]; if (v !== undefined && v !== null && v !== '') lim[k] = Math.max(0, Math.min(100000, Math.floor(+v) || 0)); }
+    const cfg = { features, types, plan, ...(Object.keys(lim).length ? { limits: lim } : {}), updated: Date.now(), migInv: true, migPP: true, migF2: true };
     await saveJson(pth(T, 'tcfg'), cfg);
     return res.status(200).json({ ok: true, cfg });
   }
@@ -275,6 +281,8 @@ async function main(req, res) {
       return res.status(200).json({ ok: true });
     }
     if (action === 'team_add') {
+      const L = limitsOf((await loadJson(pth(T, 'tcfg'))) || tcfgDefault(T), T);
+      if (L.users && team.length >= L.users) return res.status(403).json({ ok: false, error: 'limit', limit: L.users, plan: L.plan });
       const role = roleKeys.includes(body.role) ? body.role : 'staff'; const name = String(body.name || '').trim().slice(0, 60) || 'Mitarbeiter';
       let u = slug(body.user || name) || 'user'; let k = u; let n = 2; while (team.some(x => x.user === k)) k = u + '-' + n++;
       const pass = genPassword(); const m = { id: Math.max(0, ...team.map(x => x.id)) + 1, name, role, user: k, hash: sha(pass), active: true, created: Date.now() };

@@ -76,6 +76,7 @@ h1{font-size:22px;font-weight:600}h2{font-size:16px;font-weight:600}h3{font-size
 .nav button:focus-visible,.btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .nav .ic{width:18px;text-align:center;opacity:.8}
 .nav .badge{margin-left:auto;background:var(--crit);color:#fff;font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600}
+.subtabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:-4px 0 16px}.subtabs button{display:inline-flex;align-items:center;gap:7px;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:500;padding:9px 12px;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;border-radius:6px 6px 0 0}.subtabs button:hover{color:var(--fg);background:var(--accent-soft)}.subtabs button.on{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}.subtabs .ic{display:inline-flex;opacity:.8}.subtabs .ic svg{width:15px;height:15px}.subtabs .badge{background:var(--crit);color:#fff;font-size:10px;padding:1px 6px;border-radius:99px}
 .navlabel{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 2px}
 .rolebox{margin-top:auto;border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--bg)}
 .rolebox label{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -1337,7 +1338,7 @@ function navItems(){
   if(HQ) return [{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}];
   if(CONSOLE) return [
     {s:'console'},{k:'chome',ic:'◆'},{k:'tenants',ic:'🏢'},{k:'rollout',ic:'🚀'},{k:'codes',ic:'🔑'},
-    {s:'consoleOps'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),...(ph(1)?[{k:'security',ic:'🛡️'}]:[]),...(ph(3)?[{k:'billing',ic:'💳'},{k:'pilot',ic:'🎯'}]:[]),...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),
+    {s:'consoleOps'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),...(ph(1)?[{k:'security',ic:'🛡️'}]:[]),...(ph(3)?[{k:'billing',ic:'💳'}]:[]),...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),
     {s:'consoleDocs'},{k:'bp',ic:'📘'},{k:'urls',ic:'🔗'}];
   const meItem=TEAMROLE&&feat('hr')?[{k:'me',ic:'🙋'}]:[];
   if(viewer.type==='admin'&&TEAMROLE&&!(TEAMPERMS||[]).length) return [{s:'mine'},...meItem,{k:'notif',ic:'🔔',badge:unread}];
@@ -1348,12 +1349,34 @@ function navItems(){
   const FM={pricelist:'orders',orders:'orders',stock:'stock',install:'install',site:'sites',projects:'projects'};
   return [{s:'me'},...MODULES.filter(m=>p.access.modules.includes(m)&&(!FM[m]||feat(FM[m]))).map(m=>({k:m,ic:ic[m],badge:m==='notif'?unread:0}))];
 }
+/* sidebar categories: many modules collapse into a few entries; members appear as tabs inside the page */
+const NAV_CATS=[
+ {id:'net',ic:'👥',l:['Partnernetz','Partner ağı','Partner network','Partnernetwerk'],m:['partners','perf','terr','program','contracts']},
+ {id:'sales',ic:'📥',l:['Vertrieb','Satış','Sales','Verkoop'],m:['leads','customers','quotes','pricing']},
+ {id:'ops',ic:'📦',l:['Aufträge & Logistik','Sipariş & lojistik','Orders & logistics','Orders & logistiek'],m:['orders','stock','install','returns','projects']},
+ {id:'fin',ic:'🧾',l:['Finanzen','Finans','Finance','Financiën'],m:['invoices','credit']},
+ {id:'mkt',ic:'🌐',l:['Marketing & Material','Pazarlama & materyal','Marketing & materials','Marketing & materiaal'],m:['sites','dam']},
+ {id:'adm',ic:'⚙️',l:['Einstellungen','Ayarlar','Settings','Instellingen'],m:['settings','hr','audit']},
+ {id:'hq',ic:'◆',l:['Firmenzentrale','Genel merkez','Head office','Hoofdkantoor'],m:['hqhome','hqcreds','hqdoors','team']},
+ {id:'porder',p:1,ic:'📦',l:['Bestellen','Sipariş','Ordering','Bestellen'],m:['pricelist','orders','stock','install']},
+ {id:'plead',p:1,ic:'📥',l:['Leads & Empfehlungen','Lead & tavsiye','Leads & referrals','Leads & aanbevelingen'],m:['pool','leads','myleads','referral']},
+ {id:'pacc',p:1,ic:'💶',l:['Vertrag & Vergütung','Sözleşme & kazanç','Contract & earnings','Contract & vergoeding'],m:['earn','mycontract']}];
+const catLbl=c=>L4(...c.l);
+function catOf(k,items){if(CONSOLE)return null;const ks=(items||navItems()).filter(i=>i.k).map(i=>i.k);const pv=!!viewer.partner;for(const c of NAV_CATS){if(!!c.p!==pv||!c.m.includes(k))continue;const mem=c.m.filter(x=>ks.includes(x));if(mem.length>1)return {...c,mem}}return null}
+function groupNav(items){if(CONSOLE)return items;const out=[];const done=new Set();
+  for(const i of items){if(!i.k){out.push(i);continue}const c=catOf(i.k,items);if(!c){out.push(i);continue}if(done.has(c.id))continue;done.add(c.id);
+    out.push({k:c.mem[0],ic:c.ic,cat:c,badge:c.mem.reduce((a,k)=>a+((items.find(x=>x.k===k)||{}).badge||0),0)})}
+  /* drop section labels left without entries */
+  return out.filter((x,ix,a)=>!x.s||(a[ix+1]&&!a[ix+1].s&&a[ix+2]&&!a[ix+2].s))}
+function subTabs(){const c=catOf(page);if(!c)return '';const items=navItems();
+  return `<div class="subtabs">${c.mem.map(k=>{const it=items.find(i=>i.k===k)||{};return `<button class="${k===page?'on':''}" data-subk="${k}"><span class="ic">${it.ic||''}</span>${MOD_LABEL(k)}${it.badge?`<span class="badge">${it.badge}</span>`:''}</button>`}).join('')}</div>`}
 function renderNav(){
   const items=navItems();
   if(PENDING&&!document.body.classList.contains('locked')&&gateToken()&&(!NET||PDOOR)){const x=routeFromRest(PENDING,items);if(x){page=x.k;selPartner=x.sel;selDetail=x.det||null}else{page='notfound';selDetail=null}PENDING=null}
   if(!items.some(i=>i.k===page)&&page!=='notfound'&&!(page==='register'&&document.body.classList.contains('public'))) page=CONSOLE?'chome':HQ?'hqhome':items.some(i=>i.k==='dash')?'dash':(items.find(i=>i.k&&i.k!=='me'&&i.k!=='notif')||items.find(i=>i.k)||{k:'dash'}).k;
-  $('#nav').innerHTML=deco(items.map(i=>i.s?`<div class="navlabel">${i.s==='public'?'Website':i.s==='mine'?'Mein Bereich':i.s==='hq'?'Firmenzentrale':i.s==='console'?'Plattform':i.s==='consoleOps'?'Betrieb':i.s==='consoleDocs'?'Produkt':t('sec.'+i.s)}</div>`:
-    `<button class="${i.k===page?'on':''}" data-k="${i.k}"><span class="ic">${i.ic}</span>${i.k==='register'?t('reg.nav'):MOD_LABEL(i.k)}${i.badge?`<span class="badge">${i.badge}</span>`:''}</button>`).join(''));
+  const shown=groupNav(items);
+  $('#nav').innerHTML=deco(shown.map(i=>i.s?`<div class="navlabel">${i.s==='public'?'Website':i.s==='mine'?'Mein Bereich':i.s==='hq'?'Firmenzentrale':i.s==='console'?'Plattform':i.s==='consoleOps'?'Betrieb':i.s==='consoleDocs'?'Produkt':t('sec.'+i.s)}</div>`:
+    `<button class="${i.cat?(i.cat.mem.includes(page)?'on':''):(i.k===page?'on':'')}" data-k="${i.k}"><span class="ic">${i.ic}</span>${i.cat?catLbl(i.cat):i.k==='register'?t('reg.nav'):MOD_LABEL(i.k)}${i.badge?`<span class="badge">${i.badge}</span>`:''}</button>`).join(''));
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{PENDING=null;page=b.dataset.k;selPartner=null;selDetail=null;render();$('#side').classList.remove('open')});
 }
 
@@ -1483,7 +1506,7 @@ function partnerCard(id){
   return `<button class="btn sm" id="back" style="margin-bottom:12px">← ${t('nav.partners')}</button>
   <div class="detail">
     <div style="display:grid;gap:14px;align-content:start">
-      <div class="card"><div class="hd"><h2>${esc(p.name)}</h2>${stTag(p.status)}<span class="sp"></span><button class="btn sm" data-act="save">✎ ${t('partnerCard')}</button>${viewer.type==='admin'&&ph(1)?`<button class="btn sm" data-act="offboard" style="color:var(--crit)">⏏ Offboarding</button>`:''}</div>
+      <div class="card"><div class="hd"><h2>${esc(p.name)}</h2>${stTag(p.status)}<span class="sp"></span><button class="btn sm" data-act="save">✎ ${t('partnerCard')}</button>${p.status==='pending'&&viewer.type==='admin'?`<button class="btn p sm" data-papprove="${p.id}">✓ ${L4('Freigeben','Onayla','Approve','Goedkeuren')}</button>`:''}${viewer.type==='admin'&&ph(1)?`<button class="btn sm" data-act="offboard" style="color:var(--crit)">⏏ Offboarding</button>`:''}</div>
         ${p.offboarded?`<div style="background:var(--accent-soft);border-left:4px solid var(--crit);padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:10px;font-size:13px"><b>Offboarding ausgeführt:</b> Zugang gesperrt · ${p.offboarded.leads} Leads neu zugewiesen · Microsite deaktiviert · Anonymisierung am ${p.offboarded.anon}</div>`:''}
         <dl class="kv"><dt>${t('contact')}</dt><dd>${esc(p.contact)} · ${esc(p.mail)} · ${esc(p.tel)}</dd><dt>${t('address')}</dt><dd>${esc(p.addr)}</dd><dt>${t('industries')}</dt><dd>${p.ind.map(i=>`<span class="tag">${esc(i)}</span>`).join(' ')}</dd><dt>${t('rolesTitle')}</dt><dd>${p.roles.map(r=>`${brandTag(r.b)} ${t('types.'+r.t)} ${tierTag(r.tier)}`).join('<br>')}</dd></dl></div>
       <div class="card"><div class="hd"><h2>${t('contractsTitle')}</h2><span class="sp"></span>${ctrOpen?'':contractGen(p)}</div>${ctrOpen?contractGen(p):''}${cs.length?contractsTable(cs,false):'<p style="color:var(--muted);margin:0">—</p>'}</div>
@@ -1585,7 +1608,7 @@ function viewEarn(){
 function viewSettings(){
   const mods=['dash','partners','leads','contracts','orders','dam','notif','settings'];
   const matrix={admin:[1,1,1,1,1,1,1,1],staff:[1,1,1,1,1,1,1,0],distributor:[1,1,1,0,1,1,1,0],partner:[1,0,0,0,1,1,1,0],freelancer:[1,0,1,0,0,1,1,0],leadgen:[1,0,1,0,0,1,1,0]};
-  return pwCard()+`<div class="card" style="margin-bottom:14px"><div class="hd"><h2>Gebuchte Module</h2><span class="sp"></span><button class="btn sm" data-act="reqmod">Weitere Module anfragen</button></div>
+  return pwCard()+planCard()+`<div class="card" style="margin-bottom:14px"><div class="hd"><h2>Gebuchte Module</h2><span class="sp"></span><button class="btn sm" data-act="reqmod">Weitere Module anfragen</button></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${CORE_DEF.map(([ic,n])=>`<span class="tag" style="font-size:12px">${ic} ${n}</span>`).join('')}${Object.entries(ADDON_DEF).map(([k,a])=>`<span class="tag" style="font-size:12px;${feat(k)?'border-color:var(--ok);color:var(--ok)':'opacity:.45;text-decoration:line-through'}">${a.ic} ${a.n}</span>`).join('')}</div>
     <p style="margin:8px 0 0;font-size:12px;color:var(--muted)">${L4('Partnertypen','Partner türleri','Partner types','Partnertypes')}: ${typesOn().map(k=>t('types.'+k)).join(' · ')}</p></div>
   <div class="card" style="margin-bottom:14px"><div class="hd"><h2>${t('acc.all')}</h2><span style="color:var(--muted);font-size:12px">${t('acc.hint')}</span></div>
@@ -1992,7 +2015,13 @@ function prefsCard(){
     <tr><td colspan="4"><small style="color:var(--crit);font-weight:600">${t('bp.critical')}</small></td></tr>${crit.map(k=>row(k,true)).join('')}
     <tr><td colspan="4"><small style="color:var(--muted);font-weight:600">${t('bp.optional')}</small></td></tr>${opt.map(k=>row(k,false)).join('')}</tbody></table></div></div>`;
 }
+/* platform log for the TechNS console: only platform events, never tenant business data */
+const PLOG=[{who:'TechNS',what:'Deployment 6d4279b → Produktion (b2b-portal.foundercheck.de)',when:'2026-10-28 16:13'},{who:'TechNS',what:'Mandant UG-Alu GmbH: Modul „Buchhaltung“ freigeschaltet',when:'2026-10-28 15:40'},{who:'TechNS',what:'Mandant Sirius Windows angelegt · Plan Business',when:'2026-10-27 11:05'},{who:'System',what:'Backup DB + Blob erfolgreich',when:'2026-10-28 03:00'},{who:'System',what:'Zertifikat b2b-portal.foundercheck.de erneuert',when:'2026-10-26 04:12'}];
+document.addEventListener('click',e=>{const b=e.target.closest('[data-papprove]');if(!b)return;const p=PARTNERS.find(x=>x.id===+b.dataset.papprove);if(!p)return;const L=limitsOf(TCFG);if(L.partners&&usePartners()>=L.partners){toast(limitMsg('partners'));return}p.status='active';p.access=p.access||{};AUDIT.unshift({who:TEAMNAME||t('types.admin'),what:'Partner freigegeben: '+p.name,when:new Date().toISOString().slice(0,16).replace('T',' ')});toast(L4('Partner freigegeben','Partner onaylandı','Partner approved','Partner goedgekeurd')+' · '+p.name);render()});
+const platLog=()=>[...AUDIT.filter(a=>a.who==='TechNS'),...PLOG];
 function viewAudit(){
+  if(CONSOLE)return `<div class="card"><div class="hd"><h2>${L4('Plattform-Protokoll','Platform kaydı','Platform log','Platformlogboek')}</h2><span class="sp"></span><small style="color:var(--muted)">${L4('Nur Plattform-Ereignisse – keine Daten der Mandanten','Yalnızca platform olayları – firma verisi yok','Platform events only – no tenant data','Alleen platformgebeurtenissen – geen tenantgegevens')}</small></div>
+    <div class="tw"><table><thead><tr><th>${t('bp.when')}</th><th>${t('bp.who')}</th><th>${t('bp.what')}</th></tr></thead><tbody>${platLog().map(a=>`<tr><td style="font-variant-numeric:tabular-nums;white-space:nowrap">${a.when}</td><td>${esc(a.who)}</td><td style="white-space:normal">${esc(a.what)}</td></tr>`).join('')}</tbody></table></div></div>`;
   return `<div class="card"><div class="hd"><h2>${t('bp.audit')}</h2><span class="sp"></span><button class="btn sm" data-act="export">⤓ CSV</button></div>
     <div class="tw"><table><thead><tr><th>${t('bp.when')}</th><th>${t('bp.who')}</th><th>${t('bp.what')}</th></tr></thead><tbody>${AUDIT.map(a=>`<tr><td style="font-variant-numeric:tabular-nums;white-space:nowrap">${a.when}</td><td>${esc(a.who)}</td><td style="white-space:normal">${esc(a.what)}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
@@ -2010,7 +2039,7 @@ function slaBanner(){
   if(!ph(2))return '';
   const late=PARTNERS.filter(p=>p.status==='pending'&&p.appliedAt&&Date.now()-p.appliedAt>48*3600e3);
   if(!late.length)return '';
-  return late.map(p=>`<div style="background:var(--accent-soft);border-left:4px solid var(--crit);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>⚠ ${esc(p.name)}</b><span style="color:var(--muted)">${t('bp.pendingSla').replace('{h}',Math.floor((Date.now()-p.appliedAt)/3600e3))}</span><span class="sp" style="flex:1"></span><button class="btn p sm" data-openp="${p.id}">${t('partnerCard')} →</button></div>`).join('');
+  return late.map(p=>`<div style="background:var(--accent-soft);border-left:4px solid var(--crit);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>⚠ ${esc(p.name)}</b><span style="color:var(--muted)">${t('bp.pendingSla').replace('{h}',Math.floor((Date.now()-p.appliedAt)/3600e3))}</span><span class="sp" style="flex:1"></span><button class="btn sm" data-openp="${p.id}">${t('partnerCard')} →</button><button class="btn p sm" data-papprove="${p.id}">✓ ${L4('Freigeben','Onayla','Approve','Goedkeuren')}</button></div>`).join('');
 }
 
 
@@ -2253,7 +2282,7 @@ function viewProjects(){
 let TEAM={list:null,roles:null,loading:false,last:null,err:'',editRole:null};
 async function teamLoad(){TEAM.loading=true;try{if(GATE_API){const r=await gateApi({action:'team_list',token:gateToken()});if(r.ok){TEAM.list=r.team;TEAM.roles=r.roles}else TEAM.err='Keine Berechtigung.'}else{TEAM.list=localTeam();TEAM.roles=localRoles()}}catch(e){TEAM.err=t('gate.neterr')}TEAM.loading=false;render()}
 async function teamAct(action,extra){
-  if(GATE_API){const r=await gateApi({action,token:gateToken(),...extra});if(!r.ok){toast(({self:'Eigenen Zugang nicht sperren',inuse:'Rolle ist noch Personen zugewiesen',builtin:'Standardrolle kann nicht gelöscht werden',locked:'Geschäftsführer-Rolle ist fest',name:'Bitte Rollennamen eingeben'})[r.error]||'Fehler');return}if(r.pass)TEAM.last={name:r.member.name,user:r.member.user,pass:r.pass};}
+  if(GATE_API){const r=await gateApi({action,token:gateToken(),...extra});if(!r.ok){toast(r.error==='limit'?limitMsg('users'):({self:'Eigenen Zugang nicht sperren',inuse:'Rolle ist noch Personen zugewiesen',builtin:'Standardrolle kann nicht gelöscht werden',locked:'Geschäftsführer-Rolle ist fest',name:'Bitte Rollennamen eingeben'})[r.error]||'Fehler');return}if(r.pass)TEAM.last={name:r.member.name,user:r.member.user,pass:r.pass};}
   else if(action.startsWith('team_role_')){const R=localRoles();if(action==='team_role_save'){let x=R.find(y=>y.key===extra.key);if(x&&x.locked){toast('Geschäftsführer-Rolle ist fest');return}if(x){x.name=extra.name;x.perms=extra.perms}else R.push({key:extra.name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name:extra.name,perms:extra.perms})}else{const x=R.find(y=>y.key===extra.key);if(x.builtin){toast('Standardrolle kann nicht gelöscht werden');return}if(localTeam().some(m=>m.role===x.key)){toast('Rolle ist noch Personen zugewiesen');return}R.splice(R.indexOf(x),1)}saveLocalRoles(R)}
   else{const L=localTeam();const W=['Zelt','Regen','Anker','Wolke'];const pw=()=>W[Math.floor(Math.random()*4)]+'-'+Math.floor(1000+Math.random()*9000)+'-halle';
     if(action==='team_add'){const m={id:Math.max(...L.map(x=>x.id))+1,name:extra.name||'Mitarbeiter',role:extra.role,user:(extra.name||'user').toLowerCase().replace(/[^a-z0-9]+/g,'-'),pass:pw(),active:true,created:Date.now()};L.push(m);TEAM.last={name:m.name,user:m.user,pass:m.pass}}
@@ -3239,7 +3268,7 @@ function viewUrls(){
   const groups=[
     [T('Mitarbeiter-Portal','Personel portalı'),'staff',['dash','partners','leads','projects','contracts','orders','stock','install','sites','dam','notif','audit','settings','hr','me','hqhome','hqcreds','hqdoors','team','register']],
     [T('Partner-Portal','Partner portalı'),'network',['dash','network','pool','leads','myleads','referral','projects','pricelist','orders','stock','install','site','earn','mycontract','dam','notif']],
-    ['Console','console',['chome','tenants','rollout','codes','integrations','security','billing','pilot','audit','bp','urls']]];
+    ['Console','console',['chome','tenants','rollout','codes','integrations','security','billing','audit','bp','urls']]];
   const rule=(ok,no)=>`<div class="rule"><div class="ok"><b>${T('Richtig','Doğru')}</b><br>${ok}</div><div class="no"><b>${T('Falsch','Yanlış')}</b><br>${no}</div></div>`;
   return `<div class="uh" style="display:grid;gap:14px">
   <div class="card"><div class="hd"><h2>${T('Link-Handbuch','Link El Kitabı')}</h2><span class="sp"></span><span class="pill">v1.0 · ${T('verbindlich für alle Mandanten','tüm firmalar için bağlayıcı')}</span></div>
@@ -3305,6 +3334,18 @@ function viewUrls(){
 
 /* ---------- console: modules & partner structure per tenant ---------- */
 let TCEDIT=null,CFGT=null,CFGBASE=null;
+/* packages: how many partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override possible */
+const PLAN_LIMITS={Starter:{partners:25,users:5,brands:1},Business:{partners:100,users:15,brands:3},Group:{partners:0,users:0,brands:0}};
+const PLAN_DEFAULT={aydemir:'Group','ug-alu':'Starter',sirius:'Business'};
+const planOf=(c,t)=>PLAN_LIMITS[(c||{}).plan]?(c||{}).plan:PLAN_DEFAULT[t||TENANT]||'Starter';
+function limitsOf(c,t){const pl=planOf(c,t);const o=(c||{}).limits||{};return {plan:pl,partners:o.partners!=null&&o.partners!==''?+o.partners:PLAN_LIMITS[pl].partners,users:o.users!=null&&o.users!==''?+o.users:PLAN_LIMITS[pl].users,brands:PLAN_LIMITS[pl].brands}}
+const usePartners=()=>PARTNERS.filter(p=>p.status!=='pending').length;
+const useUsers=()=>(GATE_API&&TEAM&&TEAM.list?TEAM.list:localTeam()).length;
+const limTxt=(n,l)=>n+' / '+(l?l:'∞');
+function limitMsg(kind){const L=limitsOf(TCFG);return L4(`Paket-Limit erreicht: ${L[kind]} ${kind==='partners'?'Partner':'Benutzer'} im Paket ${L.plan}. Erweiterung über TechNS anfragen.`,`Paket sınırına ulaşıldı: ${L.plan} paketinde ${L[kind]} ${kind==='partners'?'partner':'kullanıcı'}. Genişletme için TechNS ile iletişime geçin.`,`Package limit reached: ${L[kind]} ${kind==='partners'?'partners':'users'} in the ${L.plan} package. Ask TechNS for an extension.`,`Pakketlimiet bereikt: ${L[kind]} ${kind==='partners'?'partners':'gebruikers'} in het pakket ${L.plan}. Vraag TechNS om een uitbreiding.`)}
+function planCard(){const L=limitsOf(TCFG);const bar=(n,l)=>`<div class="bar" style="margin:4px 0 10px"><i style="width:${l?Math.min(100,n/l*100):8}%;background:${l&&n>l?'var(--crit)':l&&n/l>=0.8?'var(--warn)':'var(--ok)'}"></i></div>`;const np=usePartners(),nu=useUsers();
+  return `<div class="card" style="margin-bottom:14px"><div class="hd"><h2>${L4('Paket & Limits','Paket & sınırlar','Package & limits','Pakket & limieten')}</h2><span class="tier premium">${L.plan}</span><span class="sp"></span><button class="btn sm" data-act="reqmod">${L4('Erweiterung anfragen','Genişletme talep et','Request extension','Uitbreiding aanvragen')}</button></div>
+   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"><div><small>${L4('Partner (Unterhändler)','Partner (alt bayi)','Partners (sub-dealers)','Partners (subdealers)')}</small><br><b>${limTxt(np,L.partners)}</b>${bar(np,L.partners)}</div><div><small>${L4('Team-Benutzer','Ekip kullanıcıları','Team users','Teamgebruikers')}</small><br><b>${limTxt(nu,L.users)}</b>${bar(nu,L.users)}</div><div><small>${L4('Marken','Markalar','Brands','Merken')}</small><br><b>${limTxt(Object.keys(BRANDS).length,L.brands)}</b>${bar(Object.keys(BRANDS).length,L.brands)}</div></div></div>`}
 /* console: configure any tenant; business-model templates bundle modules and partner types */
 const tcKey=t=>'b2b-tcfg'+(t==='aydemir'?'':':'+t);
 function tcDefault(t){return {features:TENANT_FEATURES[t]||Object.keys(ADDON_DEF).filter(k=>k!=='invoices'),types:{leadgen:{on:true,label:''},freelancer:{on:true,label:''},partner:{on:true,label:''},distributor:{on:true,label:''}}}}
@@ -3319,6 +3360,9 @@ function modulesCard(){
   if(!CFGT){CFGT=TENANT;CFGBASE=JSON.parse(JSON.stringify(TCFG))}const E=TCEDIT||(TCEDIT=JSON.parse(JSON.stringify(CFGBASE)));
   const dirty=JSON.stringify(E)!==JSON.stringify(CFGBASE);
   return `<div class="card" style="margin-top:14px;border-color:var(--accent)"><div class="hd"><h2>Module & Partnerstruktur</h2>${EDITION==='full'?`<select data-tcten style="padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)">${TENANT_LIST.map(t=>`<option value="${t}" ${t===CFGT?'selected':''}>${f2('cfgFor')}: ${esc(codeTenName(t))}</option>`).join('')}</select>`:''}<span class="sp"></span>${['Starter','Business','Group'].map(pl=>`<button class="btn sm" data-tplan="${pl}">${pl}-Vorlage</button>`).join('')}<button class="btn p sm" data-tsave ${dirty?'':'disabled'}>${dirty?'Speichern & ausrollen':'Gespeichert'}</button></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)"><b style="font-size:12px">${L4('Paket','Paket','Package','Pakket')}</b><select data-tcplan style="padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel)">${Object.keys(PLAN_LIMITS).map(pl=>`<option ${planOf(E,CFGT)===pl?'selected':''}>${pl}</option>`).join('')}</select>
+      <label style="margin:0;font-size:12px">${L4('Max. Partner','Azami partner','Max. partners','Max. partners')}</label><input type="number" min="0" data-tclim="partners" value="${limitsOf(E,CFGT).partners}" style="width:80px;padding:5px;border:1px solid var(--line);border-radius:6px">
+      <label style="margin:0;font-size:12px">${L4('Max. Benutzer','Azami kullanıcı','Max. users','Max. gebruikers')}</label><input type="number" min="0" data-tclim="users" value="${limitsOf(E,CFGT).users}" style="width:70px;padding:5px;border:1px solid var(--line);border-radius:6px"><small style="color:var(--muted)">0 = ${L4('unbegrenzt','sınırsız','unlimited','onbeperkt')}</small></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><small style="color:var(--muted);font-weight:600">${f2('presets')}:</small>${Object.keys(TC_PRESETS).map(k=>`<button class="btn sm" data-tpreset="${k}">${f2('pr_'+k)}</button>`).join('')}</div>
     <div class="grid two">
       <div><b style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Kern · immer enthalten</b>
@@ -3335,14 +3379,14 @@ function modulesCard(){
 /* ---------- TechNS console views ---------- */
 function viewConsoleHome(){
   const mrr=TENANTS.reduce((a,x)=>a+x.mrr,0);const failed=QUEUE.filter(j=>j.st==='failed').length;
-  return `<div class="grid kpis" style="margin-bottom:14px">${kpi('Mandanten',TENANTS.length,'')}${kpi('Partner gesamt',TENANTS.reduce((a,x)=>a+x.partners(),0),'')}${kpi('MRR',eur(mrr),'ARR '+eur(mrr*12))}${kpi('Rollout Pilot','Phase '+PHASE+' / 3',PHASE===3?'komplett':'läuft')}${kpi('Fehlgeschlagene Jobs',failed,failed?'→ Integrationen':'',failed>0)}</div>
+  return `<div class="grid kpis" style="margin-bottom:14px">${kpi('Mandanten',TENANTS.length,'')}${kpi('Partner gesamt',TENANTS.reduce((a,x)=>a+x.partners(),0),'')}${kpi('MRR',eur(mrr),'ARR '+eur(mrr*12))}${kpi('Rollout','Phase '+PHASE+' / 3',PHASE===3?'komplett':'läuft')}${kpi('Fehlgeschlagene Jobs',failed,failed?'→ Integrationen':'',failed>0)}</div>
   <div class="grid two">
     <div class="card"><div class="hd"><h2>Mandanten</h2><span class="sp"></span><button class="btn sm" data-goto="tenants">Verwalten →</button></div>
       <div class="tw"><table><thead><tr><th>Mandant</th><th>Plan</th><th>Partner</th><th>Phase</th><th>MRR</th><th></th></tr></thead><tbody>
       ${TENANTS.map(x=>`<tr><td><b>${esc(x.name)}</b><br><small style="color:var(--muted)">${x.domain}</small></td><td>${x.plan}</td><td>${x.partners()}</td><td>${x.id==='t1'?`<span class="stt ${PHASE===3?'demo':'p1'}">${PHASE} / 3</span>`:'<span class="stt demo">3 / 3</span>'}</td><td style="font-variant-numeric:tabular-nums">${eur(x.mrr)}</td><td><a class="btn sm" href="${portalUrl()}" data-openportal="${x.id}">Portal ↗</a></td></tr>`).join('')}</tbody></table></div></div>
     <div style="display:grid;gap:14px;align-content:start">
       <div class="card"><div class="hd"><h2>Systemstatus</h2></div><dl class="kv"><dt>API</dt><dd><span class="st ok">online</span> · /api/gate</dd><dt>Hosting</dt><dd>Vercel fra1 · Supabase eu-central-1</dd><dt>Uptime 30 d</dt><dd>99,98 %</dd><dt>Queue</dt><dd>${QUEUE.filter(j=>j.st==='queued'||j.st==='retry').length} offen · ${failed} fehlgeschlagen</dd><dt>Letztes Backup</dt><dd>${SEC.lastBackup}</dd></dl></div>
-      <div class="card"><div class="hd"><h2>Plattform-Aktivität</h2><span class="sp"></span>${ph(1)?'<button class="btn sm" data-goto="audit">Audit →</button>':''}</div><div class="feed">${AUDIT.slice(0,5).map(a=>`<div class="it"><span class="dot" style="background:var(--accent);margin-top:6px"></span><span>${esc(a.what)}<br><small style="color:var(--muted)">${esc(a.who)}</small></span><small>${a.when.slice(5)}</small></div>`).join('')}</div></div>
+      <div class="card"><div class="hd"><h2>Plattform-Aktivität</h2><span class="sp"></span>${ph(1)?'<button class="btn sm" data-goto="audit">Audit →</button>':''}</div><div class="feed">${platLog().slice(0,5).map(a=>`<div class="it"><span class="dot" style="background:var(--accent);margin-top:6px"></span><span>${esc(a.what)}<br><small style="color:var(--muted)">${esc(a.who)}</small></span><small>${a.when.slice(5)}</small></div>`).join('')}</div></div>
     </div></div>`;
 }
 function viewRollout(){
@@ -3407,7 +3451,7 @@ function viewSecurity(){
       <button class="btn sm" data-act="restore" style="margin-top:8px">Wiederherstellung testen</button></div></div>`;
 }
 function viewBilling(){
-  const T=TENANTS.find(x=>x.id===curTenant);const lim={Starter:[1,25],Business:[3,100],Group:[99,9999]}[T.plan];
+  const T=TENANTS.find(x=>x.id===curTenant);const LL=limitsOf(curTenant==='t1'?TCFG:null);if(curTenant==='t1')T.plan=LL.plan;const lim=[LL.brands||9999,LL.partners||9999];
   return `<div class="grid two" style="margin-bottom:14px">
     <div class="card"><div class="hd"><h2>Plan · ${esc(T.name)}</h2><span class="tier premium">${T.plan}</span></div>
       <dl class="kv"><dt>Preis</dt><dd>${eur(T.mrr)} / Monat${T.pilot?' <span class="tag">Pilot-Rabatt bis 31.01.2027</span>':''}</dd><dt>Marken</dt><dd>${T.brands} / ${lim[0]>50?'∞':lim[0]}</dd><dt>Partner</dt><dd>${T.partners()} / ${lim[1]>5000?'∞':lim[1]}</dd><dt>Adapter</dt><dd>${Object.values(ADAPTERS).filter(a=>a.st==='ok').length} aktiv</dd></dl>
@@ -3495,7 +3539,8 @@ function render(){
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
   document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':NET?(PDOOR?DOOR_META[DOOR].n:'Partner-Portal')+' · '+TENANTS[0].name:TENANTS[0].name+' · Verwaltung';
   const v=$('#view');
-  v.innerHTML=deco(page==='notfound'?viewNotFound():selDetail&&DTYPE[page]===selDetail.t?viewDetail():({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:()=>viewDash()+pfMyCard()+f2MyProgram(),partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:()=>viewOrders()+f2MyAccount()+ivPartnerCard()+f2MyReturns(),invoices:viewInvoices,pricing:viewPricing,perf:viewPerf,program:viewProgram,terr:viewTerr,customers:viewCustomers,quotes:viewQuotes,credit:viewCredit,returns:viewReturns,pricelist:()=>feat('pricing')?viewPricelistPro():viewPricelist(),dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]());
+  v.innerHTML=deco((page==='notfound'?'':subTabs())+(page==='notfound'?viewNotFound():selDetail&&DTYPE[page]===selDetail.t?viewDetail():({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:()=>viewDash()+pfMyCard()+f2MyProgram(),partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:()=>viewOrders()+f2MyAccount()+ivPartnerCard()+f2MyReturns(),invoices:viewInvoices,pricing:viewPricing,perf:viewPerf,program:viewProgram,terr:viewTerr,customers:viewCustomers,quotes:viewQuotes,credit:viewCredit,returns:viewReturns,pricelist:()=>feat('pricing')?viewPricelistPro():viewPricelist(),dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]()));
+  v.querySelectorAll('[data-subk]').forEach(b=>b.onclick=()=>{page=b.dataset.subk;selPartner=null;selDetail=null;render()});
   syncUrl();
   v.querySelectorAll('[data-dl]').forEach(r=>r.onclick=e=>{if(e.target.closest('button,select,a,input,[data-act]'))return;const [tt,id]=r.dataset.dl.split('|');selDetail={t:tt,id};render();window.scrollTo(0,0)});
   v.querySelectorAll('[data-dback]').forEach(b=>b.onclick=()=>{selDetail=null;render()});
@@ -3531,7 +3576,7 @@ function render(){
     else if(a==='take'){const l=LEADS.find(x=>x.id===b.dataset.l);l.owner=viewer.partner;l.stage='contacted';render();toast(t('pool.taken'))}
     else if(a==='invite')toast(t('net.invited'));
     else if(a==='reqmod')toast('Anfrage an TechNS gesendet – wir melden uns innerhalb von 24 h');
-    else if(a==='teamadd'){const n=$('#tm_name').value.trim();if(!n){$('#tm_name').focus();return}teamAct('team_add',{name:n,role:$('#tm_role').value})}
+    else if(a==='teamadd'){const n=$('#tm_name').value.trim();if(!n){$('#tm_name').focus();return}{const L=limitsOf(TCFG);if(L.users&&useUsers()>=L.users){toast(limitMsg('users'));return}}teamAct('team_add',{name:n,role:$('#tm_role').value})}
     else if(a==='sendcreds'){const ids=[...CREDS.sel];const now=new Date().toLocaleTimeString(LOC(),{hour:'2-digit',minute:'2-digit'});ids.forEach(id=>CREDS.sent[id]=now);AUDIT.unshift({who:TEAMNAME||'Geschäftsführung',what:'Zugangsdaten per E-Mail gesendet an: '+ids.map(pName).join(', '),when:new Date().toISOString().slice(0,16).replace('T',' ')});CREDS.sel=new Set();render();toast('Zugangsdaten an '+ids.length+' Partner gesendet')}
     else if(a==='newtenant'){TENANTS.push({id:'t'+(TENANTS.length+1),name:'Neuer Mandant '+(TENANTS.length+1),domain:'partner.neuer-mandant.de',accent:'#4b5fd6',plan:'Starter',brands:1,partners:()=>0,langs:['DE'],currency:'EUR',pipeline:['Neu','Kontaktiert','Angebot','Gewonnen','Verloren'],types:['Händler'],tiers:['Basic','Silver','Gold'],pilot:false,mrr:249});AUDIT.unshift({who:'Verwaltung',what:'Mandant angelegt: Neuer Mandant '+TENANTS.length,when:new Date().toISOString().slice(0,16).replace('T',' ')});render();toast('Mandant angelegt · Supabase-Schema + RLS-Policies erstellt')}
     else if(a==='applywl'){const T=TENANTS.find(x=>x.id===curTenant);T.name=$('#wl_name').value;T.domain=$('#wl_domain').value;T.accent=$('#wl_color').value;document.documentElement.style.setProperty('--accent',T.accent);$('#t-brand').textContent=T.name;render();toast('White-Label angewendet')}
@@ -3577,6 +3622,8 @@ function render(){
   v.querySelectorAll('[data-ttype]').forEach(c=>c.onchange=()=>{TCEDIT.types[c.dataset.ttype].on=c.checked;if(!typesOnE())TCEDIT.types[c.dataset.ttype].on=true;render()});
   v.querySelectorAll('[data-tlabel]').forEach(i=>i.onchange=()=>{TCEDIT.types[i.dataset.tlabel].label=i.value.trim();render()});
   v.querySelectorAll('[data-tcten]').forEach(sl=>sl.onchange=()=>tcLoad(sl.value));
+  v.querySelectorAll('[data-tcplan]').forEach(sl=>sl.onchange=()=>{TCEDIT.plan=sl.value;delete TCEDIT.limits;render()});
+  v.querySelectorAll('[data-tclim]').forEach(i=>i.onchange=()=>{TCEDIT.limits={...(TCEDIT.limits||{}),[i.dataset.tclim]:Math.max(0,Math.floor(+i.value||0))};render()});
   v.querySelectorAll('[data-tpreset]').forEach(b=>b.onclick=()=>{const P=TC_PRESETS[b.dataset.tpreset];TCEDIT.features=Object.keys(ADDON_DEF).filter(k=>P.f.includes(k));['leadgen','freelancer','partner','distributor'].forEach(k=>TCEDIT.types[k].on=P.t.includes(k));render();toast(f2('presetLoaded'))});
   v.querySelectorAll('[data-tplan]').forEach(b=>b.onclick=()=>{TCEDIT.features=PLAN_ADDONS[b.dataset.tplan].slice();render();toast(b.dataset.tplan+'-Vorlage geladen – speichern zum Ausrollen')});
   v.querySelectorAll('[data-tsave]').forEach(b=>b.onclick=async()=>{b.disabled=true;let ok=true;const T0=CFGT||TENANT;let saved=JSON.parse(JSON.stringify({...TCEDIT,migInv:true,migPP:true,migF2:true}));if(GATE_API){try{const r=await gateApi({action:'tenant_cfg_set',token:gateToken(),cfg:TCEDIT,tenant:T0});ok=r.ok;if(ok)saved=r.cfg}catch(e){ok=false}}if(ok){try{localStorage.setItem(tcKey(T0),JSON.stringify(saved))}catch(e){}if(T0===TENANT)TCFG=JSON.parse(JSON.stringify(saved));CFGBASE=JSON.parse(JSON.stringify(saved));TCEDIT=JSON.parse(JSON.stringify(saved));AUDIT.unshift({who:'TechNS',what:'Module/Partnertypen für '+codeTenName(T0)+' ausgerollt: '+saved.features.length+' Zusatzmodule, '+['leadgen','freelancer','partner','distributor'].filter(k=>saved.types[k].on).length+' Partnertypen',when:new Date().toISOString().slice(0,16).replace('T',' ')});toast('Ausgerollt – Mandanten-Portal & Partner-Eingänge aktualisiert')}else toast('Speichern fehlgeschlagen');render()});
