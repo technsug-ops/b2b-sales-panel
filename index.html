@@ -163,6 +163,10 @@ svg.i{width:1.05em;height:1.05em;vertical-align:-.16em;fill:none;stroke:currentC
 .nav .ic{display:inline-grid;place-items:center;width:18px}.nav .ic svg.i{width:17px;height:17px}
 .btn svg.i{width:15px;height:15px}
 .brand .mark svg.i{width:18px;height:18px}
+/* public application page */
+body.public .side,body.public .top,body.public #aiFab,body.public .rolebox{display:none!important}
+body.public .main{margin-left:0!important;max-width:980px;margin:0 auto!important;padding-top:24px}
+body.public .shell,body.public .app{grid-template-columns:1fr!important}
 /* product home */
 #home{position:fixed;inset:0;z-index:6000;background:var(--bg,#f4f5f7);overflow:auto;padding:48px 16px}
 #home .hwrap{max-width:980px;margin:0 auto}
@@ -239,6 +243,7 @@ body.console #gate .brand .mark{background:#5b4fd6}
 .notes .ft{padding:8px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;padding-bottom:max(8px,env(safe-area-inset-bottom,0px))}
 @media (max-width:760px){.notes{width:100%}}
 /* login gate */
+[hidden]{display:none!important}
 #gate{position:fixed;inset:0;z-index:5000;background:var(--bg);display:grid;place-items:center;padding:16px}
 body.locked .app,body.locked .fab,body.locked .ai{visibility:hidden}
 #gate .box{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:var(--shadow);display:grid;gap:14px}
@@ -351,6 +356,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
     <div class="err" id="gateErr"></div>
     <button class="btn p" type="submit" style="justify-content:center" data-i="gate.btn">Anmelden</button>
     <small class="hint" data-i="gate.hint">Demo-Zugang · nur für eingeladene Personen</small>
+    <a class="hint" id="gateJoin" hidden style="color:var(--accent);font-weight:600;text-decoration:none"></a>
   </form>
 </div>
 <div class="app">
@@ -706,7 +712,7 @@ const px=(lon,lat)=>[(lon-5.7)*62,(55.3-lat)*62*1.55];
 
 /* ---------- access model (Super Admin controls what each partner sees) ---------- */
 const MODULES=['dash','network','pool','leads','myleads','referral','projects','pricelist','orders','stock','install','site','earn','mycontract','dam','notif'];
-const MOD_LABEL=m=>({urls:'Link-Handbuch',me:'Mein Bereich',hr:'Personal',projects:'Projekte',team:'Team & Rollen',hqhome:'Zentrale',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
+const MOD_LABEL=m=>({notfound:'Seite nicht gefunden',urls:'Link-Handbuch',me:'Mein Bereich',hr:'Personal',projects:'Projekte',team:'Team & Rollen',hqhome:'Zentrale',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
 const DEFAULT_ACCESS={
  leadgen:['dash','myleads','referral','site','earn','mycontract','dam','notif'],
  freelancer:['dash','pool','myleads','stock','install','site','earn','mycontract','dam','notif'],
@@ -884,25 +890,50 @@ function showHome(){
   document.body.appendChild(el);
 }
 
+/* ---------- public partner application (partner.<tenant>.B2B.com/join) ---------- */
+function showJoin(){PENDING=null;page='register';document.body.classList.add('public');$('#gate').hidden=true;document.body.classList.remove('locked');document.body.style.overflow='';render()}
+
 /* ---------- page <-> path ---------- */
 const SLUGS={dash:'dashboard',partners:'network',network:'network',leads:'leads',myleads:'my-leads',pool:'lead-pool',referral:'referral',projects:'projects',contracts:'contracts',mycontract:'contract',pricelist:'pricelist',orders:'orders',stock:'stock',install:'appointments',sites:'sites',site:'my-site',earn:'earnings',dam:'materials',notif:'notifications',audit:'audit-log',settings:'settings',hr:'hr',me:'me',team:'settings/team',hqhome:'company',hqcreds:'settings/partner-access',hqdoors:'settings/portals',register:'join',
   chome:'',tenants:'tenants',rollout:'rollout',codes:'access-codes',integrations:'integrations',security:'security',billing:'billing',pilot:'pilot',bp:'docs/best-practices',urls:'docs/url-handbook'};
 const slugOf=k=>k in SLUGS?SLUGS[k]:k;
+/* opaque public ids (no sequential numbers in URLs) */
+function pubId(pre,raw){let h=0x811c9dc5;const x='b2b|'+pre+'|'+raw;for(let i=0;i<x.length;i++){h^=x.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}let o=(h>>>0).toString(36);h=Math.imul(h^0x5bd1e995,0x01000193)>>>0;o+=h.toString(36);return pre+'_'+o.slice(0,8)}
+const DTYPE={leads:'l',myleads:'l',orders:'o',contracts:'c',mycontract:'c'};
+let selDetail=null;
+const CONTRACT_ID=c=>c.id||(c.id='C-'+(318+CONTRACTS.indexOf(c)));
+function detailRaw(pre,pub){
+  if(pre==='p'){const x=PARTNERS.find(p=>pubId('p',p.id)===pub);return x?x.id:null}
+  if(pre==='l'){const x=LEADS.find(l=>pubId('l',l.id)===pub);return x?x.id:null}
+  if(pre==='o'){const x=ORDERS.find(o=>pubId('o',o.id)===pub);return x?x.id:null}
+  if(pre==='c'){const x=CONTRACTS.find(c=>pubId('c',CONTRACT_ID(c))===pub);return x?CONTRACT_ID(x):null}
+  return null}
 function routeFromRest(rest,items){
-  let segs=rest.slice(),sel=null;const last=segs[segs.length-1]||'';const m=/^p-(\d+)$/.exec(last);if(m){sel=+m[1];segs.pop()}
+  let segs=rest.slice(),sel=null,det=null;const last=segs[segs.length-1]||'';const m=/^([plco])_([a-z0-9]{4,12})$/.exec(last);
+  if(m){segs.pop();const raw=detailRaw(m[1],last);if(raw==null)return null;if(m[1]==='p')sel=raw;else det={t:m[1],id:raw}}
   const path=segs.join('/');const keys=items.filter(i=>i.k).map(i=>i.k);
-  const k=keys.find(x=>slugOf(x)===path);return k?{k,sel}:null}
+  const k=keys.find(x=>slugOf(x)===path);if(!k)return null;
+  if(sel&&!['partners','network'].includes(k))return null;if(det&&DTYPE[k]!==det.t)return null;
+  if(det&&!detailVisible(det))return null;if(sel&&k==='network'&&!networkVisible(sel))return null;
+  return {k,sel,det}}
+function detailVisible(d){const me=viewer.partner;if(!me)return true;
+  if(d.t==='l'){const l=LEADS.find(x=>x.id===d.id);return !!l&&(l.owner===me||(viewer.type==='distributor'&&/^7/.test(l.plz)))}
+  if(d.t==='o'){const o=ORDERS.find(x=>x.id===d.id);return !!o&&o.p===me}
+  if(d.t==='c'){const c=CONTRACTS.find(x=>CONTRACT_ID(x)===d.id);return !!c&&c.p===me}
+  return false}
+function networkVisible(id){const me=PARTNERS.find(p=>p.id===viewer.partner);return !!me&&(viewer.type==='distributor')&&PARTNERS.some(p=>p.id===id)}
 function currentPath(){return pagePath(page,selPartner)}
-function pagePath(k,sel){const det=sel&&(k==='partners'||k==='network')?'/p-'+sel:'';return slugOf(k)+det}
+function pagePath(k,sel){let det=sel&&(k==='partners'||k==='network')?'/'+pubId('p',sel):'';if(selDetail&&DTYPE[k]===selDetail.t)det='/'+pubId(selDetail.t,selDetail.id);return (slugOf(k)+det).replace(/^\//,'')}
 let URL_REPLACE=true;
 function syncUrl(){
-  if(AREA==='home'||document.body.classList.contains('locked')||PENDING)return;
+  if(AREA==='home'||document.body.classList.contains('locked')||PENDING||page==='notfound')return;
+  if(document.body.classList.contains('public')&&page!=='register')return;
   const want=areaHref(AREA,currentPath()).replace(/\/$/,'')||'/';
   const have=HOSTMODE||IS_HTTP?location.pathname.replace(/\/$/,'')||'/':(location.hash||'');
   const cmp=HOSTMODE?want.replace(/^https?:\/\/[^/]+/,'')||'/':want;
   if(cmp!==have&&cmp+'/'!==have){try{history[URL_REPLACE?'replaceState':'pushState'](null,'',want)}catch(e){}}
   URL_REPLACE=false}
-function onRouteChange(){const r=parseArea();if(r.area!==AREA){location.reload();return}const x=routeFromRest(r.rest,navItems());if(x){page=x.k;selPartner=x.sel}else if(!r.rest.length){page=CONSOLE?'chome':'dash';selPartner=null}URL_REPLACE=true;render()}
+function onRouteChange(){const r=parseArea();if(r.area!==AREA||(document.body.classList.contains('public')&&r.rest[0]!=='join')){location.reload();return}const x=routeFromRest(r.rest,navItems());if(x){page=x.k;selPartner=x.sel;selDetail=x.det||null}else if(!r.rest.length){page=CONSOLE?'chome':'dash';selPartner=null;selDetail=null}else{page='notfound';selDetail=null}URL_REPLACE=true;render()}
 
 /* ---------- navigation ---------- */
 function navItems(){
@@ -923,11 +954,11 @@ function navItems(){
 }
 function renderNav(){
   const items=navItems();
-  if(PENDING&&!document.body.classList.contains('locked')&&gateToken()&&(!NET||PDOOR)){const x=routeFromRest(PENDING,items);if(x){page=x.k;selPartner=x.sel;PENDING=null}}
-  if(!items.some(i=>i.k===page)) page=CONSOLE?'chome':HQ?'hqhome':items.some(i=>i.k==='dash')?'dash':(items.find(i=>i.k)||{k:'dash'}).k;
+  if(PENDING&&!document.body.classList.contains('locked')&&gateToken()&&(!NET||PDOOR)){const x=routeFromRest(PENDING,items);if(x){page=x.k;selPartner=x.sel;selDetail=x.det||null}else{page='notfound';selDetail=null}PENDING=null}
+  if(!items.some(i=>i.k===page)&&page!=='notfound'&&!(page==='register'&&document.body.classList.contains('public'))) page=CONSOLE?'chome':HQ?'hqhome':items.some(i=>i.k==='dash')?'dash':(items.find(i=>i.k)||{k:'dash'}).k;
   $('#nav').innerHTML=deco(items.map(i=>i.s?`<div class="navlabel">${i.s==='public'?'Website':i.s==='mine'?'Mein Bereich':i.s==='hq'?'Firmenzentrale':i.s==='console'?'Plattform':i.s==='consoleOps'?'Betrieb':i.s==='consoleDocs'?'Produkt':t('sec.'+i.s)}</div>`:
     `<button class="${i.k===page?'on':''}" data-k="${i.k}"><span class="ic">${i.ic}</span>${i.k==='register'?t('reg.nav'):MOD_LABEL(i.k)}${i.badge?`<span class="badge">${i.badge}</span>`:''}</button>`).join(''));
-  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{PENDING=null;page=b.dataset.k;selPartner=null;render();$('#side').classList.remove('open')});
+  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{PENDING=null;page=b.dataset.k;selPartner=null;selDetail=null;render();$('#side').classList.remove('open')});
 }
 
 /* ---------- views ---------- */
@@ -1080,7 +1111,7 @@ function partnerCard(id){
 }
 function contractsTable(list,withName=true){
   return `<div class="tw"><table><thead><tr>${withName?`<th>${t('cols.name')}</th>`:''}<th>${t('cols.brands')}</th><th>${t('cols.contract')}</th><th>${t('cols.status')}</th><th>${t('cols.until')}</th><th></th></tr></thead><tbody>
-  ${list.map(c=>`<tr data-p="${c.p}">${withName?`<td><b>${esc(pName(c.p))}</b></td>`:''}<td>${brandTag(c.b)}</td><td>${c.kind} ${ph(1)?`<span class="tag" style="font-size:10px">${t('bp.version')} ${c.ver||1}</span>`:''}<br><small style="color:var(--muted)">${c.file}${ph(1)&&c.signedBy?` · ${t('bp.signedBy')} ${esc(c.signedBy)} ${t('bp.signedAt')} ${c.signedAt}`:''}</small></td><td>${stTag(c.status)}${ph(3)&&c.esign?`<br><small style="color:var(--muted)">✍ ${c.esign}</small>`:''}</td><td style="font-variant-numeric:tabular-nums">${c.until}</td><td><button class="btn sm" data-act="pdf">PDF</button>${c.esign==='wartet auf Signatur'?` <button class="btn sm" data-esigndone="${c.file}">✓ simulieren</button>`:''}</td></tr>`).join('')}</tbody></table></div>`;
+  ${list.map(c=>`<tr data-dl="c|${CONTRACT_ID(c)}">${withName?`<td><b>${esc(pName(c.p))}</b></td>`:''}<td>${brandTag(c.b)}</td><td>${c.kind} ${ph(1)?`<span class="tag" style="font-size:10px">${t('bp.version')} ${c.ver||1}</span>`:''}<br><small style="color:var(--muted)">${c.file}${ph(1)&&c.signedBy?` · ${t('bp.signedBy')} ${esc(c.signedBy)} ${t('bp.signedAt')} ${c.signedAt}`:''}</small></td><td>${stTag(c.status)}${ph(3)&&c.esign?`<br><small style="color:var(--muted)">✍ ${c.esign}</small>`:''}</td><td style="font-variant-numeric:tabular-nums">${c.until}</td><td><button class="btn sm" data-act="pdf">PDF</button>${c.esign==='wartet auf Signatur'?` <button class="btn sm" data-esigndone="${c.file}">✓ simulieren</button>`:''}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function viewContracts(){
   const list=CONTRACTS.filter(c=>brandF==='all'||c.b===brandF);
@@ -1089,7 +1120,7 @@ function viewContracts(){
 }
 function leadsTable(list){
   return `<div class="tw"><table><thead><tr><th>ID</th><th>${t('cols.name')}</th><th>${t('cols.brands')}</th><th>${t('cols.source')}</th><th>${t('cols.stage')}</th><th>${t('cols.value')}</th><th>${t('cols.assigned')}</th></tr></thead><tbody>
-  ${list.map(l=>`<tr><td style="font-variant-numeric:tabular-nums;color:var(--muted)">${l.id}</td><td><b>${esc(l.name)}</b><br><small style="color:var(--muted)">${l.plz} ${l.city} · ${l.seg}</small></td><td>${brandTag(l.b)}</td><td><small>${esc(l.src)}</small></td><td>${stTag(l.stage)}${ph(2)&&l.stage==='lost'&&l.lostReason?`<br><small style="color:var(--muted)">${t('bp.lostReason')}: ${l.lostReason}</small>`:''}${ph(2)&&l.stage==='lost'&&!l.lostReason?`<br><select data-lost="${l.id}" style="font-size:11px;padding:2px 4px;border:1px solid var(--crit);border-radius:5px;background:var(--bg)"><option value="">${t('bp.lostReason')} *</option>${t('bp.reasons').map(r=>`<option>${r}</option>`).join('')}</select>`:''}${l.quality==='bad'?`<br><span class="st crit" style="font-size:11px">${t('bp.bad')}</span>`:''}<br>${leadTimeout(l)}</td><td style="font-variant-numeric:tabular-nums">${eur(l.val)}</td><td>${l.owner?esc(pName(l.owner))+(ph(2)&&viewer.partner===l.owner&&!['won','lost'].includes(l.stage)&&l.quality!=='bad'?`<br><button class="btn sm" data-flag="${l.id}" title="${t('bp.quality')}">⚑ ${t('bp.bad')}</button>`:''):`<button class="btn sm" data-act="assign">${t('cols.assigned')} →</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+  ${list.map(l=>`<tr data-dl="l|${l.id}"><td style="font-variant-numeric:tabular-nums;color:var(--muted)">${l.id}</td><td><b>${esc(l.name)}</b><br><small style="color:var(--muted)">${l.plz} ${l.city} · ${l.seg}</small></td><td>${brandTag(l.b)}</td><td><small>${esc(l.src)}</small></td><td>${stTag(l.stage)}${ph(2)&&l.stage==='lost'&&l.lostReason?`<br><small style="color:var(--muted)">${t('bp.lostReason')}: ${l.lostReason}</small>`:''}${ph(2)&&l.stage==='lost'&&!l.lostReason?`<br><select data-lost="${l.id}" style="font-size:11px;padding:2px 4px;border:1px solid var(--crit);border-radius:5px;background:var(--bg)"><option value="">${t('bp.lostReason')} *</option>${t('bp.reasons').map(r=>`<option>${r}</option>`).join('')}</select>`:''}${l.quality==='bad'?`<br><span class="st crit" style="font-size:11px">${t('bp.bad')}</span>`:''}<br>${leadTimeout(l)}</td><td style="font-variant-numeric:tabular-nums">${eur(l.val)}</td><td>${l.owner?esc(pName(l.owner))+(ph(2)&&viewer.partner===l.owner&&!['won','lost'].includes(l.stage)&&l.quality!=='bad'?`<br><button class="btn sm" data-flag="${l.id}" title="${t('bp.quality')}">⚑ ${t('bp.bad')}</button>`:''):`<button class="btn sm" data-act="assign">${t('cols.assigned')} →</button>`}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function viewLeads(mine){
   const me=viewer.partner;let list=LEADS.filter(l=>brandF==='all'||l.b===brandF);
@@ -1101,7 +1132,7 @@ function ordersTable(list){
   const d=s=>s?new Date(s).toLocaleDateString(lang==='tr'?'tr-TR':lang==='en'?'en-GB':'de-DE',{day:'2-digit',month:'2-digit'}):'—';
   const shipCell=o=>!o.ship?`<small style="color:var(--muted)">—</small>`:o.ship.done?`<span class="st ok">${d(o.ship.eta)}</span>`:`<span class="st warn">🚚 ${t('stk.eta')} ${d(o.ship.eta)}</span><br><small style="color:var(--muted)">${o.ship.carrier}</small>`;
   return `<div class="tw"><table><thead><tr><th>${t('cols.order')}</th><th>${t('cols.name')}</th><th>${t('cols.brands')}</th><th>${t('cols.amount')}</th><th>${t('cols.status')}</th><th>${t('stk.eta')}</th><th>🔧 ${t('stk.install')}</th><th></th></tr></thead><tbody>
-  ${list.map(o=>`<tr data-p="${o.p}"><td style="font-variant-numeric:tabular-nums">${o.id}<br><small style="color:var(--muted)">${d(o.date)}</small></td><td><b>${esc(pName(o.p))}</b></td><td>${brandTag(o.b)}</td><td style="font-variant-numeric:tabular-nums">${eur(o.amount)}</td><td>${stTag(o.status)}</td><td>${shipCell(o)}</td><td style="font-variant-numeric:tabular-nums">${o.install?d(o.install):`<small style="color:var(--muted)">—</small>`}</td><td style="white-space:nowrap">${ph(3)&&o.status==='open'?`<button class="btn sm" data-act="payshop">Zahlung im Shop →</button>`:''}${ph(3)&&o.ship&&!o.ship.done?`<button class="btn sm" data-notify="${o.id}">📩 Kunde informieren</button>`:''}${o.notified?'<span class="st ok">Kunde informiert</span>':''}</td></tr>`).join('')}</tbody></table></div>`;
+  ${list.map(o=>`<tr data-dl="o|${o.id}"><td style="font-variant-numeric:tabular-nums">${o.id}<br><small style="color:var(--muted)">${d(o.date)}</small></td><td><b>${esc(pName(o.p))}</b></td><td>${brandTag(o.b)}</td><td style="font-variant-numeric:tabular-nums">${eur(o.amount)}</td><td>${stTag(o.status)}</td><td>${shipCell(o)}</td><td style="font-variant-numeric:tabular-nums">${o.install?d(o.install):`<small style="color:var(--muted)">—</small>`}</td><td style="white-space:nowrap">${ph(3)&&o.status==='open'?`<button class="btn sm" data-act="payshop">Zahlung im Shop →</button>`:''}${ph(3)&&o.ship&&!o.ship.done?`<button class="btn sm" data-notify="${o.id}">📩 Kunde informieren</button>`:''}${o.notified?'<span class="st ok">Kunde informiert</span>':''}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function viewOrders(){const me=viewer.partner;const list=ORDERS.filter(o=>(brandF==='all'||o.b===brandF)&&(!me||o.p===me));return `<div class="card"><div class="hd"><h2>${t('nav.orders')}</h2><span class="sp"></span>${brandChips()}</div>${ordersTable(list)}</div>`}
 function viewPricelist(){
@@ -1433,7 +1464,8 @@ function viewRegister(){
   if(regStep===4) body=`<div class="frm">
     <div class="f full"><label>${r('docs')}</label><label for="r_docs" style="display:block;border:2px dashed var(--line);border-radius:10px;padding:26px;text-align:center;color:var(--muted);cursor:pointer;font-weight:400">⤒ ${r('drop')}<input id="r_docs" type="file" multiple hidden></label></div>
     <div class="f full"><label class="chk"><input id="r_consent" type="checkbox" checked><span>${r('consent')}</span></label></div></div>`;
-  return `<div class="reg">
+  const pub=document.body.classList.contains('public');
+  return `<div class="reg">${pub?`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>${TENANTS[0].name} · Partner-Programm</b><a class="btn sm" style="text-decoration:none;color:inherit" href="${areaHref('network')}">${lang==='tr'?'Partner girişi':lang==='en'?'Partner login':'Partner-Login'}</a></div>`:''}
     <div class="hero"><div><h1 style="font-size:26px">${r('title')}</h1><p style="margin:4px 0 0;color:var(--muted);max-width:60ch">${r('sub')}</p></div><div class="lg">${Object.values(BRANDS).map(b=>`<span style="background:${b.c}">${b.name}</span>`).join('')}</div></div>
     <div class="steps">${steps}</div>
     <div class="card"><h2 style="margin-bottom:12px">${r('s'+regStep)}</h2>${body}
@@ -1865,6 +1897,26 @@ function viewHqDoors(){
 }
 
 
+/* ---------- 404 + detail pages ---------- */
+function viewNotFound(){
+  const home=CONSOLE?'chome':(navItems().find(i=>i.k)||{k:'dash'}).k;
+  return `<div class="card" style="max-width:560px;margin:40px auto;text-align:center;padding:40px 24px"><div style="font:600 46px/1 ui-monospace,monospace;color:var(--muted)">404</div><h2 style="margin:14px 0 6px">${lang==='tr'?'Sayfa bulunamadı':lang==='en'?'Page not found':'Seite nicht gefunden'}</h2><p style="color:var(--muted);margin:0 0 18px">${lang==='tr'?'Bu adres mevcut değil.':lang==='en'?'This address does not exist.':'Diese Adresse existiert nicht.'}</p><button class="btn p" data-goto="${home}">${lang==='tr'?'Ana sayfaya':lang==='en'?'Go to start':'Zur Startseite'}</button></div>`;
+}
+function detailShell(title,sub,rows,extra){
+  const back=MOD_LABEL(page);
+  return `<div style="display:grid;gap:14px"><div><button class="btn sm" data-dback>← ${back}</button></div>
+  <div class="card"><div class="hd"><h2>${title}</h2><span class="sp"></span>${sub||''}</div><dl class="kv">${rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>${extra||''}
+  <p style="margin:12px 0 0;font-size:12px;color:var(--muted)">Link: <span class="cred-pw">${absUrl(AREA,currentPath()).replace(/^https?:\/\//,'')}</span> <button class="btn sm" data-act="copy" data-v="${absUrl(AREA,currentPath())}">⧉</button></p></div></div>`}
+function viewDetail(){
+  const d=selDetail;const dt=s=>s?new Date(s).toLocaleDateString(lang==='tr'?'tr-TR':lang==='en'?'en-GB':'de-DE'):'—';
+  if(d.t==='l'){const l=LEADS.find(x=>x.id===d.id);if(!l)return viewNotFound();
+    return detailShell(esc(l.name),stTag(l.stage),[['ID',l.id],[t('cols.brands'),brandTag(l.b)],[t('cols.source'),esc(l.src)],['Ort',`${l.plz} ${esc(l.city)}`],['Segment',esc(l.seg)],[t('cols.value'),eur(l.val)],[t('cols.assigned'),l.owner?esc(pName(l.owner)):'—']])}
+  if(d.t==='o'){const o=ORDERS.find(x=>x.id===d.id);if(!o)return viewNotFound();
+    return detailShell(o.id,stTag(o.status),[[t('cols.name'),esc(pName(o.p))],[t('cols.brands'),brandTag(o.b)],[t('cols.amount'),eur(o.amount)],['Datum',dt(o.date)],['Versand',o.ship?`${o.ship.carrier} · ${o.ship.no||''} · ETA ${dt(o.ship.eta)}`:'—'],['Montage',o.install?dt(o.install):'—']])}
+  if(d.t==='c'){const c=CONTRACTS.find(x=>CONTRACT_ID(x)===d.id);if(!c)return viewNotFound();
+    return detailShell(esc(c.kind),stTag(c.status),[['ID',CONTRACT_ID(c)],[t('cols.name'),esc(pName(c.p))],[t('cols.brands'),brandTag(c.b)],['Datei',esc(c.file)],['Version',c.ver||1],[t('cols.until'),c.until],['Unterzeichnet',c.signedBy?esc(c.signedBy)+' · '+c.signedAt:'—']],`<div style="margin-top:10px"><button class="btn sm" data-act="pdf">PDF</button></div>`)}
+  return viewNotFound()}
+
 /* ---------- console: URL handbook ---------- */
 function viewUrls(){
   const T=(de,tr)=>lang==='tr'?tr:de;
@@ -1889,7 +1941,7 @@ function viewUrls(){
       <li><b>${T('Zwei Eingänge pro Mandant.','Firma başına iki giriş.')}</b> ${T('Mitarbeiter und Vertriebsnetz sind getrennte Adressen und getrennte Sitzungen. Innerhalb des Vertriebsnetzes gibt es keine Extra-Eingänge pro Typ.','Personel ve satış ağı ayrı adres ve ayrı oturumdur. Satış ağı içinde tür başına ayrı kapı yoktur.')}</li>
       <li><b>${T('Berechtigung kommt aus dem Konto, nie aus der Adresse.','Yetki hesaptan gelir, asla adresten değil.')}</b> ${T('Wer eine fremde Adresse aufruft, sieht nur, was seine Rolle erlaubt.','Başkasının adresini açan kişi yalnızca rolünün izin verdiğini görür.')}</li>
       <li><b>${T('Pfade sind Englisch, klein, mit Bindestrich','Yollar İngilizce, küçük harf, tireli')}</b> ${T('– unabhängig von der Oberflächensprache (DE/TR/EN).','– arayüz dilinden (DE/TR/EN) bağımsız.')}</li>
-      <li><b>${T('Datensätze haben eine feste Adresse','Kayıtların sabit bir adresi olur')}</b> ${T('mit Präfix-ID','önekli kimlikle')} (<code>p-1042</code>, <code>l-2051</code>). ${T('Filter stehen im Query-String, nie im Pfad.','Filtreler yolda değil, sorgu dizesinde durur.')}</li>
+      <li><b>${T('Datensätze haben eine feste Adresse','Kayıtların sabit bir adresi olur')}</b> ${T('mit Präfix und zufälliger ID (nicht fortlaufend – verrät keine Mengen, lädt nicht zum Durchprobieren ein)','önekli ve rastgele kimlikle (sıralı değil – sayı ele vermez, deneme yapmaya davet etmez)')} (<code>p_7k2m9x4q</code>, <code>l_3hq8zt1c</code>). ${T('Filter stehen im Query-String, nie im Pfad.','Filtreler yolda değil, sorgu dizesinde durur.')}</li>
     </ol></div>
 
   <div class="card"><div class="hd"><h2>${T('Zielstruktur','Hedef yapı')}</h2></div><div class="tw"><table><thead><tr><th>${T('Adresse','Adres')}</th><th>${T('Wofür','Ne için')}</th><th>Login</th><th>${T('Demo heute','Bugünkü demo')}</th></tr></thead><tbody>
@@ -1900,11 +1952,11 @@ function viewUrls(){
 
   <div class="card"><div class="hd"><h2>${T('Seitenpfade','Sayfa yolları')}</h2></div>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">${groups.map(([n,a,keys])=>`<div><p style="margin:0 0 6px"><b>${n}</b> · <code>${areaHost(a)}${D}</code></p><div class="tw"><table><tbody>${keys.map(k=>`<tr style="cursor:default"><td style="padding:5px 8px">${k==='register'?t('reg.nav'):MOD_LABEL(k)}</td><td style="padding:5px 8px"><code>/${slugOf(k)}</code></td></tr>`).join('')}</tbody></table></div></div>`).join('')}</div>
-    <p style="margin:10px 0 0;color:var(--muted);font-size:12.5px">${T('Detailseiten','Detay sayfaları')}: <code>/network/p-1042</code> · <code>/leads/l-2051</code> · <code>/contracts/c-318</code>. ${T('Module, die beim Mandanten nicht gebucht sind, liefern 404 – nicht „Zugriff verweigert“.','Firmada açık olmayan modüller 404 döner – "erişim reddedildi" değil.')}</p></div>
+    <p style="margin:10px 0 0;color:var(--muted);font-size:12.5px">${T('Detailseiten','Detay sayfaları')}: <code>/network/p_7k2m9x4q</code> · <code>/leads/l_3hq8zt1c</code> · <code>/contracts/c_9df02kpa</code>. ${T('Nicht gebuchte Module, fremde Datensätze und Seiten ohne Berechtigung liefern alle dieselbe 404-Seite – nicht „Zugriff verweigert“. So verrät die Adresse nicht, ob etwas existiert.','Açık olmayan modüller, başkasına ait kayıtlar ve yetki olmayan sayfalar hep aynı 404 sayfasını verir – "erişim reddedildi" değil. Böylece adres bir şeyin var olup olmadığını ele vermez.')} ${T('Öffentlich ohne Login','Girişsiz herkese açık')}: <code>partner.${S}.${D}/join</code>.</p></div>
 
   <div class="card"><div class="hd"><h2>${T('Regeln mit Beispielen','Örnekli kurallar')}</h2></div><div style="display:grid;gap:8px">
     ${rule(`<code>/leads?region=bayern&amp;status=open</code><br>${T('Bundesland ist ein Filter','Eyalet bir filtredir')}`,`<code>/bayern/leads</code><br>${T('Region im Pfad – bricht bei Gebietswechsel','Bölge yolda – bölge değişince kırılır')}`)}
-    ${rule(`<code>/network/p-1042</code><br>${T('feste ID, Name kann sich ändern','sabit kimlik, isim değişebilir')}`,`<code>/network/hofladen-kreuzer</code><br>${T('Name als Schlüssel – bricht bei Umfirmierung','İsim anahtar – unvan değişince kırılır')}`)}
+    ${rule(`<code>/network/p_7k2m9x4q</code><br>${T('feste, zufällige ID','sabit, rastgele kimlik')}`,`<code>/network/hofladen-kreuzer</code> · <code>/network/p-17</code><br>${T('Name bricht bei Umfirmierung; fortlaufende Nummer verrät die Anzahl','İsim unvan değişince kırılır; sıralı numara sayıyı ele verir')}`)}
     ${rule(`<code>/settings/team</code><br>${T('Sprache kommt aus dem Profil','Dil profilden gelir')}`,`<code>/de/einstellungen/team</code><br>${T('drei Sprachen = drei Adressen für dieselbe Seite','üç dil = aynı sayfaya üç adres')}`)}
     ${rule(`<code>partner.${S}.${D}</code><br>${T('ein Eingang, Typ aus dem Konto','tek giriş, tür hesaptan')}`,`<code>/freelancer</code>, <code>/leadgen</code>, <code>/distributor</code><br>${T('Eingang verrät Struktur, lädt zum Raten ein','kapı yapıyı ele verir, tahmine davet eder')}`)}
     ${rule(`<code>/company</code>, <code>/settings/partner-access</code>`,`<code>/zentrale</code>, <code>/admin.php</code>, <code>/index.html#hq</code><br>${T('interne oder technische Wörter','iç ya da teknik kelimeler')}`)}
@@ -2115,6 +2167,7 @@ function render(){
   document.querySelector('.rolebox').hidden=true;if(!NET&&!CONSOLE&&!HQ)viewer=VIEWERS[0];
   $('#doorBtn').innerHTML=CONSOLE?ico('external')+' Mandanten-Portal':'';$('#doorBtn').hidden=!CONSOLE;$('#doorBtn').setAttribute('href',portalUrl());
   const gb=document.querySelector('#gate .brand');if(gb){const M=NET?(PDOOR?DOOR_META[DOOR]:{n:'Partner-Portal',c:'#0f6f8c',ic:'🛰'}):null;gb.querySelector('b').textContent=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':M?M.n:TENANTS[0].name;gb.querySelector('small').textContent=CONSOLE?'Entwickler-Zugang · nur Master-Code':HQ?TENANTS[0].name+' · Zentrale-Code':M?TENANTS[0].name+' · Benutzername & Passwort':'Moonzelt · Euroconteiner · Wasserernte';gb.querySelector('.mark').innerHTML=CONSOLE?'TN':HQ?'HQ':M?deco(M.ic):'A';if(M)gb.querySelector('.mark').style.background=M.c}
+  {const gj=$('#gateJoin');if(gj){gj.hidden=!NET;gj.textContent=lang==='tr'?'Henüz partner değil misiniz? Şimdi başvurun →':lang==='en'?'Not a partner yet? Apply now →':'Noch kein Partner? Jetzt bewerben →';gj.href=areaHref('network','join');gj.onclick=e=>{e.preventDefault();try{history.pushState(null,'',areaHref('network','join'))}catch(x){}showJoin()}}}
   $('#gateUserWrap').hidden=!!CONSOLE;$('#gateUserLbl').textContent=NET?'Benutzername':'Benutzername (Team) – leer lassen für Zugangscode';$('#gatePwLbl').textContent=NET?'Passwort':CONSOLE?'Master-Code':'Passwort / Zugangscode';
   const sel=$('#roleSel');sel.innerHTML=VIEWERS.map(v=>`<option value="${v.id}" ${v===viewer?'selected':''}>${v.label()}</option>`).join('');
   const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
@@ -2125,8 +2178,10 @@ function render(){
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
   document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':NET?(PDOOR?DOOR_META[DOOR].n:'Partner-Portal')+' · '+TENANTS[0].name:TENANTS[0].name+' · Verwaltung';
   const v=$('#view');
-  v.innerHTML=deco(({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]());
+  v.innerHTML=deco(page==='notfound'?viewNotFound():selDetail&&DTYPE[page]===selDetail.t?viewDetail():({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]());
   syncUrl();
+  v.querySelectorAll('[data-dl]').forEach(r=>r.onclick=e=>{if(e.target.closest('button,select,a,input,[data-act]'))return;const [tt,id]=r.dataset.dl.split('|');selDetail={t:tt,id};render();window.scrollTo(0,0)});
+  v.querySelectorAll('[data-dback]').forEach(b=>b.onclick=()=>{selDetail=null;render()});
   /* access toggles (admin) */
   v.querySelectorAll('[data-mod],[data-brand],[data-flag]').forEach(cb=>cb.onchange=()=>{const p=PARTNERS.find(x=>x.id===selPartner);
     if(cb.dataset.mod){p.access.modules=MODULES.filter(m=>m==='dash'||(m===cb.dataset.mod?cb.checked:p.access.modules.includes(m)))}
@@ -2381,7 +2436,7 @@ $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').val
       if(kind&&doorAllows(kind))enterAs(kind,'local:'+kind);else{$('#gateErr').textContent=kind?(CONSOLE?DENY.console:HQ?DENY.zentrale:DENY.root):t('gate.err');$('#gatePw').select()}}
   }catch(x){$('#gateErr').textContent=t('gate.neterr')}
   btn.disabled=false;btn.textContent=t('gate.btn')};
-(async()=>{if(AREA==='home'){showHome();return}const tok=gateToken();if(!tok){showGate();return}
+(async()=>{if(AREA==='home'){showHome();return}if(NET&&ROUTE.rest[0]==='join'&&!gateToken()){showJoin();return}const tok=gateToken();if(!tok){showGate();return}
   if(tok.startsWith('local:')){const sub=tok.slice(6);if(!doorAllows(kindOfSub(sub),sub)){showGate()}else if(kindOfSub(sub)==='team'){const R=localRoles().find(x=>x.key===sub.split(':')[2]);setTeam(sub.split(':')[2],TEAMNAME,R?R.perms:[],R?R.name:'');render()}return}
   if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});
     if(!r.ok||!doorAllows(kindOfSub(r.sub),r.sub)){try{sessionStorage.removeItem(GKEY)}catch(x){}showGate()}
