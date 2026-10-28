@@ -1122,7 +1122,7 @@ function showSite(){
   document.body.classList.add('locked');$('#gate').hidden=true;
   const C=TD.content[Object.keys(TD.brands)[0]];document.title=TD.name+' · B2B';
   const IMG=u=>IS_HTTP?'/api/img?u='+encodeURIComponent(u):u;const UP='https://www.ug-alu.de/_uploads/home/',PI='https://images.ug-alu.de/products/';
-  const cats=[['Überdachungen','Terrassen- und Balkonüberdachungen, Carports',UP+'terrassenueberdachung.png'],['Vordächer','Haustürvordächer, Edelstahlvordächer',UP+'vordaecher.jpg'],['Seitenelemente','Glasschiebe-Systeme, Seitenwände',UP+'seitenelemente.png'],['Solar','Photovoltaik-Dächer',UP+'solardach.png'],['Beschattungen','Sonnensegel, Wintergartenmarkisen',UP+'sonnensegel.jpg'],['Zubehör','LED, Fundamente, Pfosten',UP+'teleskop-burste.png']];
+  const cats=[['Überdachungen','Terrassen- und Balkonüberdachungen, Carports',UP+'terrassenueberdachung.webp'],['Vordächer','Haustürvordächer, Edelstahlvordächer',UP+'vordaecher.webp'],['Seitenelemente','Glasschiebe-Systeme, Seitenwände',UP+'seitenelemente.webp'],['Solar','Photovoltaik-Dächer',UP+'solardach.webp'],['Beschattungen','Sonnensegel, Wintergartenmarkisen',UP+'sonnensegel.webp'],['Zubehör','LED, Fundamente, Pfosten',UP+'teleskop-burste.webp']];
   const refImg=[PI+'1/terrassenuberdachung_anthrazit_stegplatte_7m_4.jpg',PI+'6/kaltwintergarten_anthrazit_stegplatte_klar_6m_1.jpg',PI+'8/balkonuberdachung_stegplatte_klar_anthrazit_6m_lvFVyggl1XYEPd.jpg'];
   const prog=[['leadgen','Leadgenerator','Sie empfehlen, wir verkaufen.',['Persönlicher Empfehlungslink','Provision je Abschluss','Status jeder Empfehlung im Portal']],
     ['freelancer','Freelancer','Beratung und Aufmaß beim Kunden.',['Leads aus dem Pool in Ihrer Region','Provision nach Stufe','Material und Schulungsvideos']],
@@ -1134,7 +1134,7 @@ function showSite(){
   <div class="sdemo">Demo-Entwurf von TechNS für ${esc(TD.name)} – keine veröffentlichte Website · Zieladresse ${TD.domain}</div>
   <header class="shead"><div class="swrap shrow"><div class="slogo"><img src="${IMG('https://static.ug-alu.de/images/ug-alu.png')}" alt="${esc(TD.name)}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${TD.mark}'}))"><small>Fachpartner-Programm</small></div>
     <nav class="snav">${[['s-produkte','Produkte'],['s-programm','Partnerprogramm'],['s-haendler','Händlersuche'],['s-referenzen','Referenzen'],['s-kontakt','Kontakt']].map(([id,l])=>`<button data-sgo="${id}">${l}</button>`).join('')}<a class="sbtn ghost" href="${login}">Partner-Login</a></nav></div></header>
-  <section class="shero" style="--simg:url('${IMG('https://static.ug-alu.de/images/header.jpg')}')"><div class="swrap"><p class="skick">Für Händler, Monteure und Vertriebspartner</p><h1>${C.hero}</h1><p class="slead">${C.sub}</p>
+  <section class="shero" style="--simg:url('${IMG('https://static.ug-alu.de/images/header.png')}')"><div class="swrap"><p class="skick">Für Händler, Monteure und Vertriebspartner</p><h1>${C.hero}</h1><p class="slead">${C.sub}</p>
     <div class="scta"><a class="sbtn" href="${join}">Fachpartner werden</a><button class="sbtn ghost" data-sgo="s-programm">Programm ansehen</button></div>
     <div class="sfacts">${C.facts.map(([a,b])=>`<div><b>${a}</b><span>${b}</span></div>`).join('')}</div></div></section>
   <section class="ssec" id="s-produkte"><div class="swrap"><h2>Produkte</h2><p class="ssub">Alle Systeme aus massiven Aluminiumprofilen, gefertigt nach Maß.</p>
