@@ -104,7 +104,7 @@ async function main(req, res) {
   const codes = await loadCodes();
 
   if (action === 'create') {
-    const ttl = Math.min(Math.max(Number(body.ttlHours) || 48, 1), 24 * 30);
+    const ttl = Math.min(Math.max(Number(body.ttlHours) || 48, 0.25), 24 * 30);
     const code = genCode();
     const entry = { id: 'c_' + Date.now().toString(36) + randomInt(1e6).toString(36), label: String(body.label || '').slice(0, 80), hash: sha(code.replace(/-/g, '')), created: Date.now(), expires: Date.now() + ttl * 3600e3, usedAt: null };
     codes.unshift(entry);
