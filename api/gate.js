@@ -24,6 +24,15 @@ const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr'];
 const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
 const DEFAULT_TCFG = { features: ADDONS.slice(), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
+// ---- tenants: aydemir keeps its original blob paths; others live under gate/t/<slug>/
+const TENANTS = ['aydemir', 'ug-alu'];
+const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
+const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
+const pth = (T, kind) => T === 'aydemir' ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites'], types: DEFAULT_TCFG.types } };
+const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
+// a token's tenant (tokens minted before tenancy belong to aydemir)
+const tokTenant = d => d && (d.ten || 'aydemir');
 const PERMS = ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'hr', 'creds', 'team'];
 const BUILTIN_ROLES = [
   { key: 'gf', name: 'Geschäftsführer', perms: PERMS.slice(), builtin: true, locked: true },
@@ -31,23 +40,24 @@ const BUILTIN_ROLES = [
   { key: 'staff', name: 'Verwaltung', perms: ['partners', 'leads', 'projects', 'orders', 'dam'], builtin: true },
   { key: 'mitarbeiter', name: 'Mitarbeiter (nur Mein Bereich)', perms: [], builtin: true },
 ];
-async function loadRoles() {
-  let r = await loadJson(ROLES_PATH);
-  if (!r) { r = BUILTIN_ROLES.map(x => ({ ...x })); await saveJson(ROLES_PATH, r); }
+async function loadRoles(T = 'aydemir') {
+  const RP = pth(T, 'roles');
+  let r = await loadJson(RP);
+  if (!r) { r = BUILTIN_ROLES.map(x => ({ ...x, fixMa: true, migratedProjects: true })); await saveJson(RP, r); }
   let changed = false;
   if (!r.some(x => x.key === 'mitarbeiter')) { r.push({ ...BUILTIN_ROLES[3] }); changed = true; }
   for (const x of r) { if (x.key === 'gf' && x.perms.length !== PERMS.length) { x.perms = PERMS.slice(); changed = true; } if (x.key === 'mitarbeiter' && !x.fixMa) { x.perms = x.perms.filter(p => p !== 'projects'); x.fixMa = true; changed = true; }
     if (x.builtin && x.key !== 'mitarbeiter' && !x.migratedProjects) { if (!x.perms.includes('projects')) x.perms.push('projects'); x.migratedProjects = true; changed = true; } }
-  if (changed) await saveJson(ROLES_PATH, r);
+  if (changed) await saveJson(RP, r);
   return r;
 }
-async function permsOf(sub) {
+async function permsOf(sub, T = 'aydemir') {
   if (sub === 'hq') return PERMS.slice();
   const m = /^t:(\d+):([a-z0-9-]+)$/.exec(String(sub || ''));
   if (!m) return null;
-  const team = await loadTeam(); const mem = team.find(x => x.id === Number(m[1]));
+  const team = await loadTeam(T); const mem = team.find(x => x.id === Number(m[1]));
   if (!mem || !mem.active) return null;
-  const roles = await loadRoles(); const role = roles.find(x => x.key === mem.role);
+  const roles = await loadRoles(T); const role = roles.find(x => x.key === mem.role);
   return role ? role.perms : [];
 }
 const SEED_TEAM = [
@@ -56,10 +66,16 @@ const SEED_TEAM = [
   { id: 3, name: 'Verwaltung', role: 'staff', user: 'verwaltung', pass: 'Aydemir-Team-2026' },
   { id: 4, name: 'Mehmet K.', role: 'mitarbeiter', user: 'mehmet', pass: 'Aydemir-Mont-2026' },
 ];
-async function loadTeam() {
-  let t = await loadJson(TEAM_PATH);
-  if (!t) { t = SEED_TEAM.map(x => ({ id: x.id, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() })); await saveJson(TEAM_PATH, t); }
-  if (!t.some(x => x.user === 'mehmet')) { const x = SEED_TEAM[3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); await saveJson(TEAM_PATH, t); }
+const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
+  { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'UGAlu-GF-2026' },
+  { id: 2, name: 'Vertrieb', role: 'staff', user: 'vertrieb', pass: 'UGAlu-Team-2026' },
+  { id: 3, name: 'Montageleitung', role: 'mitarbeiter', user: 'montage', pass: 'UGAlu-Mont-2026' },
+] };
+async function loadTeam(T = 'aydemir') {
+  const TP = pth(T, 'team');
+  let t = await loadJson(TP);
+  if (!t) { t = SEEDS[T].map(x => ({ id: x.id, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() })); await saveJson(TP, t); }
+  if (T === 'aydemir' && !t.some(x => x.user === 'mehmet')) { const x = SEED_TEAM[3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); await saveJson(TP, t); }
   return t;
 }
 const publicMember = m => ({ id: m.id, name: m.name, role: m.role, user: m.user, active: m.active, created: m.created, lastLogin: m.lastLogin || null, logins: m.logins || 0 });
@@ -72,10 +88,10 @@ const SESSION_HOURS = 12;
 const sha = s => createHash('sha256').update(String(s)).digest('hex');
 const safeEq = (a, b) => { const x = Buffer.from(String(a)); const y = Buffer.from(String(b)); return x.length === y.length && timingSafeEqual(x, y); };
 
-function makeToken(sub, expCap) {
+function makeToken(sub, expCap, ten) {
   let exp = Date.now() + SESSION_HOURS * 3600e3;
   if (expCap && expCap < exp) exp = expCap;
-  const payload = Buffer.from(JSON.stringify({ sub, exp })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify(ten ? { sub, exp, ten } : { sub, exp })).toString('base64url');
   const sig = createHmac('sha256', ADMIN_SECRET + MASTER_HASH).update(payload).digest('base64url');
   return `${payload}.${sig}`;
 }
@@ -127,6 +143,9 @@ async function main(req, res) {
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   body = body || {};
   const { action } = body;
+  const T = tenantOf(body);
+  // tenant-bound subjects (team t:, partner p:) only count inside their own tenant
+  const scoped = d => d && /^[tp]:/.test(String(d.sub)) ? (tokTenant(d) === T ? d : null) : d;
 
   if (action === 'notes_get' || action === 'notes_set') {
     const d = verifyToken(body.token);
@@ -141,31 +160,31 @@ async function main(req, res) {
   }
 
   if (action === 'verify') {
-    const d = verifyToken(body.token);
-    const perms = d && String(d.sub).startsWith('t:') ? await permsOf(d.sub) : undefined;
+    const d = scoped(verifyToken(body.token));
+    const perms = d && String(d.sub).startsWith('t:') ? await permsOf(d.sub, T) : undefined;
     if (d && String(d.sub).startsWith('t:') && perms === null) return res.status(200).json({ ok: false });
-    return res.status(200).json({ ok: !!d, sub: d?.sub || null, exp: d?.exp || null, perms });
+    return res.status(200).json({ ok: !!d, sub: d?.sub || null, exp: d?.exp || null, perms, tenant: d ? (d.ten || (/^[tp]:/.test(String(d.sub)) ? 'aydemir' : null)) : null });
   }
 
   if (action === 'plogin') {
     // single partner entrance ("network"); legacy per-type doors still accepted
     const asked = String(body.door || 'network'); const user = String(body.user || '').trim().toLowerCase(); const pass = String(body.pass || '');
     if ((asked !== 'network' && !DOORS.includes(asked)) || !user || !pass) return res.status(400).json({ ok: false, error: 'empty' });
-    const creds = (await loadJson(CREDS_PATH)) || [];
+    const creds = (await loadJson(pth(T, 'creds'))) || [];
     const c = creds.find(x => x.user === user);
     if (!c || !c.active || !safeEq(c.pass, pass) || (asked !== 'network' && !c.doors.includes(asked))) return res.status(401).json({ ok: false, error: 'invalid' });
-    const tc = (await loadJson(TCFG_PATH)) || DEFAULT_TCFG;
+    const tc = (await loadJson(pth(T, 'tcfg'))) || tcfgDefault(T);
     const isOn = d => !(tc.types && tc.types[d] && tc.types[d].on === false);
     const door = asked === 'network' ? (c.doors.filter(d => DOORS.includes(d)).find(isOn) || null) : (isOn(asked) ? asked : null);
     if (!door) return res.status(403).json({ ok: false, error: 'door_off' });
     c.lastLogin = Date.now(); c.logins = (c.logins || 0) + 1; c.lastDoor = door;
-    await saveJson(CREDS_PATH, creds);
-    return res.status(200).json({ ok: true, token: makeToken('p:' + c.id + ':' + door), kind: 'partner', pid: c.id, door });
+    await saveJson(pth(T, 'creds'), creds);
+    return res.status(200).json({ ok: true, token: makeToken('p:' + c.id + ':' + door, null, T), kind: 'partner', pid: c.id, door, tenant: T });
   }
 
   if (action === 'tenant_cfg_get') {
-    const c = (await loadJson(TCFG_PATH)) || DEFAULT_TCFG;
-    return res.status(200).json({ ok: true, cfg: c });
+    const c = (await loadJson(pth(T, 'tcfg'))) || tcfgDefault(T);
+    return res.status(200).json({ ok: true, cfg: c, tenant: T });
   }
   if (action === 'tenant_cfg_set') {
     const d = verifyToken(body.token);
@@ -176,25 +195,25 @@ async function main(req, res) {
     for (const k of PTYPES) { const t = (inp.types || {})[k] || {}; types[k] = { on: t.on !== false, label: String(t.label || '').slice(0, 30) }; }
     if (!PTYPES.some(k => types[k].on)) return res.status(400).json({ ok: false, error: 'notype' });
     const cfg = { features, types, updated: Date.now() };
-    await saveJson(TCFG_PATH, cfg);
+    await saveJson(pth(T, 'tcfg'), cfg);
     return res.status(200).json({ ok: true, cfg });
   }
 
   if (action === 'tlogin') {
     const user = String(body.user || '').trim().toLowerCase(); const pass = String(body.pass || '');
     if (!user || !pass) return res.status(400).json({ ok: false, error: 'empty' });
-    const team = await loadTeam();
+    const team = await loadTeam(T);
     const m = team.find(x => x.user === user);
     if (!m || !m.active || !safeEq(m.hash, sha(pass))) return res.status(401).json({ ok: false, error: 'invalid' });
-    m.lastLogin = Date.now(); m.logins = (m.logins || 0) + 1; await saveJson(TEAM_PATH, team);
-    const roles = await loadRoles(); const role = roles.find(x => x.key === m.role) || { name: m.role, perms: [] };
-    return res.status(200).json({ ok: true, token: makeToken('t:' + m.id + ':' + m.role), kind: 'team', role: m.role, roleName: role.name, perms: role.perms, name: m.name, user: m.user });
+    m.lastLogin = Date.now(); m.logins = (m.logins || 0) + 1; await saveJson(pth(T, 'team'), team);
+    const roles = await loadRoles(T); const role = roles.find(x => x.key === m.role) || { name: m.role, perms: [] };
+    return res.status(200).json({ ok: true, token: makeToken('t:' + m.id + ':' + m.role, null, T), kind: 'team', tenant: T, role: m.role, roleName: role.name, perms: role.perms, name: m.name, user: m.user });
   }
 
   if (action && action.startsWith('team_')) {
-    const d = verifyToken(body.token);
-    if (!d || !((await permsOf(d.sub)) || []).includes('team')) return res.status(403).json({ ok: false, error: 'forbidden' });
-    const team = await loadTeam(); const roles = await loadRoles(); const roleKeys = roles.map(x => x.key);
+    const d = scoped(verifyToken(body.token));
+    if (!d || !((await permsOf(d.sub, T)) || []).includes('team')) return res.status(403).json({ ok: false, error: 'forbidden' });
+    const team = await loadTeam(T); const roles = await loadRoles(T); const TEAMP = pth(T, 'team'), ROLESP = pth(T, 'roles'); const roleKeys = roles.map(x => x.key);
     if (action === 'team_list') return res.status(200).json({ ok: true, team: team.map(publicMember), roles, perms: PERMS });
     if (action === 'team_role_save') {
       const perms = (body.perms || []).filter(x => PERMS.includes(x)); const name = String(body.name || '').trim().slice(0, 40);
@@ -202,35 +221,36 @@ async function main(req, res) {
       let r = roles.find(x => x.key === body.key);
       if (r) { if (r.locked) return res.status(400).json({ ok: false, error: 'locked' }); r.name = name; r.perms = perms; }
       else { let k = slug(name) || 'rolle'; let kk = k; let n = 2; while (roleKeys.includes(kk)) kk = k + '-' + n++; r = { key: kk, name, perms }; roles.push(r); }
-      await saveJson(ROLES_PATH, roles);
+      await saveJson(ROLESP, roles);
       return res.status(200).json({ ok: true, roles });
     }
     if (action === 'team_role_delete') {
       const r = roles.find(x => x.key === body.key);
       if (!r || r.builtin) return res.status(400).json({ ok: false, error: 'builtin' });
       if (team.some(x => x.role === r.key)) return res.status(400).json({ ok: false, error: 'inuse' });
-      await saveJson(ROLES_PATH, roles.filter(x => x.key !== r.key));
+      await saveJson(ROLESP, roles.filter(x => x.key !== r.key));
       return res.status(200).json({ ok: true });
     }
     if (action === 'team_add') {
       const role = roleKeys.includes(body.role) ? body.role : 'staff'; const name = String(body.name || '').trim().slice(0, 60) || 'Mitarbeiter';
       let u = slug(body.user || name) || 'user'; let k = u; let n = 2; while (team.some(x => x.user === k)) k = u + '-' + n++;
       const pass = genPassword(); const m = { id: Math.max(0, ...team.map(x => x.id)) + 1, name, role, user: k, hash: sha(pass), active: true, created: Date.now() };
-      team.push(m); await saveJson(TEAM_PATH, team);
+      team.push(m); await saveJson(TEAMP, team);
       return res.status(200).json({ ok: true, member: publicMember(m), pass });
     }
     const m = team.find(x => x.id === Number(body.id));
     if (!m) return res.status(404).json({ ok: false, error: 'not found' });
-    if (action === 'team_reset') { const pass = genPassword(); m.hash = sha(pass); await saveJson(TEAM_PATH, team); return res.status(200).json({ ok: true, member: publicMember(m), pass }); }
-    if (action === 'team_toggle') { if (d.sub === 't:' + m.id + ':' + m.role) return res.status(400).json({ ok: false, error: 'self' }); m.active = !m.active; await saveJson(TEAM_PATH, team); return res.status(200).json({ ok: true, member: publicMember(m) }); }
-    if (action === 'team_role') { m.role = roleKeys.includes(body.role) ? body.role : m.role; await saveJson(TEAM_PATH, team); return res.status(200).json({ ok: true, member: publicMember(m) }); }
+    if (action === 'team_reset') { const pass = genPassword(); m.hash = sha(pass); await saveJson(TEAMP, team); return res.status(200).json({ ok: true, member: publicMember(m), pass }); }
+    if (action === 'team_toggle') { if (d.sub === 't:' + m.id + ':' + m.role) return res.status(400).json({ ok: false, error: 'self' }); m.active = !m.active; await saveJson(TEAMP, team); return res.status(200).json({ ok: true, member: publicMember(m) }); }
+    if (action === 'team_role') { m.role = roleKeys.includes(body.role) ? body.role : m.role; await saveJson(TEAMP, team); return res.status(200).json({ ok: true, member: publicMember(m) }); }
     return res.status(400).json({ ok: false, error: 'unknown action' });
   }
 
   if (action && action.startsWith('pcreds_')) {
-    const d = verifyToken(body.token);
-    if (!d || !((await permsOf(d.sub)) || []).includes('creds')) return res.status(403).json({ ok: false, error: 'forbidden' });
-    let creds = (await loadJson(CREDS_PATH)) || [];
+    const d = scoped(verifyToken(body.token));
+    if (!d || !((await permsOf(d.sub, T)) || []).includes('creds')) return res.status(403).json({ ok: false, error: 'forbidden' });
+    const CP = pth(T, 'creds');
+    let creds = (await loadJson(CP)) || [];
     if (action === 'pcreds_sync') {
       const list = Array.isArray(body.partners) ? body.partners.slice(0, 500) : [];
       const used = new Set(creds.map(c => c.user));
@@ -242,7 +262,7 @@ async function main(req, res) {
           creds.push({ id, name: String(p.name).slice(0, 80), doors, user: k, pass: genPassword(), active: true, created: Date.now() });
         } else { c.name = String(p.name).slice(0, 80); c.doors = doors; }
       }
-      await saveJson(CREDS_PATH, creds);
+      await saveJson(CP, creds);
       return res.status(200).json({ ok: true, creds: creds.map(publicCred) });
     }
     const c = creds.find(x => x.id === Number(body.id));
@@ -250,7 +270,7 @@ async function main(req, res) {
     if (action === 'pcreds_reset') c.pass = genPassword();
     else if (action === 'pcreds_toggle') c.active = !c.active;
     else return res.status(400).json({ ok: false, error: 'unknown action' });
-    await saveJson(CREDS_PATH, creds);
+    await saveJson(CP, creds);
     return res.status(200).json({ ok: true, cred: publicCred(c) });
   }
 
