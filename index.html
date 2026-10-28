@@ -605,6 +605,7 @@ en:{nav:{bp:"Best practices",audit:"Audit log",tenants:"Tenants & white-label",i
 };
 let lang=(()=>{try{return localStorage.getItem('pp-lang')||'de'}catch(e){return 'de'}})();
 /* ---------- tenant (first path segment, or <tenant>.b2b-easy.com) ---------- */
+const EDITION='full';
 const TENANT_LIST=['aydemir','ug-alu','sirius'];
 /* customer domains (CNAME to B2B-Easy): host -> [tenant, area] */
 const HOST_MAP={'b2b.ug-alu.de':['ug-alu','site'],'partner.ug-alu.de':['ug-alu','network'],'team.ug-alu.de':['ug-alu','staff'],
@@ -924,7 +925,7 @@ if(TD){
 /* late overrides (data defined further down) */
 function applyTenantLate(){
   /* console list: Aydemir + the two demo tenants */
-  TENANTS.splice(1,TENANTS.length-1,TENANT_DATA['ug-alu'].tenantRow,TENANT_DATA['sirius'].tenantRow);
+  if(TENANT_DATA['ug-alu']&&TENANT_DATA['sirius'])TENANTS.splice(1,TENANTS.length-1,TENANT_DATA['ug-alu'].tenantRow,TENANT_DATA['sirius'].tenantRow);
   TENANTS[0].domain='partner.aydemir-gruppe.de';
   if(!TD)return;
   const i=TENANTS.findIndex(t=>t.name===TD.name);if(i>0){const [r]=TENANTS.splice(i,1);TENANTS.unshift(r)}
@@ -963,7 +964,8 @@ const IS_HTTP=(()=>{try{return location.protocol.startsWith('http')&&!/claudeuse
 const LEGACY_PDOORS=['partner','freelancer','leadgen','distributor'];
 const HOSTMODE=(()=>{try{return IS_HTTP&&location.hostname.toLowerCase().endsWith('.'+APP_DOMAIN.toLowerCase())}catch(e){return false}})();
 function rawPath(){try{return IS_HTTP?location.pathname:(location.hash.replace(/^#/,'')||'/')}catch(e){return '/'}}
-function parseArea(){
+function parseArea(){const r=parseArea0();if(EDITION!=='full'&&(r.area==='home'||r.area==='console'))return{area:'staff',rest:[],legacy:!!r.legacy||r.area==='console'};return r}
+function parseArea0(){
   const segs=rawPath().split('?')[0].split('/').filter(Boolean).map(x=>decodeURIComponent(x).toLowerCase());
   if(CUSTOMHOST)return{area:CUSTOMHOST[1],rest:segs};
   if(HOSTMODE){const h=location.hostname.toLowerCase().slice(0,-(APP_DOMAIN.length+1));
@@ -988,11 +990,11 @@ function absUrl(a,sub,t){return HOSTMODE||CUSTOMHOST?areaHref(a,sub,t):(IS_HTTP?
 const TARGET_HOSTS={aydemir:{staff:'team.aydemir-gruppe.de',network:'partner.aydemir-gruppe.de'},'ug-alu':{staff:'team.ug-alu.de',network:'partner.ug-alu.de',site:'b2b.ug-alu.de'},sirius:{staff:'team.siriuswindows.nl',network:'partner.siriuswindows.nl'}};
 function targetUrl(a,sub,t){t=t||TENANT;const h=a==='console'?'console.'+APP_DOMAIN:a==='home'?'www.'+APP_DOMAIN:a==='embed'?'embed.'+APP_DOMAIN:(TARGET_HOSTS[t]||{})[a]||areaHost(a)+APP_DOMAIN;return h+(sub?'/'+sub:'')}
 if(ROUTE.legacy){try{history.replaceState(null,'',IS_HTTP?areaPath(AREA):(AREA==='home'?location.pathname+location.search:'#'+areaPath(AREA)))}catch(e){}}
-let CONSOLE=AREA==='console';const HQ=false;
+let CONSOLE=AREA==='console'||AREA==='home';const HQ=false;
 let DOOR=CONSOLE?'console':'',PDOOR=null;
 if(NET){try{const d=sessionStorage.getItem('b2b-ptype'+TENANT);if(LEGACY_PDOORS.includes(d)&&sessionStorage.getItem('b2b-gate'+(TENANT!=='aydemir'?':'+TENANT:'')+':network'))DOOR=PDOOR=d}catch(e){}}
 function adoptDoor(sub){const d=String(sub||'').split(':')[2];if(NET&&LEGACY_PDOORS.includes(d)){DOOR=PDOOR=d;try{sessionStorage.setItem('b2b-ptype'+TENANT,d)}catch(e){}}return PDOOR}
-const SKEY=(TENANT!=='aydemir'&&AREA!=='console'&&AREA!=='home'?':'+TENANT:'')+(AREA==='staff'||AREA==='home'?'':':'+AREA);
+const SKEY=(TENANT!=='aydemir'&&AREA!=='console'&&AREA!=='home'?':'+TENANT:'')+(AREA==='staff'?'':':'+(AREA==='home'?'console':AREA));
 const GKEY='b2b-gate'+SKEY,KKEY='b2b-kind'+SKEY,PKEY='b2b-pid'+SKEY;
 let PID=(()=>{try{return +sessionStorage.getItem(PKEY)||null}catch(e){return null}})();
 const RKEY='b2b-role'+SKEY;
@@ -1183,7 +1185,7 @@ function showEmbed(){
         <h2 class="hsec">3 · DNS bei ${esc(TNAME)}</h2><pre class="code">${esc(`partner.${(TARGET_HOSTS[TENANT]||{}).network?TARGET_HOSTS[TENANT].network.replace(/^partner\./,''):'firma.de'}  CNAME  cname.b2b-easy.com.\nteam.${(TARGET_HOSTS[TENANT]||{}).staff?TARGET_HOSTS[TENANT].staff.replace(/^team\./,''):'firma.de'}     CNAME  cname.b2b-easy.com.\n_b2b-verify  TXT  "b2b-verify=…"`)}</pre>
         <div class="hlinks">${['network','staff'].map(a=>`<a class="hlink" href="${areaHref(a)}"><span>${a==='network'?'Partner-Portal':'Mitarbeiter-Portal'}</span><code>${targetUrl(a)}</code><em>Demo: ${absUrl(a).replace(/^https?:\/\//,'')}</em></a>`).join('')}</div></div>
     </div>
-    <p class="hfoot"><a href="${areaHref('home')}">← Alle Demo-Mandanten</a></p></div>`);
+    ${EDITION==='full'?`<p class="hfoot"><a href="${areaHref('home')}">← Alle Demo-Mandanten</a></p>`:`<p class="hfoot"><a href="${areaHref('staff')}">← Zum Portal</a></p>`}</div>`);
   document.body.appendChild(el);
   const draw=q=>{const X=dealers.filter(p=>!q||(p.city+' '+p.addr).toLowerCase().includes(q.toLowerCase())).slice(0,6);$('#embList').innerHTML=X.map(p=>`<div class="embd"><b>${esc(p.name)}</b><span>${esc(p.city)} · ${esc(p.tel)}</span></div>`).join('')||'<p>—</p>'};
   draw('');$('#embQ').oninput=e=>draw(e.target.value.trim());
@@ -2707,7 +2709,7 @@ function doorAllows(kind,sub){
 }
 function kindOfSub(sub){return sub==='master'?'master':sub==='hq'?'hq':String(sub||'').startsWith('p:')?'partner':String(sub||'').startsWith('t:')?'team':'once'}
 function setTeam(role,name,perms,roleName,user){if(user){TEAMUSER=user;try{sessionStorage.setItem(RKEY+':u',user)}catch(e){}}if(!role){TEAMUSER=null;try{sessionStorage.removeItem(RKEY+':u')}catch(e){}}TEAMROLE=role||null;TEAMNAME=name||null;if(perms)TEAMPERMS=perms;if(roleName)TEAMROLENAME=roleName;if(!role){TEAMPERMS=null;TEAMROLENAME=null}try{if(role){sessionStorage.setItem(RKEY,role);sessionStorage.setItem(RKEY+':n',name||'');if(perms)sessionStorage.setItem(RKEY+':p',JSON.stringify(perms));if(roleName)sessionStorage.setItem(RKEY+':r',roleName)}else{[RKEY,RKEY+':n',RKEY+':p',RKEY+':r'].forEach(k=>sessionStorage.removeItem(k))}}catch(e){}}
-function enterAs(kind,tok,pid){try{sessionStorage.setItem(GKEY,tok);if(pid){sessionStorage.setItem(PKEY,pid)}}catch(x){}if(kind!=='team')setTeam(null);setKind(kind);PID=pid||PID;hideGate();page=CONSOLE?'chome':HQ?'hqhome':'dash';render();lockAt(kind==='once'?tokenExp(tok):null)}
+function enterAs(kind,tok,pid){if(AREA==='home'){try{sessionStorage.setItem(GKEY,tok)}catch(x){}hideGate();showHome();return}try{sessionStorage.setItem(GKEY,tok);if(pid){sessionStorage.setItem(PKEY,pid)}}catch(x){}if(kind!=='team')setTeam(null);setKind(kind);PID=pid||PID;hideGate();page=CONSOLE?'chome':HQ?'hqhome':'dash';render();lockAt(kind==='once'?tokenExp(tok):null)}
 /* offline (artifact) partner credentials */
 function localCreds(){let c=null;try{c=JSON.parse(localStorage.getItem(LSK('b2b-creds'))||'null')}catch(e){}
   if(!c){const W=['Zelt','Regen','Stahl','Halle','Wasser','Anker','Wolke','Linde'];c=PARTNERS.map((p,i)=>({id:p.id,name:p.name,doors:[...new Set(p.roles.map(r=>r.t))],user:p.name.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,24),pass:W[i%W.length]+'-'+String(1000+i*137%9000)+'-'+W[(i+3)%W.length].toLowerCase(),active:true,created:Date.now(),logins:0}));try{localStorage.setItem(LSK('b2b-creds'),JSON.stringify(c))}catch(e){}}
@@ -2738,7 +2740,7 @@ $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').val
       if(kind&&doorAllows(kind))enterAs(kind,'local:'+kind);else{$('#gateErr').textContent=kind?(CONSOLE?DENY.console:HQ?DENY.zentrale:DENY.root):t('gate.err');$('#gatePw').select()}}
   }catch(x){$('#gateErr').textContent=t('gate.neterr')}
   btn.disabled=false;btn.textContent=t('gate.btn')};
-(async()=>{if(AREA==='home'){showHome();return}if(AREA==='site'){showSite();return}if(AREA==='embed'){showEmbed();return}if(NET&&ROUTE.rest[0]==='join'&&!gateToken()){showJoin();return}const tok=gateToken();if(!tok){showGate();return}
+(async()=>{if(AREA==='home'){const tk=gateToken();let ok=false;if(tk==='local:master')ok=true;else if(tk&&GATE_API){try{const r=await gateApi({action:'verify',token:tk});ok=!!(r.ok&&r.sub==='master')}catch(e){}}if(ok)showHome();else showGate();return}if(AREA==='site'){showSite();return}if(AREA==='embed'){showEmbed();return}if(NET&&ROUTE.rest[0]==='join'&&!gateToken()){showJoin();return}const tok=gateToken();if(!tok){showGate();return}
   if(tok.startsWith('local:')){const sub=tok.slice(6);if(!doorAllows(kindOfSub(sub),sub)){showGate()}else if(kindOfSub(sub)==='team'){const R=localRoles().find(x=>x.key===sub.split(':')[2]);setTeam(sub.split(':')[2],TEAMNAME,R?R.perms:[],R?R.name:'');render()}return}
   if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});
     if(!r.ok||!doorAllows(kindOfSub(r.sub),r.sub)){try{sessionStorage.removeItem(GKEY)}catch(x){}showGate()}
