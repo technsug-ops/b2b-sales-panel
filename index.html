@@ -677,13 +677,13 @@ const DE=[[6.8,53.6],[7.2,53.7],[8.5,53.9],[8.9,54.1],[8.6,54.9],[8.7,55.0],[9.5
 const px=(lon,lat)=>[(lon-5.7)*62,(55.3-lat)*62*1.55];
 
 /* ---------- access model (Super Admin controls what each partner sees) ---------- */
-const MODULES=['dash','network','pool','leads','myleads','referral','pricelist','orders','stock','install','site','earn','mycontract','dam','notif'];
-const MOD_LABEL=m=>({team:'Team & Rollen',hqhome:'Zentrale',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
+const MODULES=['dash','network','pool','leads','myleads','referral','projects','pricelist','orders','stock','install','site','earn','mycontract','dam','notif'];
+const MOD_LABEL=m=>({projects:'Projekte',team:'Team & Rollen',hqhome:'Zentrale',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
 const DEFAULT_ACCESS={
  leadgen:['dash','myleads','referral','site','earn','mycontract','dam','notif'],
  freelancer:['dash','pool','myleads','stock','install','site','earn','mycontract','dam','notif'],
- partner:['dash','pricelist','orders','stock','install','site','mycontract','dam','notif'],
- distributor:['dash','network','pool','leads','pricelist','orders','stock','install','site','earn','mycontract','dam','notif']};
+ partner:['dash','projects','pricelist','orders','stock','install','site','mycontract','dam','notif'],
+ distributor:['dash','network','pool','leads','projects','pricelist','orders','stock','install','site','earn','mycontract','dam','notif']};
 PARTNERS.forEach(p=>{
   const mods=new Set();p.roles.forEach(r=>DEFAULT_ACCESS[r.t].forEach(m=>mods.add(m)));
   p.access={modules:MODULES.filter(m=>mods.has(m)),brands:[...new Set(p.roles.map(r=>r.b))],map:true,prices:true,export:p.roles.some(r=>r.t==='distributor')};
@@ -703,8 +703,13 @@ const RKEY='b2b-role'+(DOOR?':'+DOOR:'');
 let TEAMROLE=(()=>{try{return sessionStorage.getItem(RKEY)||null}catch(e){return null}})();
 let TEAMNAME=(()=>{try{return sessionStorage.getItem(RKEY+':n')||null}catch(e){return null}})();
 const ROLE_LBL={gf:'Geschäftsführer',tech:'Technik-Verantwortlicher',staff:'Verwaltung'};
-const canZentrale=()=>!PDOOR&&!CONSOLE&&(TEAMROLE==='gf'||TEAMROLE==='tech');
-const isGF=()=>!PDOOR&&!CONSOLE&&TEAMROLE==='gf';
+let TEAMPERMS=(()=>{try{return JSON.parse(sessionStorage.getItem(RKEY+':p')||'null')}catch(e){return null}})();
+let TEAMROLENAME=(()=>{try{return sessionStorage.getItem(RKEY+':r')||null}catch(e){return null}})();
+const PERM_LBL={partners:'Partner & Verträge',leads:'Leads',projects:'Projekte',orders:'Bestellungen, Lager & Montage',dam:'Material & Partner-Websites',settings:'Einstellungen & Audit',creds:'Partner-Zugänge (Passwörter)',team:'Team & Rollen verwalten'};
+const PERM_KEYS=Object.keys(PERM_LBL);
+const hasP=x=>TEAMROLE?(TEAMPERMS||[]).includes(x):!['creds','team'].includes(x);
+const canZentrale=()=>!PDOOR&&!CONSOLE&&!!TEAMROLE&&hasP('creds');
+const isGF=()=>!PDOOR&&!CONSOLE&&!!TEAMROLE&&hasP('team');
 const LIVE=(()=>{try{return location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)}catch(e){return false}})();
 function doorUrl(d){return LIVE?'/'+(d||''):(d?'#'+d:'#')}
 function portalUrl(){return doorUrl('')}
@@ -730,9 +735,9 @@ function navItems(){
     {s:'consoleOps'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),...(ph(1)?[{k:'security',ic:'🛡️'}]:[]),...(ph(3)?[{k:'billing',ic:'💳'},{k:'pilot',ic:'🎯'}]:[]),...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),
     {s:'consoleDocs'},{k:'bp',ic:'📘'}];
   if(viewer.type==='admin') return [
-    {s:'admin'},{k:'dash',ic:'▦'},{k:'partners',ic:'👥'},{k:'leads',ic:'📥'},{k:'contracts',ic:'📄'},{k:'orders',ic:'📦'},{k:'stock',ic:'🏭'},{k:'install',ic:'🔧'},{k:'sites',ic:'🌐'},{k:'dam',ic:'🗂️'},{k:'notif',ic:'🔔',badge:unread},...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),{k:'settings',ic:'⚙️'},...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'},...(isGF()?[{k:'team',ic:'👔'}]:[])]:[]),{s:'public'},{k:'register',ic:'📝'}];
+    {s:'admin'},{k:'dash',ic:'▦'},...(hasP('partners')?[{k:'partners',ic:'👥'}]:[]),...(hasP('leads')?[{k:'leads',ic:'📥'}]:[]),...(hasP('projects')?[{k:'projects',ic:'🗂'}]:[]),...(hasP('partners')?[{k:'contracts',ic:'📄'}]:[]),...(hasP('orders')?[{k:'orders',ic:'📦'},{k:'stock',ic:'🏭'},{k:'install',ic:'🔧'}]:[]),...(hasP('dam')?[{k:'sites',ic:'🌐'},{k:'dam',ic:'🗂️'}]:[]),{k:'notif',ic:'🔔',badge:unread},...(hasP('settings')&&ph(1)?[{k:'audit',ic:'🧾'}]:[]),...(hasP('settings')?[{k:'settings',ic:'⚙️'}]:[]),...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}]:[]),...(isGF()?[...(canZentrale()?[]:[{s:'hq'}]),{k:'team',ic:'👔'}]:[]),{s:'public'},{k:'register',ic:'📝'}];
   const p=PARTNERS.find(x=>x.id===viewer.partner);
-  const ic={dash:'▦',network:'👥',pool:'🎯',leads:'📥',myleads:'📥',referral:'🔗',pricelist:'📦',orders:'🧾',stock:'🏭',install:'🔧',site:'🌐',earn:'💶',mycontract:'📄',dam:'🗂️',notif:'🔔'};
+  const ic={projects:'🗂',dash:'▦',network:'👥',pool:'🎯',leads:'📥',myleads:'📥',referral:'🔗',pricelist:'📦',orders:'🧾',stock:'🏭',install:'🔧',site:'🌐',earn:'💶',mycontract:'📄',dam:'🗂️',notif:'🔔'};
   return [{s:'me'},...MODULES.filter(m=>p.access.modules.includes(m)).map(m=>({k:m,ic:ic[m],badge:m==='notif'?unread:0}))];
 }
 function renderNav(){
@@ -1429,16 +1434,52 @@ let INVOICES=[{no:"RE-2026-1041",date:"2026-10-01",amount:1290,st:'paid'},{no:"R
 
 
 
+
+/* ---------- Projekt-Management (small) ---------- */
+const PSTAGES=[['plan','Geplant','var(--muted)'],['run','In Arbeit','var(--accent)'],['mont','Montage','var(--warn)'],['done','Abgeschlossen','var(--ok)']];
+let PROJECTS=[
+ {id:'PRJ-104',name:'Zelthalle 20×40 · Karlsruhe',p:13,b:'mz',order:'DO-1193',stage:'mont',owner:'Technik-Verantwortlicher',due:'2026-11-06',value:24300,tasks:[['Statik & Zeichnung freigegeben',1],['Fundament/Anker geprüft',1],['Lieferung Dachser (ETA 29.10.)',1],['Montageteam 1 · 04.–06.11.',0],['Abnahmeprotokoll & Fotos',0]]},
+ {id:'PRJ-103',name:'Rain Water Wall · Grünwerk Frankfurt',p:2,b:'we',order:'DO-1192',stage:'run',owner:'Verwaltung',due:'2026-11-12',value:8820,tasks:[['3D-Vorentwurf an Kunde',1],['Angebot unterschrieben',1],['Bestellung Draft Order',1],['Liefertermin bestätigen',0],['Montage 12.11. · Team 2',0]]},
+ {id:'PRJ-102',name:'Containeranlage · Stadtwerke Esslingen',p:1,b:'ec',order:null,stage:'plan',owner:'Geschäftsführer',due:'2026-12-01',value:62000,tasks:[['Bedarfsaufnahme vor Ort',1],['Layout 4 Module',0],['Angebot',0],['Genehmigung Bauamt',0]]},
+ {id:'PRJ-101',name:'Flat Pack 480×600 · Nordcontainer',p:4,b:'ec',order:'DO-1191',stage:'run',owner:'Verwaltung',due:'2026-11-16',value:71500,tasks:[['Zahlung (Vorkasse)',0],['Produktion freigeben',0],['Spedition buchen',0]]},
+ {id:'PRJ-099',name:'Lagerzelt 10×20 · Eventzelte Berlin',p:8,b:'mz',order:'DO-1190',stage:'done',owner:'Technik-Verantwortlicher',due:'2026-10-28',value:15600,tasks:[['Lieferung',1],['Montage 27.–28.10.',1],['Abnahme',1]]},
+];
+let projSel=null,projFilter='all';
+const pct=pr=>pr.tasks.length?Math.round(pr.tasks.filter(t=>t[1]).length/pr.tasks.length*100):0;
+function viewProjects(){
+  const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
+  const list=PROJECTS.filter(pr=>(!me||pr.p===me.id)&&(brandF==='all'||pr.b===brandF)&&(projFilter==='all'||pr.owner===projFilter));
+  const d=s=>new Date(s).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
+  const late=pr=>pr.stage!=='done'&&new Date(pr.due)<new Date('2026-10-28');
+  if(me){ // partner: read-only status of own projects
+    return `<div class="card"><div class="hd"><h2>Meine Projekte</h2></div>${list.length?list.map(pr=>`<div style="padding:12px 0;border-bottom:1px solid var(--line)"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>${esc(pr.name)}</b>${brandTag(pr.b)}<span class="sp" style="flex:1"></span><span class="pill">${PSTAGES.find(x=>x[0]===pr.stage)[1]}</span><small style="color:var(--muted)">fällig ${d(pr.due)}</small></div><div class="bar" style="margin-top:8px"><i style="width:${pct(pr)}%"></i></div><small style="color:var(--muted)">${pr.tasks.filter(t=>t[1]).length}/${pr.tasks.length} Schritte · nächster: ${esc((pr.tasks.find(t=>!t[1])||['—'])[0])}</small></div>`).join(''):'<p style="margin:0;color:var(--muted)">Keine Projekte.</p>'}</div>`;
+  }
+  const P=projSel?PROJECTS.find(x=>x.id===projSel):null;
+  const owners=[...new Set(PROJECTS.map(x=>x.owner))];
+  const board=`<div class="grid" style="grid-template-columns:repeat(4,minmax(200px,1fr));overflow-x:auto">${PSTAGES.map(([k,l,c])=>{const col=list.filter(pr=>pr.stage===k);return `<div style="background:var(--bg);border-radius:10px;padding:8px;min-width:200px"><div style="display:flex;gap:6px;align-items:center;margin:2px 4px 8px"><span class="dot" style="background:${c}"></span><b style="font-size:13px">${l}</b><span class="pill" style="margin-left:auto;font-size:11px;padding:1px 7px">${col.length}</span></div><div style="display:grid;gap:8px">${col.map(pr=>`<button class="card" data-proj="${pr.id}" style="text-align:left;cursor:pointer;padding:10px;display:grid;gap:5px;border-color:${pr.id===projSel?'var(--accent)':'var(--line)'}"><small style="color:var(--muted)">${pr.id} · ${BRANDS[pr.b].name}</small><b style="font-size:13px">${esc(pr.name)}</b><small>${esc(pName(pr.p))}</small><div class="bar"><i style="width:${pct(pr)}%;background:${c}"></i></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>👤 ${esc(pr.owner.split('-')[0])}</span><span style="color:${late(pr)?'var(--crit)':'inherit'}">⏰ ${d(pr.due)}</span></div></button>`).join('')||'<small style="color:var(--muted);padding:4px">—</small>'}</div></div>`}).join('')}</div>`;
+  const detail=P?`<div class="card"><div class="hd"><h2>${esc(P.name)}</h2><span class="sp"></span><button class="btn sm" data-projclose>✕</button></div>
+    <dl class="kv"><dt>Partner</dt><dd>${esc(pName(P.p))}</dd><dt>Marke</dt><dd>${brandTag(P.b)}</dd><dt>Auftrag</dt><dd>${P.order||'—'} · ${eur(P.value)}</dd><dt>Verantwortlich</dt><dd><select data-projowner style="padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--bg)">${[...new Set([...owners,'Geschäftsführer','Technik-Verantwortlicher','Verwaltung'])].map(o=>`<option ${o===P.owner?'selected':''}>${o}</option>`).join('')}</select></dd><dt>Fällig</dt><dd><input type="date" data-projdue value="${P.due}" style="padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--bg)"></dd></dl>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${PSTAGES.map(([k,l])=>`<button class="btn sm ${P.stage===k?'p':''}" data-projstage="${k}">${l}</button>`).join('')}</div>
+    <b style="font-size:13px">Aufgaben · ${pct(P)} %</b><div style="display:grid;gap:4px;margin-top:6px">${P.tasks.map(([tx,dn],i)=>`<label style="display:flex;gap:8px;align-items:center;font-size:13px;padding:5px 6px;border-radius:6px;background:var(--bg)"><input type="checkbox" data-ptask="${i}" ${dn?'checked':''} style="accent-color:var(--accent)"><span style="${dn?'text-decoration:line-through;color:var(--muted)':''}">${esc(tx)}</span></label>`).join('')}</div>
+    <div style="display:flex;gap:6px;margin-top:8px"><input id="ptaskNew" placeholder="Neue Aufgabe…" style="flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)"><button class="btn sm" data-ptaskadd>+</button></div>
+    ${P.order?`<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap"><button class="btn sm" data-goto="orders">Bestellung ${P.order} →</button><button class="btn sm" data-goto="install">Montage-Kalender →</button></div>`:''}</div>`:`<div class="card"><div class="hd"><h2>Neues Projekt</h2></div><p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Aus einer Bestellung ohne Projekt anlegen – Schritte werden aus der Vorlage übernommen.</p>${ORDERS.filter(o=>!PROJECTS.some(pr=>pr.order===o.id)).map(o=>`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px"><span style="flex:1">${o.id} · ${esc(pName(o.p))} ${brandTag(o.b)}</span><button class="btn sm" data-projnew="${o.id}">+ Projekt</button></div>`).join('')||'<small style="color:var(--muted)">Alle Bestellungen haben ein Projekt.</small>'}</div>`;
+  return `<div class="grid kpis" style="margin-bottom:14px">${kpi('Aktive Projekte',PROJECTS.filter(x=>x.stage!=='done').length,'')}${kpi('In Montage',PROJECTS.filter(x=>x.stage==='mont').length,'')}${kpi('Überfällig',PROJECTS.filter(late).length,'',PROJECTS.some(late))}${kpi('Volumen offen',eur(PROJECTS.filter(x=>x.stage!=='done').reduce((a,x)=>a+x.value,0)),'')}</div>
+  <div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:14px">
+    <div class="card"><div class="hd"><h2>Projekte</h2><span class="sp"></span>${brandChips()}<select data-projf style="padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg)"><option value="all">Alle Verantwortlichen</option>${owners.map(o=>`<option ${projFilter===o?'selected':''}>${o}</option>`).join('')}</select></div>${board}</div>
+    ${detail}</div>`;
+}
+
 /* ---------- Team & Rollen (Geschäftsführer only) ---------- */
-let TEAM={list:null,loading:false,last:null,err:''};
-async function teamLoad(){TEAM.loading=true;try{if(GATE_API){const r=await gateApi({action:'team_list',token:gateToken()});if(r.ok)TEAM.list=r.team;else TEAM.err='Keine Berechtigung.'}else TEAM.list=localTeam()}catch(e){TEAM.err=t('gate.neterr')}TEAM.loading=false;render()}
+let TEAM={list:null,roles:null,loading:false,last:null,err:'',editRole:null};
+async function teamLoad(){TEAM.loading=true;try{if(GATE_API){const r=await gateApi({action:'team_list',token:gateToken()});if(r.ok){TEAM.list=r.team;TEAM.roles=r.roles}else TEAM.err='Keine Berechtigung.'}else{TEAM.list=localTeam();TEAM.roles=localRoles()}}catch(e){TEAM.err=t('gate.neterr')}TEAM.loading=false;render()}
 async function teamAct(action,extra){
-  if(GATE_API){const r=await gateApi({action,token:gateToken(),...extra});if(!r.ok){toast(r.error==='self'?'Eigenen Zugang nicht sperren':'Fehler');return}if(r.pass)TEAM.last={name:r.member.name,user:r.member.user,pass:r.pass};}
+  if(GATE_API){const r=await gateApi({action,token:gateToken(),...extra});if(!r.ok){toast(({self:'Eigenen Zugang nicht sperren',inuse:'Rolle ist noch Personen zugewiesen',builtin:'Standardrolle kann nicht gelöscht werden',locked:'Geschäftsführer-Rolle ist fest',name:'Bitte Rollennamen eingeben'})[r.error]||'Fehler');return}if(r.pass)TEAM.last={name:r.member.name,user:r.member.user,pass:r.pass};}
+  else if(action.startsWith('team_role_')){const R=localRoles();if(action==='team_role_save'){let x=R.find(y=>y.key===extra.key);if(x&&x.locked){toast('Geschäftsführer-Rolle ist fest');return}if(x){x.name=extra.name;x.perms=extra.perms}else R.push({key:extra.name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name:extra.name,perms:extra.perms})}else{const x=R.find(y=>y.key===extra.key);if(x.builtin){toast('Standardrolle kann nicht gelöscht werden');return}if(localTeam().some(m=>m.role===x.key)){toast('Rolle ist noch Personen zugewiesen');return}R.splice(R.indexOf(x),1)}saveLocalRoles(R)}
   else{const L=localTeam();const W=['Zelt','Regen','Anker','Wolke'];const pw=()=>W[Math.floor(Math.random()*4)]+'-'+Math.floor(1000+Math.random()*9000)+'-halle';
     if(action==='team_add'){const m={id:Math.max(...L.map(x=>x.id))+1,name:extra.name||'Mitarbeiter',role:extra.role,user:(extra.name||'user').toLowerCase().replace(/[^a-z0-9]+/g,'-'),pass:pw(),active:true,created:Date.now()};L.push(m);TEAM.last={name:m.name,user:m.user,pass:m.pass}}
     else{const m=L.find(x=>x.id===extra.id);if(action==='team_reset'){m.pass=pw();TEAM.last={name:m.name,user:m.user,pass:m.pass}}if(action==='team_toggle')m.active=!m.active;if(action==='team_role')m.role=extra.role}
     saveLocalTeam(L)}
-  AUDIT.unshift({who:TEAMNAME||'Geschäftsführung',what:'Team: '+({team_add:'Konto angelegt',team_reset:'Passwort neu',team_toggle:'Zugang geändert',team_role:'Rolle geändert'})[action]+(extra.name?' · '+extra.name:''),when:new Date().toISOString().slice(0,16).replace('T',' ')});
+  AUDIT.unshift({who:TEAMNAME||'Geschäftsführung',what:'Team: '+({team_add:'Konto angelegt',team_reset:'Passwort neu',team_toggle:'Zugang geändert',team_role:'Rolle geändert',team_role_save:'Rolle gespeichert',team_role_delete:'Rolle gelöscht'})[action]+(extra.name?' · '+extra.name:''),when:new Date().toISOString().slice(0,16).replace('T',' ')});
   await teamLoad();
 }
 function viewTeam(){
@@ -1448,12 +1489,16 @@ function viewTeam(){
   return `<div class="grid two" style="margin-bottom:14px">
     <div class="card"><div class="hd"><h2>Team & Rollen · ${esc(TENANTS[0].name)}</h2></div>
       <div class="tw"><table><thead><tr><th>Name</th><th>Rolle</th><th>Benutzername</th><th>Status</th><th>Letzte Anmeldung</th><th></th></tr></thead><tbody>
-      ${TEAM.list.map(m=>`<tr style="cursor:default"><td><b>${esc(m.name)}</b></td><td><select data-trole="${m.id}" style="padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg)">${Object.entries(ROLE_LBL).map(([k,l])=>`<option value="${k}" ${m.role===k?'selected':''}>${l}</option>`).join('')}</select></td><td><span class="cred-pw">${m.user}</span></td><td>${m.active?'<span class="st ok">aktiv</span>':'<span class="st crit">gesperrt</span>'}</td><td><small>${fmt(m.lastLogin)}${m.logins?' · '+m.logins+'×':''}</small></td><td style="white-space:nowrap"><button class="btn sm" data-treset="${m.id}">↻ Passwort</button> <button class="btn sm" data-ttoggle="${m.id}">${m.active?'⏸':'▶'}</button></td></tr>`).join('')}</tbody></table></div>
+      ${TEAM.list.map(m=>`<tr style="cursor:default"><td><b>${esc(m.name)}</b></td><td><select data-trole="${m.id}" style="padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg)">${(TEAM.roles||[]).map(r=>`<option value="${r.key}" ${m.role===r.key?'selected':''}>${esc(r.name)}</option>`).join('')}</select></td><td><span class="cred-pw">${m.user}</span></td><td>${m.active?'<span class="st ok">aktiv</span>':'<span class="st crit">gesperrt</span>'}</td><td><small>${fmt(m.lastLogin)}${m.logins?' · '+m.logins+'×':''}</small></td><td style="white-space:nowrap"><button class="btn sm" data-treset="${m.id}">↻ Passwort</button> <button class="btn sm" data-ttoggle="${m.id}">${m.active?'⏸':'▶'}</button></td></tr>`).join('')}</tbody></table></div>
       ${TEAM.last?`<div style="margin-top:12px;background:var(--accent-soft);border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div><small style="color:var(--muted)">Zugangsdaten für ${esc(TEAM.last.name)} – nur jetzt sichtbar</small><div class="cred-pw" style="font-size:15px">${TEAM.last.user} · <b>${esc(TEAM.last.pass)}</b></div></div><button class="btn sm" data-act="copy" data-v="Benutzer: ${TEAM.last.user} · Passwort: ${esc(TEAM.last.pass)}">⧉ Kopieren</button></div>`:''}</div>
     <div style="display:grid;gap:14px;align-content:start">
-      <div class="card"><div class="hd"><h2>Mitarbeiter hinzufügen</h2></div><div class="frm"><div class="f full"><label>Name</label><input id="tm_name" placeholder="z. B. Ayşe Demir"></div><div class="f full"><label>Rolle</label><select id="tm_role">${Object.entries(ROLE_LBL).map(([k,l])=>`<option value="${k}" ${k==='staff'?'selected':''}>${l}</option>`).join('')}</select></div><div class="f full"><button class="btn p" data-act="teamadd">Konto anlegen</button></div></div></div>
-      <div class="card"><div class="hd"><h2>Rechte je Rolle</h2></div><div class="tw"><table><thead><tr><th></th><th style="text-align:center">GF</th><th style="text-align:center">Technik</th><th style="text-align:center">Verwaltung</th></tr></thead><tbody>
-        ${[['Operativer Betrieb',1,1,1],['Partner-Zugänge & Passwörter',1,1,0],['Eingänge & Links',1,1,0],['Team & Rollen',1,0,0],['Notizen',1,1,0]].map(([l,...r])=>`<tr style="cursor:default"><td>${l}</td>${r.map(x=>`<td style="text-align:center;color:${x?'var(--ok)':'var(--line)'}">${x?'●':'○'}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+      <div class="card"><div class="hd"><h2>Mitarbeiter hinzufügen</h2></div><div class="frm"><div class="f full"><label>Name</label><input id="tm_name" placeholder="z. B. Ayşe Demir"></div><div class="f full"><label>Rolle</label><select id="tm_role">${(TEAM.roles||[]).map(r=>`<option value="${r.key}" ${r.key==='staff'?'selected':''}>${esc(r.name)}</option>`).join('')}</select></div><div class="f full"><button class="btn p" data-act="teamadd">Konto anlegen</button></div></div></div>
+      <div class="card"><div class="hd"><h2>Rollen & Rechte</h2><span class="sp"></span><button class="btn p sm" data-rnew>+ Neue Rolle</button></div>
+        <div class="tw"><table><thead><tr><th>Recht</th>${(TEAM.roles||[]).map(r=>`<th style="text-align:center;white-space:normal;min-width:70px">${esc(r.name)}${r.builtin?'':` <button class="btn sm" data-rdel="${r.key}" title="Löschen" style="padding:0 5px">✕</button>`}</th>`).join('')}</tr></thead><tbody>
+        ${PERM_KEYS.map(pk=>`<tr style="cursor:default"><td style="white-space:normal">${PERM_LBL[pk]}</td>${(TEAM.roles||[]).map(r=>`<td style="text-align:center"><input type="checkbox" data-rperm="${r.key}" data-pk="${pk}" ${r.perms.includes(pk)?'checked':''} ${r.locked?'disabled':''} style="accent-color:var(--accent)"></td>`).join('')}</tr>`).join('')}
+        <tr style="cursor:default"><td><small style="color:var(--muted)">Dashboard & Benachrichtigungen</small></td>${(TEAM.roles||[]).map(()=>'<td style="text-align:center;color:var(--ok)">●</td>').join('')}</tr></tbody></table></div>
+        ${TEAM.editRole!==null?`<div class="frm" style="margin-top:12px;padding:12px;border:1px solid var(--accent);border-radius:8px"><div class="f full"><label>Name der neuen Rolle</label><input id="rl_name" placeholder="z. B. Sekretariat, Vertrieb, Buchhaltung"></div><div class="f full"><div class="opt" style="grid-template-columns:1fr 1fr">${PERM_KEYS.map(pk=>`<label><input type="checkbox" data-rnewp="${pk}" ${['leads','partners'].includes(pk)?'checked':''}><span>${PERM_LBL[pk]}</span></label>`).join('')}</div></div><div class="f full" style="display:flex;gap:8px"><button class="btn p" data-rsave>Rolle anlegen</button><button class="btn" data-rcancel>Abbrechen</button></div></div>`:''}
+        <small style="color:var(--muted);display:block;margin-top:8px">Änderungen gelten ab der nächsten Anmeldung der Person. Geschäftsführer-Rolle ist fest.</small></div>
     </div></div>`;
 }
 
@@ -1666,13 +1711,13 @@ function render(){
   const sel=$('#roleSel');sel.innerHTML=VIEWERS.map(v=>`<option value="${v.id}" ${v===viewer?'selected':''}>${v.label()}</option>`).join('');
   const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
   $('#roleChips').innerHTML=me?me.roles.map(r=>`<span class="pill" style="font-size:11px;padding:2px 8px"><span class="dot" style="background:${BRANDS[r.b].c}"></span>${t('types.'+r.t)} ${r.tier}</span>`).join(''):`<span class="pill t" style="font-size:11px;padding:2px 8px">★ ${t('types.admin')}</span>`;
-  $('#userPill').textContent='👤 '+(CONSOLE?'TechNS · Entwickler':HQ?'Geschäftsleitung':me?me.contact:TEAMROLE?(TEAMNAME||ROLE_LBL[TEAMROLE])+' · '+ROLE_LBL[TEAMROLE]:TENANTS[0].name.replace(' Gruppe','')+' · '+t('types.admin'));
+  $('#userPill').textContent='👤 '+(CONSOLE?'TechNS · Entwickler':HQ?'Geschäftsleitung':me?me.contact:TEAMROLE?(TEAMNAME||'')+' · '+(TEAMROLENAME||ROLE_LBL[TEAMROLE]||TEAMROLE):TENANTS[0].name.replace(' Gruppe','')+' · '+t('types.admin'));
   const adminSess=CONSOLE?isMaster():(viewer.type==='admin'&&(isMaster()||canZentrale()));$('#notesBtn').hidden=!adminSess;if(!adminSess)$('#notes').hidden=true;
   renderNav();
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
   document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':PDOOR?DOOR_META[DOOR].n:TENANTS[0].name+' · Verwaltung';
   const v=$('#view');
-  v.innerHTML=({team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
+  v.innerHTML=({projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
   /* access toggles (admin) */
   v.querySelectorAll('[data-mod],[data-brand],[data-flag]').forEach(cb=>cb.onchange=()=>{const p=PARTNERS.find(x=>x.id===selPartner);
     if(cb.dataset.mod){p.access.modules=MODULES.filter(m=>m==='dash'||(m===cb.dataset.mod?cb.checked:p.access.modules.includes(m)))}
@@ -1745,6 +1790,22 @@ function render(){
     if(cb.dataset.sprod){s.products=cb.checked?[...new Set([...s.products,cb.dataset.sprod])]:s.products.filter(x=>x!==cb.dataset.sprod)}
     toast(t('saved'));if(cb.dataset.sflag==='enabled'||cb.dataset.skind||cb.dataset.sbrand)render()});
   ['s_logo','s_phone','s_tag'].forEach(id=>{const e=$('#'+id);if(e)e.onchange=()=>{const s=siteOf(viewer.partner);s[{s_logo:'logo',s_phone:'phone',s_tag:'tagline'}[id]]=e.value;toast(t('saved'))}});
+  /* project hooks */
+  v.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{projSel=b.dataset.proj;render()});
+  v.querySelectorAll('[data-projclose]').forEach(b=>b.onclick=()=>{projSel=null;render()});
+  v.querySelectorAll('[data-projstage]').forEach(b=>b.onclick=()=>{const P=PROJECTS.find(x=>x.id===projSel);P.stage=b.dataset.projstage;AUDIT.unshift({who:TEAMNAME||'Verwaltung',what:`Projekt ${P.id} → ${PSTAGES.find(x=>x[0]===P.stage)[1]}`,when:new Date().toISOString().slice(0,16).replace('T',' ')});render();toast('Status: '+PSTAGES.find(x=>x[0]===P.stage)[1])});
+  v.querySelectorAll('[data-ptask]').forEach(c=>c.onchange=()=>{const P=PROJECTS.find(x=>x.id===projSel);P.tasks[+c.dataset.ptask][1]=c.checked?1:0;if(pct(P)===100&&P.stage!=='done')toast('Alle Aufgaben erledigt – Projekt abschließen?');render()});
+  v.querySelectorAll('[data-ptaskadd]').forEach(b=>b.onclick=()=>{const t=$('#ptaskNew').value.trim();if(!t)return;PROJECTS.find(x=>x.id===projSel).tasks.push([t,0]);render()});
+  const pf=v.querySelector('[data-projf]');if(pf)pf.onchange=()=>{projFilter=pf.value;render()};
+  const po=v.querySelector('[data-projowner]');if(po)po.onchange=()=>{PROJECTS.find(x=>x.id===projSel).owner=po.value;render();toast('Verantwortlich: '+po.value)};
+  const pdue=v.querySelector('[data-projdue]');if(pdue)pdue.onchange=()=>{PROJECTS.find(x=>x.id===projSel).due=pdue.value;render()};
+  v.querySelectorAll('[data-projnew]').forEach(b=>b.onclick=()=>{const o=ORDERS.find(x=>x.id===b.dataset.projnew);const id='PRJ-'+(105+PROJECTS.length);PROJECTS.unshift({id,name:`${({mz:'Zelt',ec:'Container',we:'Rain Water Wall'})[o.b]} · ${pName(o.p)}`,p:o.p,b:o.b,order:o.id,stage:'plan',owner:TEAMROLENAME||'Verwaltung',due:o.install||'2026-11-30',value:o.amount,tasks:[['Auftrag prüfen',0],['Liefertermin bestätigen',0],['Montage planen',0],['Abnahme & Fotos',0]]});projSel=id;render();toast('Projekt '+id+' angelegt')});
+  /* role hooks */
+  v.querySelectorAll('[data-rnew]').forEach(b=>b.onclick=()=>{TEAM.editRole='new';render();setTimeout(()=>{const n=$('#rl_name');if(n)n.focus()},30)});
+  v.querySelectorAll('[data-rcancel]').forEach(b=>b.onclick=()=>{TEAM.editRole=null;render()});
+  v.querySelectorAll('[data-rsave]').forEach(b=>b.onclick=()=>{const n=$('#rl_name').value.trim();if(!n){$('#rl_name').focus();return}const perms=[...v.querySelectorAll('[data-rnewp]:checked')].map(c=>c.dataset.rnewp);TEAM.editRole=null;teamAct('team_role_save',{name:n,perms}).then(()=>toast('Rolle angelegt: '+n))});
+  v.querySelectorAll('[data-rperm]').forEach(c=>c.onchange=()=>{const R=(TEAM.roles||[]).find(x=>x.key===c.dataset.rperm);const perms=new Set(R.perms);c.checked?perms.add(c.dataset.pk):perms.delete(c.dataset.pk);teamAct('team_role_save',{key:R.key,name:R.name,perms:[...perms]})});
+  v.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=()=>teamAct('team_role_delete',{key:b.dataset.rdel}));
   /* team hooks */
   v.querySelectorAll('[data-treset]').forEach(b=>b.onclick=()=>teamAct('team_reset',{id:+b.dataset.treset}));
   v.querySelectorAll('[data-ttoggle]').forEach(b=>b.onclick=()=>teamAct('team_toggle',{id:+b.dataset.ttoggle}));
@@ -1849,7 +1910,7 @@ function doorAllows(kind,sub){
   return kind==='master'||kind==='once'||kind==='team';
 }
 function kindOfSub(sub){return sub==='master'?'master':sub==='hq'?'hq':String(sub||'').startsWith('p:')?'partner':String(sub||'').startsWith('t:')?'team':'once'}
-function setTeam(role,name){TEAMROLE=role||null;TEAMNAME=name||null;try{if(role){sessionStorage.setItem(RKEY,role);sessionStorage.setItem(RKEY+':n',name||'')}else{sessionStorage.removeItem(RKEY);sessionStorage.removeItem(RKEY+':n')}}catch(e){}}
+function setTeam(role,name,perms,roleName){TEAMROLE=role||null;TEAMNAME=name||null;if(perms)TEAMPERMS=perms;if(roleName)TEAMROLENAME=roleName;if(!role){TEAMPERMS=null;TEAMROLENAME=null}try{if(role){sessionStorage.setItem(RKEY,role);sessionStorage.setItem(RKEY+':n',name||'');if(perms)sessionStorage.setItem(RKEY+':p',JSON.stringify(perms));if(roleName)sessionStorage.setItem(RKEY+':r',roleName)}else{[RKEY,RKEY+':n',RKEY+':p',RKEY+':r'].forEach(k=>sessionStorage.removeItem(k))}}catch(e){}}
 function enterAs(kind,tok,pid){try{sessionStorage.setItem(GKEY,tok);if(pid){sessionStorage.setItem(PKEY,pid)}}catch(x){}if(kind!=='team')setTeam(null);setKind(kind);PID=pid||PID;hideGate();page=CONSOLE?'chome':HQ?'hqhome':'dash';render();lockAt(kind==='once'?tokenExp(tok):null)}
 /* offline (artifact) partner credentials */
 function localCreds(){let c=null;try{c=JSON.parse(localStorage.getItem('b2b-creds')||'null')}catch(e){}
@@ -1858,6 +1919,10 @@ function localCreds(){let c=null;try{c=JSON.parse(localStorage.getItem('b2b-cred
 function localTeam(){let t=null;try{t=JSON.parse(localStorage.getItem('b2b-team')||'null')}catch(e){}
   if(!t){t=[{id:1,name:'Geschäftsführung',role:'gf',user:'geschaeftsfuehrung',pass:'Aydemir-GF-2026',active:true,created:Date.now()},{id:2,name:'Technik-Verantwortlicher',role:'tech',user:'technik',pass:'Aydemir-Tech-2026',active:true,created:Date.now()},{id:3,name:'Verwaltung',role:'staff',user:'verwaltung',pass:'Aydemir-Team-2026',active:true,created:Date.now()}];try{localStorage.setItem('b2b-team',JSON.stringify(t))}catch(e){}}
   return t}
+function localRoles(){let r=null;try{r=JSON.parse(localStorage.getItem('b2b-roles')||'null')}catch(e){}
+  if(!r){r=[{key:'gf',name:'Geschäftsführer',perms:PERM_KEYS.slice(),builtin:true,locked:true},{key:'tech',name:'Technik-Verantwortlicher',perms:['partners','leads','projects','orders','dam','settings','creds'],builtin:true},{key:'staff',name:'Verwaltung',perms:['partners','leads','projects','orders','dam'],builtin:true}];try{localStorage.setItem('b2b-roles',JSON.stringify(r))}catch(e){}}
+  return r}
+function saveLocalRoles(r){try{localStorage.setItem('b2b-roles',JSON.stringify(r))}catch(e){}}
 function saveLocalTeam(t){try{localStorage.setItem('b2b-team',JSON.stringify(t))}catch(e){}}
 function saveLocalCreds(c){try{localStorage.setItem('b2b-creds',JSON.stringify(c))}catch(e){}}
 $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();const user=($('#gateUser').value||'').trim().toLowerCase();if(!code||(PDOOR&&!user))return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
@@ -1866,8 +1931,8 @@ $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').val
       if(GATE_API){const r=await gateApi({action:'plogin',door:DOOR,user,pass:code});if(r.ok)enterAs('partner',r.token,r.pid);else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
       else{const c=localCreds().find(x=>x.user===user&&x.pass===code&&x.active&&x.doors.includes(DOOR));if(c){c.logins=(c.logins||0)+1;c.lastLogin=Date.now();saveLocalCreds(localCreds().map(x=>x.id===c.id?c:x));enterAs('partner','local:p:'+c.id+':'+DOOR,c.id)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
     }else if(!CONSOLE&&user){
-      if(GATE_API){const r=await gateApi({action:'tlogin',user,pass:code});if(r.ok){setTeam(r.role,r.name);enterAs('team',r.token)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
-      else{const m=localTeam().find(x=>x.user===user&&x.pass===code&&x.active);if(m){m.lastLogin=Date.now();m.logins=(m.logins||0)+1;saveLocalTeam(localTeam().map(x=>x.id===m.id?m:x));setTeam(m.role,m.name);enterAs('team','local:t:'+m.id+':'+m.role)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
+      if(GATE_API){const r=await gateApi({action:'tlogin',user,pass:code});if(r.ok){setTeam(r.role,r.name,r.perms,r.roleName);enterAs('team',r.token)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.';$('#gatePw').select()}}
+      else{const m=localTeam().find(x=>x.user===user&&x.pass===code&&x.active);if(m){m.lastLogin=Date.now();m.logins=(m.logins||0)+1;saveLocalTeam(localTeam().map(x=>x.id===m.id?m:x));const R=localRoles().find(x=>x.key===m.role)||{perms:[],name:m.role};setTeam(m.role,m.name,R.perms,R.name);enterAs('team','local:t:'+m.id+':'+m.role)}else{$('#gateErr').textContent='Benutzername oder Passwort ist falsch – oder Ihr Zugang ist gesperrt.'}}
     }else if(GATE_API){const r=await gateApi({action:'login',code});
       if(r.ok&&doorAllows(r.kind))enterAs(r.kind,r.token);
       else if(r.ok){$('#gateErr').textContent=CONSOLE?DENY.console:HQ?DENY.zentrale:DENY.root;$('#gatePw').select()}
@@ -1877,10 +1942,10 @@ $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').val
   }catch(x){$('#gateErr').textContent=t('gate.neterr')}
   btn.disabled=false;btn.textContent=t('gate.btn')};
 (async()=>{const tok=gateToken();if(!tok){showGate();return}
-  if(tok.startsWith('local:')){const sub=tok.slice(6);if(!doorAllows(kindOfSub(sub),sub)){showGate()}else if(kindOfSub(sub)==='team'){setTeam(sub.split(':')[2],TEAMNAME);render()}return}
+  if(tok.startsWith('local:')){const sub=tok.slice(6);if(!doorAllows(kindOfSub(sub),sub)){showGate()}else if(kindOfSub(sub)==='team'){const R=localRoles().find(x=>x.key===sub.split(':')[2]);setTeam(sub.split(':')[2],TEAMNAME,R?R.perms:[],R?R.name:'');render()}return}
   if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});
     if(!r.ok||!doorAllows(kindOfSub(r.sub),r.sub)){try{sessionStorage.removeItem(GKEY)}catch(x){}showGate()}
-    else{const k=kindOfSub(r.sub);setKind(k);if(k==='partner'){PID=+String(r.sub).split(':')[1]}if(k==='team'){setTeam(String(r.sub).split(':')[2],TEAMNAME)}else setTeam(null);render();lockAt(k==='once'?(r.exp||tokenExp(tok)):null)}}catch(x){/* keep session on network hiccup */}}
+    else{const k=kindOfSub(r.sub);setKind(k);if(k==='partner'){PID=+String(r.sub).split(':')[1]}if(k==='team'){setTeam(String(r.sub).split(':')[2],TEAMNAME,r.perms,TEAMROLENAME)}else setTeam(null);render();lockAt(k==='once'?(r.exp||tokenExp(tok)):null)}}catch(x){/* keep session on network hiccup */}}
   else showGate()})();
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);const nd=DOOR_LIST.includes(h)?h:'';if(nd!==DOOR)location.reload()});
 render();
