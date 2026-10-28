@@ -209,6 +209,15 @@ body.public .shell,body.public .app{grid-template-columns:1fr!important}
 #site .sfacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:32px}#site .sfacts div{background:#fff;border:1px solid #e3e8ee;border-radius:10px;padding:12px 14px}#site .sfacts b{display:block;font-size:18px;color:var(--sa)}#site .sfacts span{font-size:13px;color:#6b7785}
 #site .ssec{padding:56px 0}#site .ssec.alt{background:#f4f7fa}#site h2{font-size:26px;margin:0 0 6px}#site .ssub{color:#5b6875;margin:0 0 24px;max-width:680px}
 #site .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}#site .sgrid.four{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.sslide{position:relative}
+.sslider{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;padding-bottom:2px}
+.sslider::-webkit-scrollbar{display:none}
+.sslider>.scard{flex:0 0 calc((100% - 42px)/4);scroll-snap-align:start}
+@media(max-width:900px){.sslider>.scard{flex-basis:calc((100% - 14px)/2)}}
+@media(max-width:560px){.sslider>.scard{flex-basis:82%}}
+.sarr{position:absolute;top:34%;width:40px;height:40px;border-radius:50%;border:1px solid #d5dbe3;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:20px;line-height:1;cursor:pointer;z-index:2;color:#1d2733}
+.sarr.l{left:-18px}.sarr.r{right:-18px}.sarr[disabled]{opacity:0;pointer-events:none}
+@media(max-width:560px){.sarr{display:none}}
 #site .scard{background:#fff;border:1px solid #e3e8ee;border-radius:10px;padding:16px;display:grid;gap:4px;align-content:start}#site .scard b{font-size:16px}#site .scard span{color:#4a5866;font-size:14px}#site .scard small{color:#6b7785;font-size:12.5px}#site .simgcard{padding:0 0 14px;overflow:hidden}#site .simgcard>*:not(.simg){padding:0 16px}#site .simg{aspect-ratio:4/3;background:#eef2f6;margin-bottom:10px;overflow:hidden}#site .simg img{width:100%;height:100%;object-fit:cover;display:block}#site .scard ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;color:#4a5866}
 #site .stiers{display:flex;gap:6px;margin:20px 0 8px}#site .stiers span{flex:1;text-align:center;background:var(--sa);color:#fff;border-radius:6px;padding:6px;font-size:12.5px;font-weight:600}
 #site .snote{color:#6b7785;font-size:13px;margin:12px 0 0}#site .sinput{font:inherit;padding:10px 12px;border:1px solid #cfd8e1;border-radius:8px;width:100%;max-width:360px;margin-bottom:16px}
@@ -1241,7 +1250,7 @@ function showSite(){
     <div class="scta"><a class="sbtn" href="${join}">Fachpartner werden</a><button class="sbtn ghost" data-sgo="s-programm">Programm ansehen</button></div>
     <div class="sfacts">${C.facts.map(([a,b])=>`<div><b>${a}</b><span>${b}</span></div>`).join('')}</div></div></section>
   <section data-notr class="ssec" id="s-produkte"><div class="swrap"><h2>Produkte</h2><p class="ssub">Alle Systeme aus massiven Aluminiumprofilen, gefertigt nach Maß.</p>
-    <div class="sgrid">${cats.map(([n,d,im])=>`<div class="scard simgcard"><div class="simg"><img loading="lazy" src="${IMG(im)}" alt="${n}" onerror="this.parentNode.remove()"></div><b>${n}</b><span>${d}</span></div>`).join('')}</div>
+    <div class="sslide"><button class="sarr l" data-sarr="-1" aria-label="zurück" disabled>‹</button><div class="sslider">${cats.map(([n,d,im])=>`<div class="scard simgcard"><div class="simg"><img loading="lazy" src="${IMG(im)}" alt="${n}" onerror="this.parentNode.remove()"></div><b>${n}</b><span>${d}</span></div>`).join('')}</div><button class="sarr r" data-sarr="1" aria-label="weiter">›</button></div>
     <p class="snote">Händlerpreise und Bestellung nur im Partner-Portal.</p></div></section>
   <section data-notr class="ssec alt" id="s-programm"><div class="swrap"><h2>Partnerprogramm</h2><p class="ssub">Vier Wege, mit ${esc(TD.name)} zu arbeiten. Jede Rolle startet bei Basic und steigt mit Abschlüssen bis Premium.</p>
     <div class="sgrid four">${prog.map(([k,n,d,li])=>`<div class="scard"><b>${n}</b><span>${d}</span><ul>${li.map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
@@ -2022,6 +2031,9 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-ppau
   /* partner login follows the partner status */
   try{if(GATE_API){if(canZentrale()){if(!CREDS.list)await hqSync();const c=(CREDS.list||[]).find(x=>x.id===p.id);if(c&&c.active!==on)await hqAct('pcreds_toggle',p.id)}}else{const Lc=localCreds();const c=Lc.find(x=>x.id===p.id);if(c){c.active=on;saveLocalCreds(Lc);if(CREDS.list)CREDS.list=Lc}}}catch(x){}
   AUDIT.unshift({who:TEAMNAME||t('types.admin'),what:(on?'Partner reaktiviert: ':'Partner deaktiviert: ')+p.name,when:new Date().toISOString().slice(0,16).replace('T',' ')});toast((on?L4('Partner reaktiviert','Partner yeniden aktif','Partner reactivated','Partner geheractiveerd'):L4('Partner deaktiviert – Anmeldung gesperrt','Partner pasife alındı – giriş kapatıldı','Partner deactivated – login blocked','Partner gedeactiveerd – inloggen geblokkeerd'))+' · '+p.name);render()});
+/* product slider (B2B site): arrows scroll one card; arrows hide at the ends */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-sarr]');if(!b)return;const w=b.parentNode.querySelector('.sslider');const c=w.querySelector('.scard');w.scrollBy({left:(+b.dataset.sarr)*((c?c.offsetWidth:260)+14),behavior:'smooth'})});
+document.addEventListener('scroll',e=>{const w=e.target;if(!w.classList||!w.classList.contains('sslider'))return;const p=w.parentNode;const l=p.querySelector('.sarr.l'),r=p.querySelector('.sarr.r');if(l)l.disabled=w.scrollLeft<4;if(r)r.disabled=w.scrollLeft+w.clientWidth>=w.scrollWidth-4},true);
 const platLog=()=>[...AUDIT.filter(a=>a.who==='TechNS'),...PLOG];
 function viewAudit(){
   if(CONSOLE)return `<div class="card"><div class="hd"><h2>${L4('Plattform-Protokoll','Platform kaydı','Platform log','Platformlogboek')}</h2><span class="sp"></span><small style="color:var(--muted)">${L4('Nur Plattform-Ereignisse – keine Daten der Mandanten','Yalnızca platform olayları – firma verisi yok','Platform events only – no tenant data','Alleen platformgebeurtenissen – geen tenantgegevens')}</small></div>
