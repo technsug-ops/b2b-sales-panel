@@ -361,9 +361,9 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
 </main>
 </div>
 
-<button class="fab" id="aiFab">💬 <span data-i="aiBtn">Assistent</span></button>
+<button class="fab" id="aiFab">💬 <span data-i="aiBtn">KI-Assistent</span></button>
 <aside class="ai" id="ai" hidden>
-  <div class="hd"><b>💬 <span data-i="aiTitle">Assistent</span></b><span class="sp" style="flex:1"></span><button class="btn sm" id="aiClose">✕</button></div>
+  <div class="hd"><b>💬 <span data-i="aiTitle">KI-Assistent</span></b><span class="sp" style="flex:1"></span><button class="btn sm" id="aiClose">✕</button></div>
   <div class="log" id="aiLog"></div>
   <form id="aiForm"><input id="aiIn" autocomplete="off"><button class="btn p" type="submit">→</button></form>
 </aside>
@@ -379,7 +379,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
 /* ---------- i18n ---------- */
 const I18N={
 de:{nav:{bp:"Best Practices",audit:"Audit-Log",tenants:"Mandanten & White-Label",integrations:"Integrationen",security:"Sicherheit & Compliance",billing:"Abrechnung",pilot:"Pilot-Dashboard",dash:"Dashboard",partners:"Partner",contracts:"Verträge",leads:"Leads",orders:"Bestellungen",dam:"Materialien (DAM)",notif:"Benachrichtigungen",settings:"Einstellungen",myleads:"Meine Leads",mycontract:"Mein Vertrag",earn:"Vergütung",network:"Mein Netzwerk",pricelist:"Preisliste & Bestellung"},
- viewAs:"Ansicht als",activeRoles:"Aktive Rollen",demoNote:"Demo · Beispieldaten",aiBtn:"Assistent",aiTitle:"Assistent",
+ viewAs:"Ansicht als",activeRoles:"Aktive Rollen",demoNote:"Demo · Beispieldaten",aiBtn:"KI-Assistent",aiTitle:"KI-Assistent",
  kpi:{partners:"Aktive Partner",leads:"Offene Leads",orders:"Bestellungen (Monat)",revenue:"Umsatz (Monat)",expiring:"Verträge laufen aus",myleads:"Meine offenen Leads",mycomm:"Provision (Monat)",rank:"Stufe"},
  map:{title:"Live-Partnerkarte",all:"Alle Marken",legendTypes:"Typen"},
  activity:"Letzte Aktivitäten",sec:{admin:"Verwaltung",me:"Mein Bereich"},
@@ -435,7 +435,7 @@ de:{nav:{bp:"Best Practices",audit:"Audit-Log",tenants:"Mandanten & White-Label"
  dpub:{btn:"+ Veröffentlichen",title:"Dokument / Video veröffentlichen",who:"Wer darf veröffentlichen: Verwaltung · Inhaber · Sekretariat",file:"Datei",name:"Titel",kind:"Typ",brand:"Marke",audTypes:"Partnertypen",audTier:"Mindeststufe",audStates:"Bundesländer (optional)",audPartners:"Nur bestimmte Partner (optional)",notify:"Benachrichtigen",reach:"Erreicht",partners:"Partner",publish:"Jetzt veröffentlichen",published:"Veröffentlicht an {n} Partner",cancel:"Abbrechen",all:"Alle",pubBy:"veröffentlicht von"},
  ctr:{new:"+ Vertrag aus Vorlage",template:"Vorlage",brand:"Marke",term:"Laufzeit",note:"Felder werden automatisch aus der Partnerkarte (CRM) gefüllt.",preview:"Vorschau",pdf:"PDF erzeugen",sign:"Zur Unterschrift senden",cancel:"Abbrechen",sent:"Vertrag erzeugt und zur Unterschrift gesendet"}},
 tr:{nav:{bp:"Best Practices",audit:"Denetim kaydı",tenants:"Kiracılar & White-Label",integrations:"Entegrasyonlar",security:"Güvenlik & Uyum",billing:"Faturalama",pilot:"Pilot paneli",dash:"Panel",partners:"Partnerler",contracts:"Sözleşmeler",leads:"Lead'ler",orders:"Siparişler",dam:"Materyaller (DAM)",notif:"Bildirimler",settings:"Ayarlar",myleads:"Lead'lerim",mycontract:"Sözleşmem",earn:"Kazançlarım",network:"Ağım",pricelist:"Fiyat Listesi & Sipariş"},
- viewAs:"Görünüm",activeRoles:"Aktif roller",demoNote:"Demo · Örnek veri",aiBtn:"Asistan",aiTitle:"Asistan",
+ viewAs:"Görünüm",activeRoles:"Aktif roller",demoNote:"Demo · Örnek veri",aiBtn:"AI Asistan",aiTitle:"AI Asistan",
  kpi:{partners:"Aktif partner",leads:"Açık lead",orders:"Sipariş (ay)",revenue:"Ciro (ay)",expiring:"Biten sözleşme",myleads:"Açık lead'lerim",mycomm:"Komisyon (ay)",rank:"Seviye"},
  map:{title:"Canlı partner haritası",all:"Tüm markalar",legendTypes:"Türler"},
  activity:"Son aktiviteler",sec:{admin:"Yönetim",me:"Alanım"},
@@ -491,7 +491,7 @@ tr:{nav:{bp:"Best Practices",audit:"Denetim kaydı",tenants:"Kiracılar & White-
  dpub:{btn:"+ Yayınla",title:"Doküman / video yayınla",who:"Yayınlayabilen: Yönetim · Patron · Sekreterya",file:"Dosya",name:"Başlık",kind:"Tür",brand:"Marka",audTypes:"Partner türleri",audTier:"Minimum seviye",audStates:"Eyaletler (isteğe bağlı)",audPartners:"Sadece belirli partnerler (isteğe bağlı)",notify:"Bildirim gönder",reach:"Ulaşır",partners:"partner",publish:"Şimdi yayınla",published:"{n} partnere yayınlandı",cancel:"İptal",all:"Tümü",pubBy:"yayınlayan"},
  ctr:{new:"+ Şablondan sözleşme",template:"Şablon",brand:"Marka",term:"Süre",note:"Alanlar partner kartından (CRM) otomatik doldurulur.",preview:"Önizleme",pdf:"PDF oluştur",sign:"İmzaya gönder",cancel:"İptal",sent:"Sözleşme oluşturuldu ve imzaya gönderildi"}},
 en:{nav:{bp:"Best practices",audit:"Audit log",tenants:"Tenants & white-label",integrations:"Integrations",security:"Security & compliance",billing:"Billing",pilot:"Pilot dashboard",dash:"Dashboard",partners:"Partners",contracts:"Contracts",leads:"Leads",orders:"Orders",dam:"Assets (DAM)",notif:"Notifications",settings:"Settings",myleads:"My leads",mycontract:"My contract",earn:"Earnings",network:"My network",pricelist:"Price list & order"},
- viewAs:"View as",activeRoles:"Active roles",demoNote:"Demo · sample data",aiBtn:"Assistant",aiTitle:"Assistant",
+ viewAs:"View as",activeRoles:"Active roles",demoNote:"Demo · sample data",aiBtn:"AI assistant",aiTitle:"AI assistant",
  kpi:{partners:"Active partners",leads:"Open leads",orders:"Orders (month)",revenue:"Revenue (month)",expiring:"Contracts expiring",myleads:"My open leads",mycomm:"Commission (month)",rank:"Tier"},
  map:{title:"Live partner map",all:"All brands",legendTypes:"Types"},
  activity:"Recent activity",sec:{admin:"Administration",me:"My area"},
