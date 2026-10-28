@@ -158,6 +158,16 @@ tr:last-child td{border:0}tbody tr{cursor:pointer}tbody tr:hover td{background:v
 .perm>div{padding:7px 6px;border-bottom:1px solid var(--line)}
 .perm .h{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center}
 .perm .c{text-align:center}
+/* TechNS console look */
+body.console{--accent:#5b4fd6;--accent-soft:#ecebfb;--accent-fg:#ffffff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.console{--accent:#a69df5;--accent-soft:#25234a;--accent-fg:#14122b}}
+:root[data-theme="dark"] body.console{--accent:#a69df5;--accent-soft:#25234a;--accent-fg:#14122b}
+body.console .side{background:#14122b;color:#e8e6fb;border-right-color:#14122b}
+body.console .side .nav button{color:#d6d3f5}body.console .side .nav button:hover{background:#25234a}
+body.console .side .nav button.on{background:#5b4fd6;color:#fff}
+body.console .side .navlabel,body.console .side .brand small{color:#9a96c9}
+body.console .brand .mark{background:#5b4fd6;color:#fff}
+body.console #gate .brand .mark{background:#5b4fd6}
 /* phase installer */
 .phasebar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 14px;padding:8px;border:1px dashed var(--line);border-radius:10px;background:var(--panel)}
 .phb{display:grid;grid-template-columns:auto 1fr;column-gap:8px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:700;color:var(--muted);min-width:0}
@@ -327,7 +337,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
     <span class="demo" data-i="demoNote">Demo · Beispieldaten</span>
     <span class="sp"></span>
     <div class="langs" id="langs"><button data-l="de">DE</button><button data-l="tr">TR</button><button data-l="en">EN</button></div>
-    <span class="pill" id="expPill" hidden style="color:var(--warn);font-variant-numeric:tabular-nums"></span><span class="pill" id="userPill">👤 —</span><button class="btn sm" id="notesBtn" hidden title="Notizen">📝</button><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
+    <a class="btn sm" id="doorBtn" hidden href="/"></a><span class="pill" id="expPill" hidden style="color:var(--warn);font-variant-numeric:tabular-nums"></span><span class="pill" id="userPill">👤 —</span><button class="btn sm" id="notesBtn" hidden title="Notizen">📝</button><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
   </div>
   <div id="view"></div>
 </main>
@@ -655,7 +665,7 @@ const px=(lon,lat)=>[(lon-5.7)*62,(55.3-lat)*62*1.55];
 
 /* ---------- access model (Super Admin controls what each partner sees) ---------- */
 const MODULES=['dash','network','pool','leads','myleads','referral','pricelist','orders','stock','install','site','earn','mycontract','dam','notif'];
-const MOD_LABEL=m=>({pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
+const MOD_LABEL=m=>({chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
 const DEFAULT_ACCESS={
  leadgen:['dash','myleads','referral','site','earn','mycontract','dam','notif'],
  freelancer:['dash','pool','myleads','stock','install','site','earn','mycontract','dam','notif'],
@@ -670,7 +680,12 @@ const mainType=p=>p.roles.slice().sort((a,b)=>TYPES.indexOf(b.t)-TYPES.indexOf(a
 /* ---------- state ---------- */
 const VIEWERS=[{id:"admin",label:()=>"★ "+t('types.admin'),type:"admin",partner:null},
  ...PARTNERS.map(p=>({id:"p"+p.id,label:()=>t('types.'+mainType(p))+" · "+p.name,type:mainType(p),partner:p.id}))];
-let viewer=VIEWERS[0], page="dash", brandF="all", selPartner=null;
+/* ---------- two doors: tenant portal vs. TechNS console ---------- */
+let CONSOLE=(()=>{try{return location.pathname.replace(/\/+$/,'')==='/console'||location.hash==='#console'}catch(e){return false}})();
+function portalUrl(){return location.pathname.replace(/\/+$/,'')==='/console'?'/':'#'}
+function consoleUrl(){return location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)?'/console':'#console'}
+
+let viewer=VIEWERS[0], page=CONSOLE?"chome":"dash", brandF="all", selPartner=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const eur=n=>new Intl.NumberFormat(lang==='tr'?'tr-TR':lang==='en'?'en-IE':'de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
@@ -683,16 +698,20 @@ function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');se
 /* ---------- navigation ---------- */
 function navItems(){
   const unread=NOTIFS.filter(n=>n.un).length;
+  if(CONSOLE) return [
+    {s:'console'},{k:'chome',ic:'◆'},{k:'tenants',ic:'🏢'},{k:'rollout',ic:'🚀'},{k:'codes',ic:'🔑'},
+    {s:'consoleOps'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),...(ph(1)?[{k:'security',ic:'🛡️'}]:[]),...(ph(3)?[{k:'billing',ic:'💳'},{k:'pilot',ic:'🎯'}]:[]),...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),
+    {s:'consoleDocs'},{k:'bp',ic:'📘'}];
   if(viewer.type==='admin') return [
-    {s:'admin'},{k:'dash',ic:'▦'},{k:'partners',ic:'👥'},{k:'leads',ic:'📥'},{k:'contracts',ic:'📄'},{k:'orders',ic:'📦'},{k:'stock',ic:'🏭'},{k:'install',ic:'🔧'},{k:'sites',ic:'🌐'},{k:'dam',ic:'🗂️'},{k:'notif',ic:'🔔',badge:unread},...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),{k:'settings',ic:'⚙️'},...(ph(1)?[{s:'platform'},{k:'tenants',ic:'🏢'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),{k:'security',ic:'🛡️'},...(ph(3)?[{k:'billing',ic:'💳'},{k:'pilot',ic:'🎯'}]:[]),{k:'bp',ic:'📘'}]:[]),{s:'public'},{k:'register',ic:'📝'}];
+    {s:'admin'},{k:'dash',ic:'▦'},{k:'partners',ic:'👥'},{k:'leads',ic:'📥'},{k:'contracts',ic:'📄'},{k:'orders',ic:'📦'},{k:'stock',ic:'🏭'},{k:'install',ic:'🔧'},{k:'sites',ic:'🌐'},{k:'dam',ic:'🗂️'},{k:'notif',ic:'🔔',badge:unread},...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),{k:'settings',ic:'⚙️'},{s:'public'},{k:'register',ic:'📝'}];
   const p=PARTNERS.find(x=>x.id===viewer.partner);
   const ic={dash:'▦',network:'👥',pool:'🎯',leads:'📥',myleads:'📥',referral:'🔗',pricelist:'📦',orders:'🧾',stock:'🏭',install:'🔧',site:'🌐',earn:'💶',mycontract:'📄',dam:'🗂️',notif:'🔔'};
   return [{s:'me'},...MODULES.filter(m=>p.access.modules.includes(m)).map(m=>({k:m,ic:ic[m],badge:m==='notif'?unread:0}))];
 }
 function renderNav(){
   const items=navItems();
-  if(!items.some(i=>i.k===page)) page='dash';
-  $('#nav').innerHTML=items.map(i=>i.s?`<div class="navlabel">${i.s==='public'?'Website':i.s==='platform'?'TechNS Platform':t('sec.'+i.s)}</div>`:
+  if(!items.some(i=>i.k===page)) page=CONSOLE?'chome':'dash';
+  $('#nav').innerHTML=items.map(i=>i.s?`<div class="navlabel">${i.s==='public'?'Website':i.s==='console'?'Plattform':i.s==='consoleOps'?'Betrieb':i.s==='consoleDocs'?'Produkt':t('sec.'+i.s)}</div>`:
     `<button class="${i.k===page?'on':''}" data-k="${i.k}"><span class="ic">${i.ic}</span>${i.k==='register'?t('reg.nav'):MOD_LABEL(i.k)}${i.badge?`<span class="badge">${i.badge}</span>`:''}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{page=b.dataset.k;selPartner=null;render();$('#side').classList.remove('open')});
 }
@@ -925,7 +944,7 @@ function viewEarn(){
 function viewSettings(){
   const mods=['dash','partners','leads','contracts','orders','dam','notif','settings'];
   const matrix={admin:[1,1,1,1,1,1,1,1],staff:[1,1,1,1,1,1,1,0],distributor:[1,1,1,0,1,1,1,0],partner:[1,0,0,0,1,1,1,0],freelancer:[1,0,1,0,0,1,1,0],leadgen:[1,0,1,0,0,1,1,0]};
-  return `${isMaster()?codesCard():''}<div class="card" style="margin-bottom:14px"><div class="hd"><h2>${t('acc.all')}</h2><span style="color:var(--muted);font-size:12px">${t('acc.hint')}</span></div>
+  return `<div class="card" style="margin-bottom:14px"><div class="hd"><h2>${t('acc.all')}</h2><span style="color:var(--muted);font-size:12px">${t('acc.hint')}</span></div>
     <div class="tw"><table><thead><tr><th>${t('cols.name')}</th><th>${t('cols.type')}</th><th>${t('acc.modules')}</th><th>${t('acc.brands')}</th><th></th></tr></thead><tbody>
     ${PARTNERS.map(p=>`<tr data-p="${p.id}"><td><b>${esc(p.name)}</b><br><small style="color:var(--muted)">${esc(p.contact)}</small></td><td>${t('types.'+mainType(p))}</td><td><small>${p.access.modules.filter(m=>m!=='dash').map(MOD_LABEL).join(' · ')}</small></td><td>${p.access.brands.map(brandTag).join(' ')}</td><td><button class="btn sm" data-open="${p.id}">${t('acc.open')} →</button></td></tr>`).join('')}</tbody></table></div></div>
   <div class="grid two">
@@ -1340,7 +1359,7 @@ const PHASES=[null,
    ["🔌","Adapter: Shopify · Zoho · Resend/WhatsApp · Yousign","integrations"],["⟳","CRM-Sync bidirektional + Warteschlange","integrations"],["✍","E-Signatur für Verträge","contracts"],
    ["📩","Kundenbenachrichtigung Lieferung/Montage","orders"],["💳","Abrechnung & Pläne","billing"],["🎯","Pilot-Dashboard mit Exit-Kriterien","pilot"]]}];
 function phaseBar(){
-  if(viewer.type!=='admin')return '';
+  if(!CONSOLE)return '';
   const L=lang==='tr'?'tr':lang==='en'?'en':'de';const F=L==='tr'?'Faz':L==='en'?'Phase':'Phase';
   return `<div class="phasebar">${[1,2,3].map(n=>{const done=PHASE>=n,next=PHASE===n-1;return `<button class="phb ${done?'done':next?'next':''}" ${done||!next?'disabled':''} data-phase="${n}" title="${PHASES[n].name[L]}">${done?'✓':n} <span>${F} ${n}</span><small>${PHASES[n].name[L]}</small></button>`}).join('<i class="phsep"></i>')}${PHASE>0?`<button class="btn sm" data-phase-reset title="Reset">↺</button>`:''}</div>`;
 }
@@ -1354,7 +1373,7 @@ function installPhase(n){
     if(i<lis.length){lis[i].classList.add('run');lis[i].querySelector('.phst').textContent='◌';ov.querySelector('#phProg').style.width=Math.round(i/lis.length*100)+'%';i++;setTimeout(step,380)}
     else{ov.querySelector('#phProg').style.width='100%';PHASE=n;try{localStorage.setItem('b2b-phase',n)}catch(e){}
       AUDIT.unshift({who:'Super Admin',what:`Phase ${n} installiert: ${P.name.de} (${P.feat.length} Module)`,when:new Date().toISOString().slice(0,16).replace('T',' ')});
-      const b=ov.querySelector('#phDone');b.hidden=false;b.onclick=()=>{ov.remove();page=P.feat[0][2];selPartner=null;render()}}};
+      const b=ov.querySelector('#phDone');b.hidden=false;b.onclick=()=>{ov.remove();page=CONSOLE?'rollout':P.feat[0][2];selPartner=null;render()}}};
   step();
 }
 
@@ -1380,6 +1399,26 @@ let PILOT={nps:null};
 let INVOICES=[{no:"RE-2026-1041",date:"2026-10-01",amount:1290,st:'paid'},{no:"RE-2026-0932",date:"2026-09-01",amount:1290,st:'paid'},{no:"RE-2026-0821",date:"2026-08-01",amount:645,st:'paid',note:'Pilot-Rabatt 50 %'}];
 
 
+
+/* ---------- TechNS console views ---------- */
+function viewConsoleHome(){
+  const mrr=TENANTS.reduce((a,x)=>a+x.mrr,0);const failed=QUEUE.filter(j=>j.st==='failed').length;
+  return `<div class="grid kpis" style="margin-bottom:14px">${kpi('Mandanten',TENANTS.length,'')}${kpi('Partner gesamt',TENANTS.reduce((a,x)=>a+x.partners(),0),'')}${kpi('MRR',eur(mrr),'ARR '+eur(mrr*12))}${kpi('Rollout Pilot','Phase '+PHASE+' / 3',PHASE===3?'komplett':'läuft')}${kpi('Fehlgeschlagene Jobs',failed,failed?'→ Integrationen':'',failed>0)}</div>
+  <div class="grid two">
+    <div class="card"><div class="hd"><h2>Mandanten</h2><span class="sp"></span><button class="btn sm" data-goto="tenants">Verwalten →</button></div>
+      <div class="tw"><table><thead><tr><th>Mandant</th><th>Plan</th><th>Partner</th><th>Phase</th><th>MRR</th><th></th></tr></thead><tbody>
+      ${TENANTS.map(x=>`<tr><td><b>${esc(x.name)}</b><br><small style="color:var(--muted)">${x.domain}</small></td><td>${x.plan}</td><td>${x.partners()}</td><td>${x.id==='t1'?`<span class="stt ${PHASE===3?'demo':'p1'}">${PHASE} / 3</span>`:'<span class="stt demo">3 / 3</span>'}</td><td style="font-variant-numeric:tabular-nums">${eur(x.mrr)}</td><td><a class="btn sm" href="${portalUrl()}" data-openportal="${x.id}">Portal ↗</a></td></tr>`).join('')}</tbody></table></div></div>
+    <div style="display:grid;gap:14px;align-content:start">
+      <div class="card"><div class="hd"><h2>Systemstatus</h2></div><dl class="kv"><dt>API</dt><dd><span class="st ok">online</span> · /api/gate</dd><dt>Hosting</dt><dd>Vercel fra1 · Supabase eu-central-1</dd><dt>Uptime 30 d</dt><dd>99,98 %</dd><dt>Queue</dt><dd>${QUEUE.filter(j=>j.st==='queued'||j.st==='retry').length} offen · ${failed} fehlgeschlagen</dd><dt>Letztes Backup</dt><dd>${SEC.lastBackup}</dd></dl></div>
+      <div class="card"><div class="hd"><h2>Plattform-Aktivität</h2><span class="sp"></span>${ph(1)?'<button class="btn sm" data-goto="audit">Audit →</button>':''}</div><div class="feed">${AUDIT.slice(0,5).map(a=>`<div class="it"><span class="dot" style="background:var(--accent);margin-top:6px"></span><span>${esc(a.what)}<br><small style="color:var(--muted)">${esc(a.who)}</small></span><small>${a.when.slice(5)}</small></div>`).join('')}</div></div>
+    </div></div>`;
+}
+function viewRollout(){
+  const L=lang==='tr'?'tr':lang==='en'?'en':'de';const T=TENANTS.find(x=>x.id==='t1');
+  return `<div class="card" style="margin-bottom:14px"><div class="hd"><h2>Rollout · ${esc(T.name)}</h2><span class="sp"></span><small style="color:var(--muted)">Phasen werden hier installiert und erscheinen danach im Mandanten-Portal.</small></div>${phaseBar()}</div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">${[1,2,3].map(n=>`<div class="card" style="border-color:${ph(n)?'var(--ok)':'var(--line)'}"><div class="hd"><h2>Phase ${n}</h2><span class="sp"></span>${ph(n)?'<span class="st ok">installiert</span>':PHASE===n-1?'<span class="st warn">bereit</span>':'<span class="st mut">gesperrt</span>'}</div><p style="margin:0 0 8px;color:var(--muted);font-size:13px">${PHASES[n].name[L]}</p><ul style="list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13px">${PHASES[n].feat.map(([ic,tx])=>`<li style="display:flex;gap:8px;color:${ph(n)?'var(--fg)':'var(--muted)'}"><span style="width:16px;text-align:center;color:var(--ok)">${ph(n)?'✓':'·'}</span><span>${ic} ${tx}</span></li>`).join('')}</ul></div>`).join('')}</div>`;
+}
+
 /* ---------- platform views ---------- */
 function viewTenants(){
   const T=TENANTS.find(x=>x.id===curTenant);
@@ -1388,7 +1427,7 @@ function viewTenants(){
     <div class="card"><div class="hd"><h2>Mandanten</h2><span class="sp"></span><button class="btn p sm" data-act="newtenant">+ Mandant anlegen</button></div>
       <div class="tw"><table><thead><tr><th>Tenant</th><th>Plan</th><th>Marken</th><th>Partner</th><th>Domain</th><th></th></tr></thead><tbody>
       ${TENANTS.map(x=>`<tr style="${x.id===curTenant?'background:var(--accent-soft)':''}"><td><b>${esc(x.name)}</b>${x.pilot?' <span class="tag" style="font-size:10px">Pilot</span>':''}</td><td>${x.plan}</td><td>${x.brands}</td><td>${x.partners()}</td><td><small>${x.domain}</small></td><td>${x.id===curTenant?'<span class="st ok">aktiv</span>':`<button class="btn sm" data-tenant="${x.id}">Wechseln →</button>`}</td></tr>`).join('')}</tbody></table></div>
-      <p style="margin:10px 0 0;font-size:12px;color:var(--muted)">Jeder Mandant: eigene Marken, Partner, Regeln, Domain. Datenisolation per Row-Level-Security – siehe <a href="#" data-goto="security">Sicherheit → RLS-Check</a>.</p></div>
+      <p style="margin:10px 0 0;font-size:12px;color:var(--muted)">Jeder Mandant: eigene Marken, Partner, Regeln, Domain. Datenisolation per Row-Level-Security${ph(1)?' – siehe <a href="#" data-goto="security">Sicherheit → RLS-Check</a>':''}.</p></div>
     <div style="display:grid;gap:14px;align-content:start">
       <div class="card"><div class="hd"><h2>White-Label · ${esc(T.name)}</h2></div>
         <div class="frm"><div class="f"><label>Portalname</label><input id="wl_name" value="${esc(T.name)}"></div><div class="f"><label>Domain</label><input id="wl_domain" value="${T.domain}"></div>
@@ -1475,19 +1514,25 @@ const BP=[
  {n:"11",t:{de:"Kennzahlen",tr:"Göstergeler",en:"KPIs"},items:[["Lead → Kontakt < 24 h · Lead → Angebot · Gewinnquote · Ø Abschlussdauer","demo"],["Aktive Leads/Umsatz/Stufenfortschritt je Partner · Partner inaktiv > 90 Tage","demo"],["„auf Anfrage“-Quote · Montage-Auslastung · Lieferverzug","demo"],["Vertragsverlängerung · Provisions-Einsprüche · Microsite → Lead","demo"],["TechNS: aktive Tenants, Partner/Tenant, MRR, Churn, Support-Tickets/Tenant","p2"]]},
  {n:"12",t:{de:"Roadmap",tr:"Yol haritası",en:"Roadmap"},table:[["0 ✔","—","Klick-Demo, serverseitiger Zugang + Einmal-Codes, Best-Practice-Spezifikation"],["1","2 Wo.","Mandantenfähiger Kern: Auth/2FA, RLS, Tenant & Marken, Rollen, i18n, Partnerkarte, Sichtbarkeit, Audit"],["2","2 Wo.","Lead-Pool, Registrierung, Referenzcode, Zuweisung/Timeout, Provisionsmotor, Verträge → PDF, Erinnerungen"],["3","2 Wo.","DAM + Zielgruppen, Benachrichtigungen, Montagekalender, Lager, Karte, Microsites"],["4","2 Wo.","Adapter: Shopify, Zoho, Resend, WhatsApp; KI-Assistent"],["5","1 Wo.","Pilot Go-live (Wasserernte/BW), Messung, Korrekturen"],["6","danach","WooCommerce/JTL, HubSpot/Pipedrive, E-Signatur, SSO, Abrechnung (Stripe), 2. Tenant"]],items:[["Pilot-Exit: ≥ 80 % Leads in 24 h kontaktiert · ≥ 1 Draft-Order-Bestellung · 0 Rechte-Leaks · Partner-NPS ≥ 30","p1"]]}
 ];
+function bpAction(n,SECPH,GOTO,L){
+  if(!ph(SECPH[n]))return `<span class="stt p2">Phase ${SECPH[n]}</span>`;
+  const open=L==='tr'?'aç':L==='en'?'open':'öffnen';
+  if(GOTO[n])return `<button class="btn sm" data-goto="${GOTO[n]}">→ ${open}</button>`;
+  return CONSOLE?`<a class="btn sm" href="${portalUrl()}">Portal ↗</a>`:`<span class="stt demo">✓</span>`;
+}
 function viewBP(){
   const L=lang==='tr'?'tr':lang==='en'?'en':'de';
   const lbl={demo:{de:"in Demo umgesetzt",tr:"demoda var",en:"in demo"},p1:{de:"in Demo umgesetzt",tr:"demoda var",en:"in demo"},p2:{de:"in Demo umgesetzt",tr:"demoda var",en:"in demo"}};
   const all=BP.flatMap(b=>b.items||[]);const cnt=k=>all.filter(i=>i[1]===k).length;
   const SECPH={"0":0,"1":1,"2":1,"3":2,"4":2,"5":1,"6":2,"7":1,"8":3,"9":1,"10":3,"11":2,"12":3};
-  const GOTO={"1":"tenants","3":"leads","4":"orders","5":"contracts","6":"dam","7":"notif","8":"integrations","9":"security","10":"billing","11":"dash","12":"pilot","2":"partners","0":"dash"};
+  const GOTO=CONSOLE?{"1":"tenants","8":"integrations","9":"security","10":"billing","12":"pilot","11":"chome","0":"chome"}:{"3":"leads","4":"orders","5":"contracts","6":"dam","7":"notif","11":"dash","2":"partners","0":"dash"};
   return `<div class="bp">
     <div class="card"><div class="hd"><h2 style="margin:0">B2B Sales Panel · ${L==='tr'?'TechNS Ürün Blueprint\'i':L==='en'?'TechNS product blueprint':'TechNS Produkt-Blueprint'} <small style="color:var(--muted);font-weight:400">v1.0 · 28.10.2026</small></h2></div>
       <p class="lead" style="margin:0">${L==='tr'?'Üreten/montaj yapan KOBİ\'ler için Händler-, Freelancer- & Montagepartner-Portalı (çok kiracılı SaaS). İlk referans: Moonzelt / Euroconteiner / Wasserernte grubu; bu demo blueprint\'in bir örneğidir, ürün markadan bağımsızdır.':L==='en'?'Dealer, freelancer & installation-partner portal for manufacturing SMEs (multi-tenant SaaS). First reference: Moonzelt / Euroconteiner / Wasserernte group; this demo is one instance of the blueprint, the product is brand-independent.':'Händler-, Freelancer- & Montagepartner-Portal für produzierende KMU (mandantenfähiges SaaS). Erste Referenz: Gruppe Moonzelt / Euroconteiner / Wasserernte; diese Demo ist eine Instanz des Blueprints, das Produkt ist markenunabhängig.'}</p>
       <div class="sum">${[1,2,3].map(n=>`<span class="stt ${ph(n)?'demo':'p2'}">${ph(n)?'✓':'○'} Phase ${n}</span>`).join('')}</div></div>
     ${BP.map(b=>`<h2><span class="num">${b.n}</span>${b.t[L]} ${SECPH[b.n]?`<span class="stt ${ph(SECPH[b.n])?'demo':'p2'}" style="margin-left:auto">${ph(SECPH[b.n])?'✓ ':''}Phase ${SECPH[b.n]}</span>`:''}</h2>${b.lead?`<p class="lead">${b.lead[L]}</p>`:''}${b.thesis?`<div class="thesis">„${b.thesis[L]}“</div>`:''}
       ${b.table?`<div class="card" style="padding:0;overflow:hidden;margin-bottom:8px"><div class="tw"><table><tbody>${b.table.map(r=>`<tr>${r.map((c,i)=>`<td style="white-space:normal;${i===0?'font-weight:600;white-space:nowrap':''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`:''}
-      ${b.items?`<ul>${b.items.map(([txt,st])=>`<li><span>${txt}</span>${ph(SECPH[b.n])?`<button class="btn sm" data-goto="${GOTO[b.n]||'dash'}">→ ${L==='tr'?'aç':L==='en'?'open':'öffnen'}</button>`:`<span class="stt p2">Phase ${SECPH[b.n]}</span>`}</li>`).join('')}</ul>`:''}`).join('')}
+      ${b.items?`<ul>${b.items.map(([txt,st])=>`<li><span>${txt}</span>${bpAction(b.n,SECPH,GOTO,L)}</li>`).join('')}</ul>`:''}`).join('')}
     <p class="lead" style="margin-top:24px"><small>Demo: b2b-portal.foundercheck.de · Repo: github.com/technsug-ops/b2b-sales-panel · ${L==='tr'?'Tam doküman Claude Project\'te':L==='en'?'Full document in the Claude project':'Vollständiges Dokument im Claude-Projekt'}</small></p></div>`;
 }
 
@@ -1496,15 +1541,22 @@ function render(){
   document.documentElement.lang=lang;
   $('#langs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));
   document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+  document.body.classList.toggle('console',CONSOLE);
+  if(CONSOLE){viewer=VIEWERS[0];$('#t-brand').textContent='TechNS Console';document.querySelector('.brand small').textContent='B2B Sales Panel · Plattform';document.querySelector('.brand .mark').textContent='TN';}
+  else{const T=TENANTS.find(x=>x.id===curTenant);$('#t-brand').textContent='B2B Sales Panel';document.querySelector('.brand small').textContent=T&&T.id!=='t1'?T.name:'Moonzelt · Euroconteiner · Wasserernte';document.querySelector('.brand .mark').textContent='B2B';}
+  document.querySelector('.rolebox').hidden=CONSOLE;
+  $('#doorBtn').textContent=CONSOLE?'↗ Mandanten-Portal':'';$('#doorBtn').hidden=!CONSOLE;$('#doorBtn').setAttribute('href',portalUrl());
+  const gb=document.querySelector('#gate .brand');if(gb){gb.querySelector('b').textContent=CONSOLE?'TechNS Console':'B2B Sales Panel';gb.querySelector('small').textContent=CONSOLE?'Entwickler-Zugang · nur Master-Code':'Moonzelt · Euroconteiner · Wasserernte';gb.querySelector('.mark').textContent=CONSOLE?'TN':'B2B'}
   const sel=$('#roleSel');sel.innerHTML=VIEWERS.map(v=>`<option value="${v.id}" ${v===viewer?'selected':''}>${v.label()}</option>`).join('');
   const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
   $('#roleChips').innerHTML=me?me.roles.map(r=>`<span class="pill" style="font-size:11px;padding:2px 8px"><span class="dot" style="background:${BRANDS[r.b].c}"></span>${t('types.'+r.t)} ${r.tier}</span>`).join(''):`<span class="pill t" style="font-size:11px;padding:2px 8px">★ ${t('types.admin')}</span>`;
-  $('#userPill').textContent='👤 '+(me?me.contact:t('types.admin'));
-  const adminSess=viewer.type==='admin'&&isMaster();$('#notesBtn').hidden=!adminSess;if(!adminSess)$('#notes').hidden=true;
+  $('#userPill').textContent='👤 '+(CONSOLE?'TechNS · Entwickler':me?me.contact:t('types.admin'));
+  const adminSess=(viewer.type==='admin'||CONSOLE)&&isMaster();$('#notesBtn').hidden=!adminSess;if(!adminSess)$('#notes').hidden=true;
   renderNav();
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
+  document.title=CONSOLE?'TechNS Console':'B2B Sales Panel';
   const v=$('#view');
-  v.innerHTML=phaseBar()+({dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
+  v.innerHTML=({chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
   /* access toggles (admin) */
   v.querySelectorAll('[data-mod],[data-brand],[data-flag]').forEach(cb=>cb.onchange=()=>{const p=PARTNERS.find(x=>x.id===selPartner);
     if(cb.dataset.mod){p.access.modules=MODULES.filter(m=>m==='dash'||(m===cb.dataset.mod?cb.checked:p.access.modules.includes(m)))}
@@ -1577,7 +1629,7 @@ function render(){
   ['s_logo','s_phone','s_tag'].forEach(id=>{const e=$('#'+id);if(e)e.onchange=()=>{const s=siteOf(viewer.partner);s[{s_logo:'logo',s_phone:'phone',s_tag:'tagline'}[id]]=e.value;toast(t('saved'))}});
   /* phase hooks */
   v.querySelectorAll('[data-phase]').forEach(b=>b.onclick=()=>installPhase(+b.dataset.phase));
-  v.querySelectorAll('[data-phase-reset]').forEach(b=>b.onclick=()=>{PHASE=0;try{localStorage.setItem('b2b-phase',0)}catch(e){}page='dash';render();toast('Demo auf Basis-Version zurückgesetzt')});
+  v.querySelectorAll('[data-phase-reset]').forEach(b=>b.onclick=()=>{PHASE=0;try{localStorage.setItem('b2b-phase',0)}catch(e){}page=CONSOLE?'rollout':'dash';render();toast('Demo auf Basis-Version zurückgesetzt')});
   /* platform hooks */
   v.querySelectorAll('[data-tenant]').forEach(b=>b.onclick=()=>{curTenant=b.dataset.tenant;const T=TENANTS.find(x=>x.id===curTenant);document.documentElement.style.setProperty('--accent',T.accent);$('#t-brand').textContent=T.name;render();toast('Mandant gewechselt: '+T.name)});
   v.querySelectorAll('[data-adp]').forEach(sel=>sel.onchange=()=>{ADAPTERS[sel.dataset.adp].sel=sel.value;ADAPTERS[sel.dataset.adp].st='off';render();toast('Adapter gewechselt – bitte verbinden')});
@@ -1600,7 +1652,7 @@ function render(){
   const cl=$('#codesLock');if(cl)cl.onclick=()=>{codesState={admin:'',list:null,last:null,busy:false,err:''};try{sessionStorage.removeItem('b2b-admin')}catch(e){}render()};
   const cc2=$('#codeCreate');if(cc2)cc2.onclick=async()=>{codesState.busy=true;render();try{const r=await gateApi({action:'create',admin:codesState.admin,label:$('#codeLabel').value,ttlHours:+$('#codeTtl').value});if(r.ok){codesState.last=r;codesState.err=''}else codesState.err=t('gate.err')}catch(e){codesState.err=t('gate.neterr')}codesState.busy=false;await codesLoad()};
   v.querySelectorAll('[data-revoke]').forEach(b=>b.onclick=async()=>{try{await gateApi({action:'revoke',admin:codesState.admin,id:b.dataset.revoke})}catch(e){}codesLoad()});
-  if(page==='settings'&&viewer.type==='admin'&&isMaster()&&codesState.admin&&codesState.list===null&&GATE_API){codesState.list=[];codesLoad()}
+  if(page==='codes'&&CONSOLE&&isMaster()&&codesState.admin&&codesState.list===null&&GATE_API){codesState.list=[];codesLoad()}
   /* DAM publish */
   const dpo=$('#dpubOpen');if(dpo)dpo.onclick=()=>{dpubOpen=true;render()};
   const dpc=$('#dpubCancel');if(dpc)dpc.onclick=()=>{dpubOpen=false;render()};
@@ -1630,6 +1682,7 @@ function aiMsg(who,txt){const d=document.createElement('div');d.className='msg '
 function aiSugg(){const w=document.createElement('div');w.className='chips';w.innerHTML=`<button class="chip" data-q="contract">${t('aiQ1')}</button><button class="chip" data-q="leads">${t('aiQ2')}</button>`;w.querySelectorAll('button').forEach(b=>b.onclick=()=>{w.remove();aiAsk(b.textContent,b.dataset.q)});$('#aiLog').appendChild(w)}
 function aiAsk(q,key){aiMsg('u',q);const k=key||(/vertr|sözleş|contract/i.test(q)?'contract':/lead|württ/i.test(q)?'leads':'other');setTimeout(()=>{aiMsg('a',AI_RESP[k][lang]());if(k==='other')aiSugg()},500)}
 $('#aiFab').onclick=aiOpen;$('#aiClose').onclick=()=>{$('#ai').hidden=true;$('#aiFab').hidden=false};
+window.addEventListener('hashchange',()=>{const c=location.hash==='#console';if(c!==CONSOLE){CONSOLE=c;page=c?'chome':'dash';selPartner=null;if(c&&!isMaster())showGate();render()}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const tok=gateToken();const e=tokenExp(tok);if(e&&!isMaster()&&e<=Date.now())lockAt(e)}});
 $('#aiForm').onsubmit=e=>{e.preventDefault();const v=$('#aiIn').value.trim();if(!v)return;$('#aiIn').value='';aiAsk(v)};
 
@@ -1663,12 +1716,12 @@ function showGate(){$('#gate').hidden=false;document.body.classList.add('locked'
 function hideGate(){$('#gate').hidden=true;document.body.classList.remove('locked');document.body.style.overflow='';MAPS.forEach(({map})=>{try{map.invalidateSize()}catch(e){}})}
 $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();if(!code)return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
   try{
-    if(GATE_API){const r=await gateApi({action:'login',code});if(r.ok){try{sessionStorage.setItem('b2b-gate',r.token)}catch(x){}setKind(r.kind||'once');hideGate();render();lockAt(r.kind==='once'?tokenExp(r.token):null)}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
+    if(GATE_API){const r=await gateApi({action:'login',code});if(r.ok&&CONSOLE&&r.kind!=='master'){$('#gateErr').textContent='Die Konsole ist nur mit dem Master-Code zugänglich.';$('#gatePw').select()}else if(r.ok){try{sessionStorage.setItem('b2b-gate',r.token)}catch(x){}setKind(r.kind||'once');hideGate();render();lockAt(r.kind==='once'?tokenExp(r.token):null)}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
     else{const h=await sha256(code);if(h===GATE_HASH){try{sessionStorage.setItem('b2b-gate','local:'+h)}catch(x){}setKind('master');hideGate();render()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
   }catch(x){$('#gateErr').textContent=t('gate.neterr')}
   btn.disabled=false;btn.textContent=t('gate.btn')};
-(async()=>{const tok=gateToken();if(!tok){showGate();return}
-  if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});if(!r.ok){try{sessionStorage.removeItem('b2b-gate')}catch(x){}showGate()}else{setKind(r.sub==='master'?'master':'once');render();lockAt(r.sub==='master'?null:(r.exp||tokenExp(tok)))}}catch(x){/* keep session on network hiccup */}}
+(async()=>{const tok=gateToken();if(!tok||(CONSOLE&&!isMaster()&&!GATE_API)){showGate();return}
+  if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});if(!r.ok){try{sessionStorage.removeItem('b2b-gate')}catch(x){}showGate()}else if(CONSOLE&&r.sub!=='master'){showGate();$('#gateErr').textContent='Die Konsole ist nur mit dem Master-Code zugänglich.'}else{setKind(r.sub==='master'?'master':'once');render();lockAt(r.sub==='master'?null:(r.exp||tokenExp(tok)))}}catch(x){/* keep session on network hiccup */}}
   else if(tok!=='local:'+GATE_HASH)showGate()})();
 render();
 </script>

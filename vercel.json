@@ -1,1 +1,1 @@
-{"cleanUrls":true,"functions":{"api/gate.js":{"maxDuration":10}}}
+{"cleanUrls":true,"rewrites":[{"source":"/console","destination":"/index.html"}],"functions":{"api/gate.js":{"maxDuration":10}}}
