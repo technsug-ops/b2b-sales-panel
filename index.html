@@ -846,7 +846,7 @@ function viewEarn(){
 function viewSettings(){
   const mods=['dash','partners','leads','contracts','orders','dam','notif','settings'];
   const matrix={admin:[1,1,1,1,1,1,1,1],staff:[1,1,1,1,1,1,1,0],distributor:[1,1,1,0,1,1,1,0],partner:[1,0,0,0,1,1,1,0],freelancer:[1,0,1,0,0,1,1,0],leadgen:[1,0,1,0,0,1,1,0]};
-  return `${codesCard()}<div class="card" style="margin-bottom:14px"><div class="hd"><h2>${t('acc.all')}</h2><span style="color:var(--muted);font-size:12px">${t('acc.hint')}</span></div>
+  return `${isMaster()?codesCard():''}<div class="card" style="margin-bottom:14px"><div class="hd"><h2>${t('acc.all')}</h2><span style="color:var(--muted);font-size:12px">${t('acc.hint')}</span></div>
     <div class="tw"><table><thead><tr><th>${t('cols.name')}</th><th>${t('cols.type')}</th><th>${t('acc.modules')}</th><th>${t('acc.brands')}</th><th></th></tr></thead><tbody>
     ${PARTNERS.map(p=>`<tr data-p="${p.id}"><td><b>${esc(p.name)}</b><br><small style="color:var(--muted)">${esc(p.contact)}</small></td><td>${t('types.'+mainType(p))}</td><td><small>${p.access.modules.filter(m=>m!=='dash').map(MOD_LABEL).join(' · ')}</small></td><td>${p.access.brands.map(brandTag).join(' ')}</td><td><button class="btn sm" data-open="${p.id}">${t('acc.open')} →</button></td></tr>`).join('')}</tbody></table></div></div>
   <div class="grid two">
@@ -1194,7 +1194,7 @@ function render(){
   const me=viewer.partner?PARTNERS.find(p=>p.id===viewer.partner):null;
   $('#roleChips').innerHTML=me?me.roles.map(r=>`<span class="pill" style="font-size:11px;padding:2px 8px"><span class="dot" style="background:${BRANDS[r.b].c}"></span>${t('types.'+r.t)} ${r.tier}</span>`).join(''):`<span class="pill t" style="font-size:11px;padding:2px 8px">★ ${t('types.admin')}</span>`;
   $('#userPill').textContent='👤 '+(me?me.contact:t('types.admin'));
-  $('#notesBtn').hidden=viewer.type!=='admin';if(viewer.type!=='admin')$('#notes').hidden=true;
+  const adminSess=viewer.type==='admin'&&isMaster();$('#notesBtn').hidden=!adminSess;if(!adminSess)$('#notes').hidden=true;
   renderNav();
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
   const v=$('#view');
@@ -1260,7 +1260,7 @@ function render(){
   const cl=$('#codesLock');if(cl)cl.onclick=()=>{codesState={admin:'',list:null,last:null,busy:false,err:''};try{sessionStorage.removeItem('b2b-admin')}catch(e){}render()};
   const cc2=$('#codeCreate');if(cc2)cc2.onclick=async()=>{codesState.busy=true;render();try{const r=await gateApi({action:'create',admin:codesState.admin,label:$('#codeLabel').value,ttlHours:+$('#codeTtl').value});if(r.ok){codesState.last=r;codesState.err=''}else codesState.err=t('gate.err')}catch(e){codesState.err=t('gate.neterr')}codesState.busy=false;await codesLoad()};
   v.querySelectorAll('[data-revoke]').forEach(b=>b.onclick=async()=>{try{await gateApi({action:'revoke',admin:codesState.admin,id:b.dataset.revoke})}catch(e){}codesLoad()});
-  if(page==='settings'&&viewer.type==='admin'&&codesState.admin&&codesState.list===null&&GATE_API){codesState.list=[];codesLoad()}
+  if(page==='settings'&&viewer.type==='admin'&&isMaster()&&codesState.admin&&codesState.list===null&&GATE_API){codesState.list=[];codesLoad()}
   /* DAM publish */
   const dpo=$('#dpubOpen');if(dpo)dpo.onclick=()=>{dpubOpen=true;render()};
   const dpc=$('#dpubCancel');if(dpc)dpc.onclick=()=>{dpubOpen=false;render()};
@@ -1273,7 +1273,7 @@ function render(){
 $('#roleSel').onchange=e=>{viewer=VIEWERS.find(v=>v.id===e.target.value);page='dash';selPartner=null;render()};
 $('#langs').onclick=e=>{const b=e.target.closest('button');if(!b)return;lang=b.dataset.l;try{localStorage.setItem('pp-lang',lang)}catch(x){}render()};
 $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
-$('#logoutBtn').onclick=()=>{try{sessionStorage.removeItem('b2b-gate')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
+$('#logoutBtn').onclick=()=>{try{sessionStorage.removeItem('b2b-gate');sessionStorage.removeItem('b2b-kind');sessionStorage.removeItem('b2b-admin')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
 
 /* ---------- AI assistant (scripted demo) ---------- */
 const AI_RESP={
@@ -1308,16 +1308,18 @@ const GATE_API=location.protocol.startsWith('http')&&!/claudeusercontent|claude\
 async function sha256(str){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function gateApi(payload){const r=await fetch(GATE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});return r.json()}
 function gateToken(){try{return sessionStorage.getItem('b2b-gate')}catch(e){return null}}
+function isMaster(){try{return sessionStorage.getItem('b2b-kind')==='master'}catch(e){return false}}
+function setKind(k){try{sessionStorage.setItem('b2b-kind',k)}catch(e){}}
 function showGate(){$('#gate').hidden=false;document.body.classList.add('locked');document.body.style.overflow='hidden';setTimeout(()=>$('#gatePw').focus(),50)}
 function hideGate(){$('#gate').hidden=true;document.body.classList.remove('locked');document.body.style.overflow='';MAPS.forEach(({map})=>{try{map.invalidateSize()}catch(e){}})}
 $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();if(!code)return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
   try{
-    if(GATE_API){const r=await gateApi({action:'login',code});if(r.ok){try{sessionStorage.setItem('b2b-gate',r.token)}catch(x){}hideGate()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
-    else{const h=await sha256(code);if(h===GATE_HASH){try{sessionStorage.setItem('b2b-gate','local:'+h)}catch(x){}hideGate()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
+    if(GATE_API){const r=await gateApi({action:'login',code});if(r.ok){try{sessionStorage.setItem('b2b-gate',r.token)}catch(x){}setKind(r.kind||'once');hideGate();render()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
+    else{const h=await sha256(code);if(h===GATE_HASH){try{sessionStorage.setItem('b2b-gate','local:'+h)}catch(x){}setKind('master');hideGate();render()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
   }catch(x){$('#gateErr').textContent=t('gate.neterr')}
   btn.disabled=false;btn.textContent=t('gate.btn')};
 (async()=>{const tok=gateToken();if(!tok){showGate();return}
-  if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});if(!r.ok){try{sessionStorage.removeItem('b2b-gate')}catch(x){}showGate()}}catch(x){/* keep session on network hiccup */}}
+  if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});if(!r.ok){try{sessionStorage.removeItem('b2b-gate')}catch(x){}showGate()}else{setKind(r.sub==='master'?'master':'once');render()}}catch(x){/* keep session on network hiccup */}}
   else if(tok!=='local:'+GATE_HASH)showGate()})();
 render();
 </script>
