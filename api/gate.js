@@ -23,20 +23,20 @@ const HQ_HASH = process.env.GATE_HQ_HASH || '';
 const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
 const TEAM_PATH = 'gate/team.json';
 const TCFG_PATH = 'gate/tenant-t1.json';
-const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr'];
+const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices'];
 const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
-const DEFAULT_TCFG = { features: ADDONS.slice(), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
+const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices'), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
 // ---- tenants: aydemir keeps its original blob paths; others live under gate/t/<slug>/
 const TENANTS = ['aydemir', 'ug-alu', 'sirius'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
 const pth = (T, kind) => T === 'aydemir' ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
-const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr'], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock'], types: DEFAULT_TCFG.types } };
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices'], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock'], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // a token's tenant (tokens minted before tenancy belong to aydemir)
 const tokTenant = d => d && (d.ten || 'aydemir');
-const PERMS = ['partners', 'leads', 'projects', 'orders', 'install', 'dam', 'settings', 'hr', 'creds', 'team'];
+const PERMS = ['partners', 'leads', 'projects', 'orders', 'install', 'dam', 'settings', 'hr', 'creds', 'team', 'acct'];
 const BUILTIN_ROLES = [
   { key: 'gf', name: 'Geschäftsführer', perms: PERMS.slice(), builtin: true, locked: true },
   { key: 'tech', name: 'Technik-Verantwortlicher', perms: ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'creds'], builtin: true },
@@ -44,6 +44,7 @@ const BUILTIN_ROLES = [
   { key: 'mitarbeiter', name: 'Mitarbeiter (nur Mein Bereich)', perms: [], builtin: true },
   { key: 'monteur', name: 'Monteur (nur Montage)', perms: ['install'], builtin: true },
   { key: 'hr', name: 'Personalabteilung', perms: ['hr'], builtin: true },
+  { key: 'buchhaltung', name: 'Buchhaltung', perms: ['acct'], builtin: true },
 ];
 async function loadRoles(T = 'aydemir') {
   const RP = pth(T, 'roles');
@@ -79,6 +80,7 @@ const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
   { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'UGAlu-GF-2026' },
   { id: 2, name: 'Vertrieb', role: 'staff', user: 'vertrieb', pass: 'UGAlu-Team-2026' },
   { id: 3, name: 'Montageleitung', role: 'monteur', user: 'montage', pass: 'UGAlu-Mont-2026' },
+  { id: 4, name: 'Buchhaltung', role: 'buchhaltung', user: 'buchhaltung', pass: 'UGAlu-Buha-2026' },
 ], sirius: [
   { id: 1, name: 'Directie', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Sirius-GF-2026' },
   { id: 2, name: 'Verkoop binnendienst', role: 'staff', user: 'verkoop', pass: 'Sirius-Team-2026' },
@@ -90,6 +92,7 @@ async function loadTeam(T = 'aydemir') {
   let tc = false;
   for (const x of t) if ((x.user === 'mehmet' || x.user === 'montage') && x.role === 'mitarbeiter' && !x.roleMig) { x.role = 'monteur'; x.roleMig = true; tc = true; }
   if (T === 'aydemir' && !t.some(x => x.user === 'personal')) { const x = SEED_TEAM[4]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
+  if (T === 'ug-alu' && !t.some(x => x.user === 'buchhaltung')) { const x = SEEDS['ug-alu'][3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
   if (tc) await saveJson(TP, t);
   if (T === 'aydemir' && !t.some(x => x.user === 'mehmet')) { const x = SEED_TEAM[3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); await saveJson(TP, t); }
   return t;
@@ -201,6 +204,8 @@ async function main(req, res) {
 
   if (action === 'tenant_cfg_get') {
     const c = (await loadJson(pth(T, 'tcfg'))) || tcfgDefault(T);
+    // UG-Alu booked the accounting module (10/2026)
+    if (T === 'ug-alu' && c.updated && !c.migInv) { if (!c.features.includes('invoices')) c.features.push('invoices'); c.migInv = true; await saveJson(pth(T, 'tcfg'), c); }
     return res.status(200).json({ ok: true, cfg: c, tenant: T });
   }
   if (action === 'tenant_cfg_set') {
@@ -211,7 +216,7 @@ async function main(req, res) {
     const types = {};
     for (const k of PTYPES) { const t = (inp.types || {})[k] || {}; types[k] = { on: t.on !== false, label: String(t.label || '').slice(0, 30) }; }
     if (!PTYPES.some(k => types[k].on)) return res.status(400).json({ ok: false, error: 'notype' });
-    const cfg = { features, types, updated: Date.now() };
+    const cfg = { features, types, updated: Date.now(), migInv: true };
     await saveJson(pth(T, 'tcfg'), cfg);
     return res.status(200).json({ ok: true, cfg });
   }
