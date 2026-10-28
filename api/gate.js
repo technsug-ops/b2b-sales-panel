@@ -20,7 +20,7 @@ const HQ_HASH = process.env.GATE_HQ_HASH || '';
 const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
 const TEAM_PATH = 'gate/team.json';
 const ROLES_PATH = 'gate/roles.json';
-const PERMS = ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'creds', 'team'];
+const PERMS = ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'hr', 'creds', 'team'];
 const BUILTIN_ROLES = [
   { key: 'gf', name: 'Geschäftsführer', perms: PERMS.slice(), builtin: true, locked: true },
   { key: 'tech', name: 'Technik-Verantwortlicher', perms: ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'creds'], builtin: true },

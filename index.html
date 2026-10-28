@@ -678,7 +678,7 @@ const px=(lon,lat)=>[(lon-5.7)*62,(55.3-lat)*62*1.55];
 
 /* ---------- access model (Super Admin controls what each partner sees) ---------- */
 const MODULES=['dash','network','pool','leads','myleads','referral','projects','pricelist','orders','stock','install','site','earn','mycontract','dam','notif'];
-const MOD_LABEL=m=>({projects:'Projekte',team:'Team & Rollen',hqhome:'Zentrale',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
+const MOD_LABEL=m=>({hr:'Personal',projects:'Projekte',team:'Team & Rollen',hqhome:'Zentrale',hqcreds:'Partner-Zugänge',hqdoors:'Eingänge & Links',chome:'Übersicht',rollout:'Rollout & Phasen',codes:'Zugangscodes',pool:t('nav2.pool'),referral:t('nav2.referral'),stock:t('nav2.stock'),install:t('stk.install'),site:t('nav2.site'),sites:t('nav2.sites')}[m]||t('nav.'+m));
 const DEFAULT_ACCESS={
  leadgen:['dash','myleads','referral','site','earn','mycontract','dam','notif'],
  freelancer:['dash','pool','myleads','stock','install','site','earn','mycontract','dam','notif'],
@@ -705,9 +705,9 @@ let TEAMNAME=(()=>{try{return sessionStorage.getItem(RKEY+':n')||null}catch(e){r
 const ROLE_LBL={gf:'Geschäftsführer',tech:'Technik-Verantwortlicher',staff:'Verwaltung'};
 let TEAMPERMS=(()=>{try{return JSON.parse(sessionStorage.getItem(RKEY+':p')||'null')}catch(e){return null}})();
 let TEAMROLENAME=(()=>{try{return sessionStorage.getItem(RKEY+':r')||null}catch(e){return null}})();
-const PERM_LBL={partners:'Partner & Verträge',leads:'Leads',projects:'Projekte',orders:'Bestellungen, Lager & Montage',dam:'Material & Partner-Websites',settings:'Einstellungen & Audit',creds:'Partner-Zugänge (Passwörter)',team:'Team & Rollen verwalten'};
+const PERM_LBL={partners:'Partner & Verträge',leads:'Leads',projects:'Projekte',orders:'Bestellungen, Lager & Montage',dam:'Material & Partner-Websites',settings:'Einstellungen & Audit',hr:'Personal (HR)',creds:'Partner-Zugänge (Passwörter)',team:'Team & Rollen verwalten'};
 const PERM_KEYS=Object.keys(PERM_LBL);
-const hasP=x=>TEAMROLE?(TEAMPERMS||[]).includes(x):!['creds','team'].includes(x);
+const hasP=x=>TEAMROLE?(TEAMPERMS||[]).includes(x):!['creds','team','hr'].includes(x);
 const canZentrale=()=>!PDOOR&&!CONSOLE&&!!TEAMROLE&&hasP('creds');
 const isGF=()=>!PDOOR&&!CONSOLE&&!!TEAMROLE&&hasP('team');
 const LIVE=(()=>{try{return location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host)}catch(e){return false}})();
@@ -735,7 +735,7 @@ function navItems(){
     {s:'consoleOps'},...(ph(3)?[{k:'integrations',ic:'🔌'}]:[]),...(ph(1)?[{k:'security',ic:'🛡️'}]:[]),...(ph(3)?[{k:'billing',ic:'💳'},{k:'pilot',ic:'🎯'}]:[]),...(ph(1)?[{k:'audit',ic:'🧾'}]:[]),
     {s:'consoleDocs'},{k:'bp',ic:'📘'}];
   if(viewer.type==='admin') return [
-    {s:'admin'},{k:'dash',ic:'▦'},...(hasP('partners')?[{k:'partners',ic:'👥'}]:[]),...(hasP('leads')?[{k:'leads',ic:'📥'}]:[]),...(hasP('projects')?[{k:'projects',ic:'🗂'}]:[]),...(hasP('partners')?[{k:'contracts',ic:'📄'}]:[]),...(hasP('orders')?[{k:'orders',ic:'📦'},{k:'stock',ic:'🏭'},{k:'install',ic:'🔧'}]:[]),...(hasP('dam')?[{k:'sites',ic:'🌐'},{k:'dam',ic:'🗂️'}]:[]),{k:'notif',ic:'🔔',badge:unread},...(hasP('settings')&&ph(1)?[{k:'audit',ic:'🧾'}]:[]),...(hasP('settings')?[{k:'settings',ic:'⚙️'}]:[]),...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}]:[]),...(isGF()?[...(canZentrale()?[]:[{s:'hq'}]),{k:'team',ic:'👔'}]:[]),{s:'public'},{k:'register',ic:'📝'}];
+    {s:'admin'},{k:'dash',ic:'▦'},...(hasP('partners')?[{k:'partners',ic:'👥'}]:[]),...(hasP('leads')?[{k:'leads',ic:'📥'}]:[]),...(hasP('projects')?[{k:'projects',ic:'🗂'}]:[]),...(hasP('partners')?[{k:'contracts',ic:'📄'}]:[]),...(hasP('orders')?[{k:'orders',ic:'📦'},{k:'stock',ic:'🏭'},{k:'install',ic:'🔧'}]:[]),...(hasP('dam')?[{k:'sites',ic:'🌐'},{k:'dam',ic:'🗂️'}]:[]),{k:'notif',ic:'🔔',badge:unread},...(hasP('settings')&&ph(1)?[{k:'audit',ic:'🧾'}]:[]),...(hasP('hr')?[{k:'hr',ic:'🧑‍💼'}]:[]),...(hasP('settings')?[{k:'settings',ic:'⚙️'}]:[]),...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}]:[]),...(isGF()?[...(canZentrale()?[]:[{s:'hq'}]),{k:'team',ic:'👔'}]:[]),{s:'public'},{k:'register',ic:'📝'}];
   const p=PARTNERS.find(x=>x.id===viewer.partner);
   const ic={projects:'🗂',dash:'▦',network:'👥',pool:'🎯',leads:'📥',myleads:'📥',referral:'🔗',pricelist:'📦',orders:'🧾',stock:'🏭',install:'🔧',site:'🌐',earn:'💶',mycontract:'📄',dam:'🗂️',notif:'🔔'};
   return [{s:'me'},...MODULES.filter(m=>p.access.modules.includes(m)).map(m=>({k:m,ic:ic[m],badge:m==='notif'?unread:0}))];
@@ -1435,6 +1435,74 @@ let INVOICES=[{no:"RE-2026-1041",date:"2026-10-01",amount:1290,st:'paid'},{no:"R
 
 
 
+
+/* ---------- Personal (HR) – Aydemir Gruppe staff ---------- */
+const DEPTS=['Geschäftsleitung','Vertrieb & Marketing','Innendienst','Außendienst','Montage','Technik'];
+let EMP=[
+ {id:1,name:'Aydemir (Inhaber)',pos:'Geschäftsführer',dept:'Geschäftsleitung',brand:'all',loc:'Essen',type:'Vollzeit',start:'2015-03-01',hours:40,vac:30,used:12,probation:null,mail:'gf@aydemir-gruppe.de',tel:'+49 176 802 45345',access:'Geschäftsführer',status:'aktiv',docs:['Geschäftsführervertrag.pdf']},
+ {id:2,name:'Ayhan',pos:'Marketing & Web, Zoho CRM',dept:'Vertrieb & Marketing',brand:'we',loc:'Essen',type:'Vollzeit',start:'2023-05-15',hours:40,vac:28,used:19,probation:null,mail:'ayhan@aydemir-gruppe.de',tel:'+49 176 111 2201',access:'Technik-Verantwortlicher',status:'aktiv',docs:['Arbeitsvertrag.pdf','Datenschutz-Verpflichtung.pdf']},
+ {id:3,name:'Emine',pos:'Lead-Kontakt & Angebote',dept:'Innendienst',brand:'all',loc:'Remote (Türkei)',type:'Vollzeit',start:'2024-02-01',hours:40,vac:26,used:20,probation:null,mail:'emine@aydemir-gruppe.de',tel:'+90 532 410 22 10',access:'Verwaltung',status:'aktiv',docs:['Arbeitsvertrag.pdf','Remote-Vereinbarung.pdf']},
+ {id:4,name:'Kazım',pos:'Logistik & Lager',dept:'Innendienst',brand:'mz',loc:'Essen',type:'Vollzeit',start:'2021-09-01',hours:40,vac:28,used:24,probation:null,mail:'kazim@aydemir-gruppe.de',tel:'+49 176 111 2203',access:null,status:'Urlaub',docs:['Arbeitsvertrag.pdf']},
+ {id:5,name:'N.N. (Außendienst BW)',pos:'Außendienst Stuttgart (Teilzeit)',dept:'Außendienst',brand:'all',loc:'Stuttgart',type:'Teilzeit',start:'2026-11-15',hours:20,vac:14,used:0,probation:'2027-05-14',mail:'',tel:'',access:null,status:'Einstellung',docs:['Stellenanzeige.pdf']},
+ {id:6,name:'Benjamin',pos:'Vertrieb (geplant)',dept:'Vertrieb & Marketing',brand:'mz',loc:'Essen',type:'Vollzeit',start:'2027-01-01',hours:40,vac:28,used:0,probation:'2027-06-30',mail:'',tel:'',access:null,status:'Einstellung',docs:[]},
+ {id:7,name:'Mehmet K.',pos:'Monteur · Team 1 (Leitung)',dept:'Montage',brand:'all',loc:'Stuttgart',type:'Vollzeit',start:'2022-04-01',hours:40,vac:28,used:15,probation:null,mail:'',tel:'+49 176 111 2207',access:null,status:'aktiv',docs:['Arbeitsvertrag.pdf','Führerschein C1E.pdf','Höhenarbeit-Schulung.pdf']},
+ {id:8,name:'Jonas W.',pos:'Monteur · Team 1',dept:'Montage',brand:'all',loc:'Stuttgart',type:'Vollzeit',start:'2026-08-01',hours:40,vac:28,used:3,probation:'2027-01-31',mail:'',tel:'+49 176 111 2208',access:null,status:'aktiv',docs:['Arbeitsvertrag.pdf']},
+ {id:9,name:'Ali R.',pos:'Monteur · Team 2 (Leitung)',dept:'Montage',brand:'all',loc:'Essen',type:'Vollzeit',start:'2020-06-01',hours:40,vac:28,used:22,probation:null,mail:'',tel:'+49 176 111 2209',access:null,status:'aktiv',docs:['Arbeitsvertrag.pdf','Führerschein C1E.pdf']},
+ {id:10,name:'Piotr N.',pos:'Monteur · Team 2',dept:'Montage',brand:'all',loc:'Essen',type:'Minijob',start:'2025-03-01',hours:10,vac:8,used:4,probation:null,mail:'',tel:'+49 176 111 2210',access:null,status:'aktiv',docs:['Arbeitsvertrag.pdf']},
+];
+let LEAVE=[
+ {id:1,emp:4,kind:'Urlaub',from:'2026-10-26',to:'2026-11-06',days:10,st:'genehmigt'},
+ {id:2,emp:3,kind:'Urlaub',from:'2026-12-22',to:'2027-01-02',days:6,st:'offen'},
+ {id:3,emp:7,kind:'Urlaub',from:'2026-11-23',to:'2026-11-27',days:5,st:'offen',note:'Kollidiert mit Montage Österreich (17.–18.11. ok)'},
+ {id:4,emp:9,kind:'Krank',from:'2026-10-20',to:'2026-10-21',days:2,st:'erfasst'},
+];
+let hrSel=null,hrTab='list',hrAdd=false;
+function viewHR(){
+  const d=s=>s?new Date(s).toLocaleDateString('de-DE'):'—';
+  const today='2026-10-28';
+  const absent=LEAVE.filter(l=>l.st!=='abgelehnt'&&l.from<=today&&l.to>=today);
+  const open=LEAVE.filter(l=>l.st==='offen');
+  const prob=EMP.filter(e=>e.probation&&e.start<=today&&e.probation>today);
+  const tabs=`<div class="chips" style="margin-bottom:14px">${[['list','Mitarbeiter'],['leave','Abwesenheiten'+(open.length?` (${open.length})`:'')],['org','Organigramm']].map(([k,l])=>`<button class="chip ${hrTab===k?'on':''}" data-hrtab="${k}">${l}</button>`).join('')}</div>`;
+  const kpis=`<div class="grid kpis" style="margin-bottom:14px">${kpi('Mitarbeiter',EMP.filter(e=>e.status!=='Einstellung').length,EMP.filter(e=>e.status==='Einstellung').length+' in Einstellung')}${kpi('Heute abwesend',absent.length,absent.map(l=>EMP.find(e=>e.id===l.emp).name.split(' ')[0]).join(', ')||'—')}${kpi('Offene Anträge',open.length,'',open.length>0)}${kpi('In Probezeit',prob.length,'')}${kpi('Montage-Monteure',EMP.filter(e=>e.dept==='Montage').length,'2 Teams')}</div>`;
+  let body='';
+  if(hrTab==='list'){
+    const E=hrSel?EMP.find(e=>e.id===hrSel):null;
+    const table=`<div class="card"><div class="hd"><h2>Mitarbeiter · ${esc(TENANTS[0].name)}</h2><span class="sp"></span><button class="btn p sm" data-hradd>+ Mitarbeiter</button><button class="btn sm" data-act="export">⤓ Export</button></div>
+      <div class="tw"><table><thead><tr><th>Name</th><th>Position</th><th>Abteilung</th><th>Standort</th><th>Art</th><th>Urlaub</th><th>Status</th></tr></thead><tbody>
+      ${EMP.map(e=>`<tr data-emp="${e.id}" style="${e.id===hrSel?'background:var(--accent-soft)':''}"><td><b>${esc(e.name)}</b>${e.access?`<br><small style="color:var(--muted)">🔑 ${e.access}</small>`:''}</td><td style="white-space:normal"><small>${esc(e.pos)}</small></td><td><small>${e.dept}</small></td><td><small>${e.loc}</small></td><td><small>${e.type} · ${e.hours} h</small></td><td style="font-variant-numeric:tabular-nums"><small>${e.vac-e.used} / ${e.vac}</small></td><td>${e.status==='aktiv'?'<span class="st ok">aktiv</span>':e.status==='Urlaub'?'<span class="st warn">Urlaub</span>':'<span class="st mut">'+e.status+'</span>'}</td></tr>`).join('')}</tbody></table></div></div>`;
+    const detail=E?`<div class="card"><div class="hd"><h2>${esc(E.name)}</h2><span class="sp"></span><button class="btn sm" data-hrclose>✕</button></div>
+      <dl class="kv"><dt>Position</dt><dd>${esc(E.pos)}</dd><dt>Abteilung</dt><dd>${E.dept}</dd><dt>Marke</dt><dd>${E.brand==='all'?'<span class="tag">Gruppe</span>':brandTag(E.brand)}</dd><dt>Standort</dt><dd>${E.loc}</dd><dt>Kontakt</dt><dd>${E.mail||'—'}<br>${E.tel||''}</dd><dt>Eintritt</dt><dd>${d(E.start)}</dd><dt>Vertrag</dt><dd>${E.type} · ${E.hours} h/Woche</dd><dt>Probezeit bis</dt><dd>${E.probation?d(E.probation):'—'}</dd><dt>Urlaub ${'2026'}</dt><dd>${E.used} von ${E.vac} Tagen genommen · <b>${E.vac-E.used} offen</b></dd><dt>Portal-Zugang</dt><dd>${E.access?`🔑 ${E.access} <button class="btn sm" data-goto="team">Team & Rollen →</button>`:`kein Zugang ${isGF()?'<button class="btn sm" data-goto="team">anlegen →</button>':''}`}</dd></dl>
+      <b style="font-size:13px;display:block;margin-top:12px">Personalakte</b><div style="display:grid;gap:4px;margin-top:6px">${E.docs.map(x=>`<div style="display:flex;gap:8px;align-items:center;padding:6px 8px;background:var(--bg);border-radius:6px;font-size:13px">📄 <span style="flex:1">${x}</span><button class="btn sm" data-act="pdf">⤓</button></div>`).join('')||'<small style="color:var(--muted)">Keine Dokumente.</small>'}</div>
+      <label class="btn sm" style="margin-top:8px;cursor:pointer">⤒ Dokument hochladen<input type="file" hidden data-hrdoc></label>
+      <b style="font-size:13px;display:block;margin-top:12px">Abwesenheiten</b>${LEAVE.filter(l=>l.emp===E.id).map(l=>`<div style="font-size:13px;padding:4px 0">${l.kind} · ${d(l.from)} – ${d(l.to)} · ${l.days} T · <span class="st ${l.st==='genehmigt'||l.st==='erfasst'?'ok':l.st==='offen'?'warn':'mut'}">${l.st}</span></div>`).join('')||'<small style="color:var(--muted)">—</small>'}
+      <button class="btn sm" data-hrleave style="margin-top:8px">+ Abwesenheit eintragen</button></div>`
+      :hrAdd?`<div class="card"><div class="hd"><h2>Mitarbeiter anlegen</h2><span class="sp"></span><button class="btn sm" data-hrclose>✕</button></div><div class="frm">
+        <div class="f full"><label>Name</label><input id="he_name"></div><div class="f full"><label>Position</label><input id="he_pos"></div>
+        <div class="f"><label>Abteilung</label><select id="he_dept">${DEPTS.map(x=>`<option>${x}</option>`).join('')}</select></div><div class="f"><label>Standort</label><input id="he_loc" value="Essen"></div>
+        <div class="f"><label>Vertragsart</label><select id="he_type"><option>Vollzeit</option><option>Teilzeit</option><option>Minijob</option><option>Werkstudent</option><option>Freelance</option></select></div><div class="f"><label>Wochenstunden</label><input id="he_hours" type="number" value="40"></div>
+        <div class="f"><label>Eintritt</label><input id="he_start" type="date" value="2026-11-01"></div><div class="f"><label>Urlaubstage</label><input id="he_vac" type="number" value="28"></div>
+        <div class="f full"><button class="btn p" data-hrsave>Anlegen</button></div></div></div>`
+      :`<div class="card"><div class="hd"><h2>Hinweise</h2></div><div class="feed">${prob.map(e=>`<div class="it"><span class="dot" style="background:var(--warn);margin-top:6px"></span><span>Probezeit ${esc(e.name)} endet ${d(e.probation)}</span><small></small></div>`).join('')}${open.map(l=>`<div class="it"><span class="dot" style="background:var(--crit);margin-top:6px"></span><span>Urlaubsantrag ${esc(EMP.find(e=>e.id===l.emp).name)} · ${d(l.from)}–${d(l.to)}</span><small><button class="btn sm" data-hrtab="leave">→</button></small></div>`).join('')}${EMP.filter(e=>e.status==='Einstellung').map(e=>`<div class="it"><span class="dot" style="background:var(--accent);margin-top:6px"></span><span>Einstellung ${esc(e.name)} zum ${d(e.start)}</span><small></small></div>`).join('')}</div><p style="margin:10px 0 0;font-size:12px;color:var(--muted)">🔒 Personaldaten sind nur mit dem Recht „Personal (HR)“ sichtbar (DSGVO, § 26 BDSG). Zugriffe werden protokolliert.</p></div>`;
+    body=`<div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:14px">${table}${detail}</div>`;
+  }
+  if(hrTab==='leave'){
+    body=`<div class="card"><div class="hd"><h2>Abwesenheiten</h2><span class="sp"></span><button class="btn p sm" data-hrleave>+ Antrag / Eintrag</button></div>
+      ${window._hrLeaveForm?`<div class="frm" style="margin-bottom:12px;padding:12px;border:1px solid var(--accent);border-radius:8px"><div class="f"><label>Mitarbeiter</label><select id="hl_emp">${EMP.map(e=>`<option value="${e.id}" ${e.id===hrSel?'selected':''}>${esc(e.name)}</option>`).join('')}</select></div><div class="f"><label>Art</label><select id="hl_kind"><option>Urlaub</option><option>Krank</option><option>Fortbildung</option><option>Sonderurlaub</option></select></div><div class="f"><label>Von</label><input id="hl_from" type="date" value="2026-11-09"></div><div class="f"><label>Bis</label><input id="hl_to" type="date" value="2026-11-13"></div><div class="f full"><button class="btn p" data-hrleavesave>Speichern</button></div></div>`:''}
+      <div class="tw"><table><thead><tr><th>Mitarbeiter</th><th>Art</th><th>Zeitraum</th><th>Tage</th><th>Status</th><th></th></tr></thead><tbody>
+      ${LEAVE.slice().sort((a,b)=>a.from<b.from?1:-1).map(l=>{const e=EMP.find(x=>x.id===l.emp);return `<tr style="cursor:default"><td><b>${esc(e.name)}</b><br><small style="color:var(--muted)">${e.dept}</small></td><td>${l.kind}</td><td style="font-variant-numeric:tabular-nums">${d(l.from)} – ${d(l.to)}${l.note?`<br><small style="color:var(--warn)">⚠ ${esc(l.note)}</small>`:''}</td><td>${l.days}</td><td><span class="st ${l.st==='genehmigt'||l.st==='erfasst'?'ok':l.st==='offen'?'warn':'mut'}">${l.st}</span></td><td style="white-space:nowrap">${l.st==='offen'?`<button class="btn p sm" data-lv="${l.id}" data-lvs="genehmigt">✓ Genehmigen</button> <button class="btn sm" data-lv="${l.id}" data-lvs="abgelehnt">✕</button>`:''}</td></tr>`}).join('')}</tbody></table></div>
+      <p style="margin:10px 0 0;font-size:12px;color:var(--muted)">Urlaub von Monteuren wird mit dem Montage-Kalender abgeglichen – Konflikte werden markiert.</p></div>`;
+  }
+  if(hrTab==='org'){
+    const gf=EMP.find(e=>e.dept==='Geschäftsleitung');
+    body=`<div class="card"><div class="hd"><h2>Organigramm · ${esc(TENANTS[0].name)}</h2></div>
+      <div style="display:grid;justify-items:center;gap:14px"><div class="card" style="border-color:var(--accent);min-width:220px;text-align:center"><b>${esc(gf.name)}</b><br><small style="color:var(--muted)">${gf.pos}</small></div>
+      <div style="width:2px;height:14px;background:var(--line)"></div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr));width:100%">${DEPTS.filter(x=>x!=='Geschäftsleitung').map(dp=>`<div class="card" style="padding:10px"><b style="font-size:13px">${dp}</b><div style="display:grid;gap:4px;margin-top:6px">${EMP.filter(e=>e.dept===dp).map(e=>`<button data-emp-org="${e.id}" style="text-align:left;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--bg);cursor:pointer;font-size:12px"><b>${esc(e.name)}</b><br><span style="color:var(--muted)">${esc(e.pos)}</span></button>`).join('')||'<small style="color:var(--muted)">—</small>'}</div></div>`).join('')}</div></div></div>`;
+  }
+  return kpis+tabs+body;
+}
+
 /* ---------- Projekt-Management (small) ---------- */
 const PSTAGES=[['plan','Geplant','var(--muted)'],['run','In Arbeit','var(--accent)'],['mont','Montage','var(--warn)'],['done','Abgeschlossen','var(--ok)']];
 let PROJECTS=[
@@ -1717,7 +1785,7 @@ function render(){
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
   document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':PDOOR?DOOR_META[DOOR].n:TENANTS[0].name+' · Verwaltung';
   const v=$('#view');
-  v.innerHTML=({projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
+  v.innerHTML=({hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:viewDash,partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:viewOrders,pricelist:viewPricelist,dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot})[page]();
   /* access toggles (admin) */
   v.querySelectorAll('[data-mod],[data-brand],[data-flag]').forEach(cb=>cb.onchange=()=>{const p=PARTNERS.find(x=>x.id===selPartner);
     if(cb.dataset.mod){p.access.modules=MODULES.filter(m=>m==='dash'||(m===cb.dataset.mod?cb.checked:p.access.modules.includes(m)))}
@@ -1790,6 +1858,17 @@ function render(){
     if(cb.dataset.sprod){s.products=cb.checked?[...new Set([...s.products,cb.dataset.sprod])]:s.products.filter(x=>x!==cb.dataset.sprod)}
     toast(t('saved'));if(cb.dataset.sflag==='enabled'||cb.dataset.skind||cb.dataset.sbrand)render()});
   ['s_logo','s_phone','s_tag'].forEach(id=>{const e=$('#'+id);if(e)e.onchange=()=>{const s=siteOf(viewer.partner);s[{s_logo:'logo',s_phone:'phone',s_tag:'tagline'}[id]]=e.value;toast(t('saved'))}});
+  /* HR hooks */
+  v.querySelectorAll('[data-hrtab]').forEach(b=>b.onclick=()=>{hrTab=b.dataset.hrtab;render()});
+  v.querySelectorAll('tr[data-emp]').forEach(r=>r.onclick=()=>{hrSel=+r.dataset.emp;hrAdd=false;render()});
+  v.querySelectorAll('[data-emp-org]').forEach(b=>b.onclick=()=>{hrSel=+b.dataset.empOrg;hrTab='list';render()});
+  v.querySelectorAll('[data-hrclose]').forEach(b=>b.onclick=()=>{hrSel=null;hrAdd=false;render()});
+  v.querySelectorAll('[data-hradd]').forEach(b=>b.onclick=()=>{hrSel=null;hrAdd=true;render()});
+  v.querySelectorAll('[data-hrsave]').forEach(b=>b.onclick=()=>{const n=$('#he_name').value.trim();if(!n){$('#he_name').focus();return}const id=Math.max(...EMP.map(e=>e.id))+1;EMP.push({id,name:n,pos:$('#he_pos').value||'—',dept:$('#he_dept').value,brand:'all',loc:$('#he_loc').value,type:$('#he_type').value,start:$('#he_start').value,hours:+$('#he_hours').value,vac:+$('#he_vac').value,used:0,probation:null,mail:'',tel:'',access:null,status:$('#he_start').value>'2026-10-28'?'Einstellung':'aktiv',docs:[]});AUDIT.unshift({who:TEAMNAME||'Geschäftsführung',what:'Personal: Mitarbeiter angelegt · '+n,when:new Date().toISOString().slice(0,16).replace('T',' ')});hrAdd=false;hrSel=id;render();toast('Mitarbeiter angelegt')});
+  v.querySelectorAll('[data-hrdoc]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];if(!f)return;EMP.find(e=>e.id===hrSel).docs.push(f.name);render();toast('Dokument abgelegt: '+f.name)});
+  v.querySelectorAll('[data-hrleave]').forEach(b=>b.onclick=()=>{window._hrLeaveForm=true;hrTab='leave';render()});
+  v.querySelectorAll('[data-hrleavesave]').forEach(b=>b.onclick=()=>{const from=$('#hl_from').value,to=$('#hl_to').value;const days=Math.max(1,Math.round((new Date(to)-new Date(from))/864e5)+1);const emp=+$('#hl_emp').value;const kind=$('#hl_kind').value;const e=EMP.find(x=>x.id===emp);const clash=e.dept==='Montage'&&JOBS.some(j=>j.d>=from&&j.d<=to&&((e.pos.includes('Team 1')&&j.team==='t1')||(e.pos.includes('Team 2')&&j.team==='t2')));LEAVE.push({id:LEAVE.length+1,emp,kind,from,to,days,st:kind==='Krank'?'erfasst':'offen',note:clash?'Kollidiert mit geplanter Montage':undefined});window._hrLeaveForm=false;render();toast(clash?'Gespeichert – Konflikt mit Montage-Kalender':'Gespeichert')});
+  v.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{const l=LEAVE.find(x=>x.id===+b.dataset.lv);l.st=b.dataset.lvs;if(l.st==='genehmigt'&&l.kind==='Urlaub'){EMP.find(e=>e.id===l.emp).used+=l.days}render();toast('Antrag '+l.st)});
   /* project hooks */
   v.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{projSel=b.dataset.proj;render()});
   v.querySelectorAll('[data-projclose]').forEach(b=>b.onclick=()=>{projSel=null;render()});
