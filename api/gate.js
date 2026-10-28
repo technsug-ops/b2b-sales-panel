@@ -32,7 +32,7 @@ const ROLES_PATH = 'gate/roles.json';
 const TENANTS = ['aydemir', 'ug-alu', 'sirius'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
-const pth = (T, kind) => T === 'aydemir' ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
+const pth = (T, kind) => T === 'aydemir' && LEGACY[kind] ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
 const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // packages: partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override in cfg.limits
@@ -170,6 +170,22 @@ async function main(req, res) {
   const T = tenantOf(body);
   // tenant-bound subjects (team t:, partner p:) only count inside their own tenant
   const scoped = d => d && /^[tp]:/.test(String(d.sub)) ? (tokTenant(d) === T ? d : null) : d;
+  // a suspended customer (tenant) loses every login: team, partner, bound codes; the TechNS console keeps working
+  const isSusp = async t => !!(((await loadJson(pth(t, 'status'))) || {}).suspended);
+  const SUSP = { ok: false, error: 'suspended' };
+  if (['plogin', 'tlogin', 'tpass'].includes(action) || (action && (action.startsWith('team_') || action.startsWith('pcreds_')))) { if (await isSusp(T)) return res.status(403).json(SUSP); }
+
+  if (action === 'tenant_status_list' || action === 'tenant_status_set') {
+    const d = verifyToken(body.token);
+    if (!d || d.sub !== 'master') return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (action === 'tenant_status_set') {
+      const t = String(body.target || '');
+      if (!TENANTS.includes(t)) return res.status(400).json({ ok: false, error: 'target' });
+      await saveJson(pth(t, 'status'), { suspended: !!body.suspended, reason: String(body.reason || '').slice(0, 200), at: Date.now() });
+    }
+    const out = {}; for (const t of TENANTS) out[t] = (await loadJson(pth(t, 'status'))) || { suspended: false };
+    return res.status(200).json({ ok: true, status: out });
+  }
 
   if (action === 'notes_get' || action === 'notes_set') {
     const d = verifyToken(body.token);
@@ -185,6 +201,7 @@ async function main(req, res) {
 
   if (action === 'verify') {
     const d = scoped(verifyToken(body.token));
+    if (d && (/^[tp]:/.test(String(d.sub)) || d.sub === 'hq') && await isSusp(T)) return res.status(200).json(SUSP);
     const perms = d && String(d.sub).startsWith('t:') ? await permsOf(d.sub, T) : undefined;
     if (d && String(d.sub).startsWith('t:') && perms === null) return res.status(200).json({ ok: false });
     { const mm = d && /^t:(\d+):/.exec(String(d.sub)); if (mm) { const mem = (await loadTeam(T)).find(x => x.id === Number(mm[1])); if (mem && mem.pwAt && !(d.iat >= mem.pwAt)) return res.status(200).json({ ok: false, error: 'pw_changed' }); } }
@@ -215,7 +232,7 @@ async function main(req, res) {
     if (c.updated && !c.migF2) { for (const f of F2) if (!c.features.includes(f)) c.features.push(f); c.migF2 = true; await saveJson(pth(T, 'tcfg'), c); }
     if (c.updated && !c.migPP) { for (const f of ['pricing', 'perf']) if (!c.features.includes(f)) c.features.push(f); c.migPP = true; await saveJson(pth(T, 'tcfg'), c); }
     if (T === 'ug-alu' && c.updated && !c.migInv) { if (!c.features.includes('invoices')) c.features.push('invoices'); c.migInv = true; await saveJson(pth(T, 'tcfg'), c); }
-    return res.status(200).json({ ok: true, cfg: c, tenant: T });
+    return res.status(200).json({ ok: true, cfg: c, tenant: T, suspended: await isSusp(T) });
   }
   if (action === 'tenant_cfg_set') {
     const d = verifyToken(body.token);
@@ -332,6 +349,7 @@ async function main(req, res) {
       return res.status(200).json({ ok: true, token: makeToken('master'), kind: 'master' });
     }
     if (HQ_HASH && safeEq(sha(code), HQ_HASH)) {
+      if (await isSusp('aydemir')) return res.status(403).json(SUSP);
       return res.status(200).json({ ok: true, token: makeToken('hq'), kind: 'hq' });
     }
     const norm = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -345,6 +363,7 @@ async function main(req, res) {
       // bound code: only at its own company and entrance; a wrong entrance does not burn it
       const want = tg.area === 'partner' ? 'network' : 'staff';
       if (tg.tenant !== T || (area && area !== want)) return res.status(409).json({ ok: false, error: 'wrong_place', tenant: tg.tenant, area: tg.area });
+      if (await isSusp(T)) return res.status(403).json(SUSP);
     }
     hit.usedAt = now;
     hit.usedUa = String(req.headers['user-agent'] || '').slice(0, 120);
