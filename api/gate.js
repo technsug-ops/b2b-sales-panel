@@ -20,8 +20,9 @@ const SESSION_HOURS = 12;
 const sha = s => createHash('sha256').update(String(s)).digest('hex');
 const safeEq = (a, b) => { const x = Buffer.from(String(a)); const y = Buffer.from(String(b)); return x.length === y.length && timingSafeEqual(x, y); };
 
-function makeToken(sub) {
-  const exp = Date.now() + SESSION_HOURS * 3600e3;
+function makeToken(sub, expCap) {
+  let exp = Date.now() + SESSION_HOURS * 3600e3;
+  if (expCap && expCap < exp) exp = expCap;
   const payload = Buffer.from(JSON.stringify({ sub, exp })).toString('base64url');
   const sig = createHmac('sha256', ADMIN_SECRET + MASTER_HASH).update(payload).digest('base64url');
   return `${payload}.${sig}`;
@@ -77,7 +78,7 @@ async function main(req, res) {
 
   if (action === 'verify') {
     const d = verifyToken(body.token);
-    return res.status(200).json({ ok: !!d, sub: d?.sub || null });
+    return res.status(200).json({ ok: !!d, sub: d?.sub || null, exp: d?.exp || null });
   }
 
   if (action === 'login') {
@@ -94,7 +95,7 @@ async function main(req, res) {
     hit.usedAt = now;
     hit.usedUa = String(req.headers['user-agent'] || '').slice(0, 120);
     await saveCodes(codes);
-    return res.status(200).json({ ok: true, token: makeToken(hit.id), kind: 'once', label: hit.label });
+    return res.status(200).json({ ok: true, token: makeToken(hit.id, hit.expires), kind: 'once', label: hit.label, exp: hit.expires });
   }
 
   // admin actions

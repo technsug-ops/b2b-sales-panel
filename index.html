@@ -297,7 +297,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
     <span class="demo" data-i="demoNote">Demo · Beispieldaten</span>
     <span class="sp"></span>
     <div class="langs" id="langs"><button data-l="de">DE</button><button data-l="tr">TR</button><button data-l="en">EN</button></div>
-    <span class="pill" id="userPill">👤 —</span><button class="btn sm" id="notesBtn" hidden title="Notizen">📝</button><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
+    <span class="pill" id="expPill" hidden style="color:var(--warn);font-variant-numeric:tabular-nums"></span><span class="pill" id="userPill">👤 —</span><button class="btn sm" id="notesBtn" hidden title="Notizen">📝</button><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
   </div>
   <div id="view"></div>
 </main>
@@ -362,7 +362,7 @@ de:{nav:{audit:"Audit-Log",dash:"Dashboard",partners:"Partner",contracts:"Vertr�
  ref:{title:"Ihr persönlicher Referenzcode",hint:"Formulare auf den Websites erkennen diesen Code – Leads landen automatisch bei Ihnen.",link:"Ihr Link",copy:"Kopieren",copied:"Kopiert",quick:"Lead schnell erfassen",name:"Name / Firma",plz:"PLZ",brand:"Marke",phone:"Telefon",save:"Lead einreichen",saved:"Lead eingereicht – Status: Neu",stats:"Ihre Zahlen"},
  net:{invite:"+ Partner einladen",invited:"Einladung gesendet",sub:"Ihr Netzwerk",comm:"Netzwerkprovision (Monat)"},
  support:{title:"Ihr Ansprechpartner",msg:"Nachricht senden"},
- gate:{pw:"Zugangscode",btn:"Anmelden",hint:"Demo-Zugang · nur für eingeladene Personen",err:"Zugangscode ist falsch oder bereits verwendet.",neterr:"Server nicht erreichbar – bitte erneut versuchen.",logout:"Abmelden",wait:"Prüfe…"},
+ gate:{pw:"Zugangscode",btn:"Anmelden",hint:"Demo-Zugang · nur für eingeladene Personen",err:"Zugangscode ist falsch oder bereits verwendet.",expired:"Ihr Zugang ist abgelaufen. Bitte neuen Code anfordern.",left:"Zugang endet in",neterr:"Server nicht erreichbar – bitte erneut versuchen.",logout:"Abmelden",wait:"Prüfe…"},
  bp:{tierProg:"Stufen-Fortschritt",nextTier:"Nächste Stufe",rule:"Regel",closings:"Abschlüsse (12 Mon.)",revenue:"Umsatz (12 Mon.)",reached:"erreicht",autoCalc:"Automatisch berechnet · Hochstufung mit Freigabe",
   timeout:"Rückfall in Pool in",overdue:"Überfällig → zurück in Pool",lostReason:"Verlustgrund",reasons:["Preis","Zeitpunkt","Wettbewerber","Nicht erreichbar","Kein Bedarf"],quality:"Lead-Qualität",good:"Qualifiziert",bad:"Unqualifiziert",flagged:"Als unqualifiziert gemeldet – wird geprüft, keine Leadgen-Vergütung",
   pendingSla:"Bewerbung wartet seit {h} h – SLA 48 h überschritten",
@@ -418,7 +418,7 @@ tr:{nav:{audit:"Denetim kaydı",dash:"Panel",partners:"Partnerler",contracts:"S�
  ref:{title:"Kişisel referans kodunuz",hint:"Web sitelerindeki formlar bu kodu tanır – lead'ler otomatik size düşer.",link:"Linkiniz",copy:"Kopyala",copied:"Kopyalandı",quick:"Hızlı lead girişi",name:"Ad / Firma",plz:"Posta kodu",brand:"Marka",phone:"Telefon",save:"Lead'i gönder",saved:"Lead gönderildi – durum: Yeni",stats:"Rakamlarınız"},
  net:{invite:"+ Partner davet et",invited:"Davet gönderildi",sub:"Ağınız",comm:"Ağ komisyonu (ay)"},
  support:{title:"Yetkiliniz",msg:"Mesaj gönder"},
- gate:{pw:"Erişim kodu",btn:"Giriş",hint:"Demo erişimi · yalnızca davetliler için",err:"Kod hatalı veya daha önce kullanılmış.",neterr:"Sunucuya ulaşılamadı – tekrar deneyin.",logout:"Çıkış",wait:"Kontrol ediliyor…"},
+ gate:{pw:"Erişim kodu",btn:"Giriş",hint:"Demo erişimi · yalnızca davetliler için",err:"Kod hatalı veya daha önce kullanılmış.",expired:"Erişim süreniz doldu. Lütfen yeni kod isteyin.",left:"Erişim bitiş",neterr:"Sunucuya ulaşılamadı – tekrar deneyin.",logout:"Çıkış",wait:"Kontrol ediliyor…"},
  bp:{tierProg:"Seviye ilerlemesi",nextTier:"Sonraki seviye",rule:"Kural",closings:"Kapanış (12 ay)",revenue:"Ciro (12 ay)",reached:"ulaşıldı",autoCalc:"Otomatik hesaplanır · yükseltme onayla",
   timeout:"Havuza dönüş",overdue:"Süresi geçti → havuza döner",lostReason:"Kayıp nedeni",reasons:["Fiyat","Zamanlama","Rakip","Ulaşılamadı","İhtiyaç yok"],quality:"Lead kalitesi",good:"Kalifiye",bad:"Kalitesiz",flagged:"Kalitesiz olarak bildirildi – inceleniyor, leadgen ücreti yok",
   pendingSla:"Başvuru {h} saattir bekliyor – 48 saat SLA aşıldı",
@@ -474,7 +474,7 @@ en:{nav:{audit:"Audit log",dash:"Dashboard",partners:"Partners",contracts:"Contr
  ref:{title:"Your personal referral code",hint:"Website forms recognise this code – leads land with you automatically.",link:"Your link",copy:"Copy",copied:"Copied",quick:"Quick lead capture",name:"Name / company",plz:"Postcode",brand:"Brand",phone:"Phone",save:"Submit lead",saved:"Lead submitted – status: New",stats:"Your numbers"},
  net:{invite:"+ Invite partner",invited:"Invitation sent",sub:"Your network",comm:"Network commission (month)"},
  support:{title:"Your contact",msg:"Send message"},
- gate:{pw:"Access code",btn:"Sign in",hint:"Demo access · invited people only",err:"Code is wrong or already used.",neterr:"Server unreachable – please retry.",logout:"Sign out",wait:"Checking…"},
+ gate:{pw:"Access code",btn:"Sign in",hint:"Demo access · invited people only",err:"Code is wrong or already used.",expired:"Your access has expired. Please request a new code.",left:"Access ends in",neterr:"Server unreachable – please retry.",logout:"Sign out",wait:"Checking…"},
  bp:{tierProg:"Tier progress",nextTier:"Next tier",rule:"Rule",closings:"Closings (12 mo)",revenue:"Revenue (12 mo)",reached:"reached",autoCalc:"Calculated automatically · promotion with approval",
   timeout:"Back to pool in",overdue:"Overdue → back to pool",lostReason:"Lost reason",reasons:["Price","Timing","Competitor","Unreachable","No need"],quality:"Lead quality",good:"Qualified",bad:"Unqualified",flagged:"Flagged as unqualified – under review, no leadgen fee",
   pendingSla:"Application waiting {h} h – 48 h SLA exceeded",
@@ -1378,7 +1378,7 @@ function render(){
 $('#roleSel').onchange=e=>{viewer=VIEWERS.find(v=>v.id===e.target.value);page='dash';selPartner=null;render()};
 $('#langs').onclick=e=>{const b=e.target.closest('button');if(!b)return;lang=b.dataset.l;try{localStorage.setItem('pp-lang',lang)}catch(x){}render()};
 $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
-$('#logoutBtn').onclick=()=>{try{sessionStorage.removeItem('b2b-gate');sessionStorage.removeItem('b2b-kind');sessionStorage.removeItem('b2b-admin')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
+$('#logoutBtn').onclick=()=>{lockAt(null);try{sessionStorage.removeItem('b2b-gate');sessionStorage.removeItem('b2b-kind');sessionStorage.removeItem('b2b-admin')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent='';showGate()};
 
 /* ---------- AI assistant (scripted demo) ---------- */
 const AI_RESP={
@@ -1395,6 +1395,7 @@ function aiMsg(who,txt){const d=document.createElement('div');d.className='msg '
 function aiSugg(){const w=document.createElement('div');w.className='chips';w.innerHTML=`<button class="chip" data-q="contract">${t('aiQ1')}</button><button class="chip" data-q="leads">${t('aiQ2')}</button>`;w.querySelectorAll('button').forEach(b=>b.onclick=()=>{w.remove();aiAsk(b.textContent,b.dataset.q)});$('#aiLog').appendChild(w)}
 function aiAsk(q,key){aiMsg('u',q);const k=key||(/vertr|sözleş|contract/i.test(q)?'contract':/lead|württ/i.test(q)?'leads':'other');setTimeout(()=>{aiMsg('a',AI_RESP[k][lang]());if(k==='other')aiSugg()},500)}
 $('#aiFab').onclick=aiOpen;$('#aiClose').onclick=()=>{$('#ai').hidden=true;$('#aiFab').hidden=false};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const tok=gateToken();const e=tokenExp(tok);if(e&&!isMaster()&&e<=Date.now())lockAt(e)}});
 $('#aiForm').onsubmit=e=>{e.preventDefault();const v=$('#aiIn').value.trim();if(!v)return;$('#aiIn').value='';aiAsk(v)};
 
 
@@ -1413,18 +1414,26 @@ const GATE_API=location.protocol.startsWith('http')&&!/claudeusercontent|claude\
 async function sha256(str){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function gateApi(payload){const r=await fetch(GATE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});return r.json()}
 function gateToken(){try{return sessionStorage.getItem('b2b-gate')}catch(e){return null}}
+function tokenExp(tok){try{if(!tok||tok.startsWith('local:'))return null;const p=JSON.parse(atob(tok.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));return p.exp||null}catch(e){return null}}
+let expTimer=null,expTick=null;
+function lockAt(exp){clearTimeout(expTimer);clearInterval(expTick);const pill=$('#expPill');if(!exp){if(pill)pill.hidden=true;return}
+  const lock=()=>{try{sessionStorage.removeItem('b2b-gate');sessionStorage.removeItem('b2b-kind')}catch(e){}$('#gatePw').value='';$('#gateErr').textContent=t('gate.expired');$('#notes').hidden=true;$('#ai').hidden=true;showGate()};
+  const ms=exp-Date.now();if(ms<=0){lock();return}
+  expTimer=setTimeout(lock,ms);
+  const upd=()=>{const r=exp-Date.now();if(r<=0)return;const h=Math.floor(r/3600e3),m=Math.floor(r%3600e3/60e3),sec=Math.floor(r%60e3/1e3);if(pill){pill.hidden=false;pill.textContent='⏱ '+t('gate.left')+' '+(h?h+' h ':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')}};
+  upd();expTick=setInterval(upd,1000)}
 function isMaster(){try{return sessionStorage.getItem('b2b-kind')==='master'}catch(e){return false}}
 function setKind(k){try{sessionStorage.setItem('b2b-kind',k)}catch(e){}}
 function showGate(){$('#gate').hidden=false;document.body.classList.add('locked');document.body.style.overflow='hidden';setTimeout(()=>$('#gatePw').focus(),50)}
 function hideGate(){$('#gate').hidden=true;document.body.classList.remove('locked');document.body.style.overflow='';MAPS.forEach(({map})=>{try{map.invalidateSize()}catch(e){}})}
 $('#gateForm').onsubmit=async e=>{e.preventDefault();const code=$('#gatePw').value.trim();if(!code)return;const btn=e.target.querySelector('button');btn.disabled=true;btn.textContent=t('gate.wait');$('#gateErr').textContent='';
   try{
-    if(GATE_API){const r=await gateApi({action:'login',code});if(r.ok){try{sessionStorage.setItem('b2b-gate',r.token)}catch(x){}setKind(r.kind||'once');hideGate();render()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
+    if(GATE_API){const r=await gateApi({action:'login',code});if(r.ok){try{sessionStorage.setItem('b2b-gate',r.token)}catch(x){}setKind(r.kind||'once');hideGate();render();lockAt(r.kind==='once'?tokenExp(r.token):null)}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
     else{const h=await sha256(code);if(h===GATE_HASH){try{sessionStorage.setItem('b2b-gate','local:'+h)}catch(x){}setKind('master');hideGate();render()}else{$('#gateErr').textContent=t('gate.err');$('#gatePw').select()}}
   }catch(x){$('#gateErr').textContent=t('gate.neterr')}
   btn.disabled=false;btn.textContent=t('gate.btn')};
 (async()=>{const tok=gateToken();if(!tok){showGate();return}
-  if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});if(!r.ok){try{sessionStorage.removeItem('b2b-gate')}catch(x){}showGate()}else{setKind(r.sub==='master'?'master':'once');render()}}catch(x){/* keep session on network hiccup */}}
+  if(GATE_API){try{const r=await gateApi({action:'verify',token:tok});if(!r.ok){try{sessionStorage.removeItem('b2b-gate')}catch(x){}showGate()}else{setKind(r.sub==='master'?'master':'once');render();lockAt(r.sub==='master'?null:(r.exp||tokenExp(tok)))}}catch(x){/* keep session on network hiccup */}}
   else if(tok!=='local:'+GATE_HASH)showGate()})();
 render();
 </script>
