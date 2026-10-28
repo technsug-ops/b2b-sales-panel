@@ -25,11 +25,11 @@ const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
 const DEFAULT_TCFG = { features: ADDONS.slice(), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
 // ---- tenants: aydemir keeps its original blob paths; others live under gate/t/<slug>/
-const TENANTS = ['aydemir', 'ug-alu'];
+const TENANTS = ['aydemir', 'ug-alu', 'sirius'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
 const pth = (T, kind) => T === 'aydemir' ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
-const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites'], types: DEFAULT_TCFG.types } };
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr'], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock'], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // a token's tenant (tokens minted before tenancy belong to aydemir)
 const tokTenant = d => d && (d.ten || 'aydemir');
@@ -70,6 +70,9 @@ const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
   { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'UGAlu-GF-2026' },
   { id: 2, name: 'Vertrieb', role: 'staff', user: 'vertrieb', pass: 'UGAlu-Team-2026' },
   { id: 3, name: 'Montageleitung', role: 'mitarbeiter', user: 'montage', pass: 'UGAlu-Mont-2026' },
+], sirius: [
+  { id: 1, name: 'Directie', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Sirius-GF-2026' },
+  { id: 2, name: 'Verkoop binnendienst', role: 'staff', user: 'verkoop', pass: 'Sirius-Team-2026' },
 ] };
 async function loadTeam(T = 'aydemir') {
   const TP = pth(T, 'team');
