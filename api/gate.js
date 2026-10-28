@@ -23,7 +23,8 @@ const HQ_HASH = process.env.GATE_HQ_HASH || '';
 const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
 const TEAM_PATH = 'gate/team.json';
 const TCFG_PATH = 'gate/tenant-t1.json';
-const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf'];
+const F2 = ['program', 'terr', 'cust', 'quotes', 'credit', 'returns'];
+const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2];
 const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
 const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices'), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
@@ -32,7 +33,7 @@ const TENANTS = ['aydemir', 'ug-alu', 'sirius'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
 const pth = (T, kind) => T === 'aydemir' ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
-const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf'], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf'], types: DEFAULT_TCFG.types } };
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // a token's tenant (tokens minted before tenancy belong to aydemir)
 const tokTenant = d => d && (d.ten || 'aydemir');
@@ -206,6 +207,8 @@ async function main(req, res) {
     const c = (await loadJson(pth(T, 'tcfg'))) || tcfgDefault(T);
     // UG-Alu booked the accounting module (10/2026)
     // prices & conditions and partner performance are on for every tenant (10/2026)
+    // partner-programme, territories, customer protection, quotes, credit, returns: on for every tenant (10/2026)
+    if (c.updated && !c.migF2) { for (const f of F2) if (!c.features.includes(f)) c.features.push(f); c.migF2 = true; await saveJson(pth(T, 'tcfg'), c); }
     if (c.updated && !c.migPP) { for (const f of ['pricing', 'perf']) if (!c.features.includes(f)) c.features.push(f); c.migPP = true; await saveJson(pth(T, 'tcfg'), c); }
     if (T === 'ug-alu' && c.updated && !c.migInv) { if (!c.features.includes('invoices')) c.features.push('invoices'); c.migInv = true; await saveJson(pth(T, 'tcfg'), c); }
     return res.status(200).json({ ok: true, cfg: c, tenant: T });
@@ -218,7 +221,7 @@ async function main(req, res) {
     const types = {};
     for (const k of PTYPES) { const t = (inp.types || {})[k] || {}; types[k] = { on: t.on !== false, label: String(t.label || '').slice(0, 30) }; }
     if (!PTYPES.some(k => types[k].on)) return res.status(400).json({ ok: false, error: 'notype' });
-    const cfg = { features, types, updated: Date.now(), migInv: true, migPP: true };
+    const cfg = { features, types, updated: Date.now(), migInv: true, migPP: true, migF2: true };
     await saveJson(pth(T, 'tcfg'), cfg);
     return res.status(200).json({ ok: true, cfg });
   }
