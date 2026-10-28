@@ -36,7 +36,8 @@ async function loadRoles() {
   if (!r) { r = BUILTIN_ROLES.map(x => ({ ...x })); await saveJson(ROLES_PATH, r); }
   let changed = false;
   if (!r.some(x => x.key === 'mitarbeiter')) { r.push({ ...BUILTIN_ROLES[3] }); changed = true; }
-  for (const x of r) { if (x.key === 'gf' && x.perms.length !== PERMS.length) { x.perms = PERMS.slice(); changed = true; } if (x.builtin && !x.migratedProjects) { if (!x.perms.includes('projects')) x.perms.push('projects'); x.migratedProjects = true; changed = true; } }
+  for (const x of r) { if (x.key === 'gf' && x.perms.length !== PERMS.length) { x.perms = PERMS.slice(); changed = true; } if (x.key === 'mitarbeiter' && !x.fixMa) { x.perms = x.perms.filter(p => p !== 'projects'); x.fixMa = true; changed = true; }
+    if (x.builtin && x.key !== 'mitarbeiter' && !x.migratedProjects) { if (!x.perms.includes('projects')) x.perms.push('projects'); x.migratedProjects = true; changed = true; } }
   if (changed) await saveJson(ROLES_PATH, r);
   return r;
 }
