@@ -84,6 +84,13 @@ h1{font-size:22px;font-weight:600}h2{font-size:16px;font-weight:600}h3{font-size
 .webmenu .wt{flex:1;min-width:0}.webmenu .wt b{display:block;font-size:13.5px;font-weight:600}.webmenu .wt small{display:block;color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .webmenu .i{flex:none;opacity:.7}
 @media(max-width:700px){#webBtn .wl{display:none}.webmenu{position:fixed;left:12px;right:12px;top:58px;min-width:0}}
+.pwwrap{position:relative;display:block;flex:1;min-width:0}.pwwrap>input{width:100%;padding-right:40px!important;box-sizing:border-box}
+.pweye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:grid;place-items:center;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:6px;padding:0}
+.pweye:hover{color:var(--ink,inherit);background:var(--accent-soft)}.pweye .i{width:18px;height:18px}
+#site .simp{position:fixed;inset:0;z-index:10;background:rgba(8,14,20,.55);display:grid;place-items:center;padding:20px}
+#site .simpbox{position:relative;background:#fff;color:#1d2733;border-radius:14px;max-width:560px;width:100%;max-height:calc(100vh - 40px);overflow:auto;padding:28px 30px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#site .simpbox h2{margin:0 0 14px}#site .simpbox p{margin:0 0 12px;font-size:14.5px;line-height:1.6}#site .simpbox .simpk{margin:16px 0 2px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7785}
+#site .simpbox a{color:var(--sa)}#site .simpx{position:absolute;top:10px;right:12px;border:0;background:none;font-size:28px;line-height:1;cursor:pointer;color:#6b7785;padding:4px 8px}
 .subtabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:-4px 0 16px}.subtabs button{display:inline-flex;align-items:center;gap:7px;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:500;padding:9px 12px;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;border-radius:6px 6px 0 0}.subtabs button:hover{color:var(--fg);background:var(--accent-soft)}.subtabs button.on{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}.subtabs .ic{display:inline-flex;opacity:.8}.subtabs .ic svg{width:15px;height:15px}.subtabs .badge{background:var(--crit);color:#fff;font-size:10px;padding:1px 6px;border-radius:99px}
 .navlabel{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 2px}
 .rolebox{margin-top:auto;border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--bg)}
@@ -981,6 +988,7 @@ const TENANT_DATA={
    refImgs:["https://images.ug-alu.de/products/1/terrassenuberdachung_anthrazit_stegplatte_7m_4.jpg","https://images.ug-alu.de/products/6/kaltwintergarten_anthrazit_stegplatte_klar_6m_1.jpg","https://images.ug-alu.de/products/8/balkonuberdachung_stegplatte_klar_anthrazit_6m_lvFVyggl1XYEPd.jpg"],
    aboutMini:"berät Sie persönlich zu Überdachungen, Carports und Vordächern von UG-Alu – vom Aufmaß vor Ort über das Angebot bis zur Montage durch einen Fachpartner in Ihrer Region."}},
   siteBase:"fachpartner.ug-alu.de",
+  impressum:{firm:"UG-Alu GmbH",addr:["Holterkamp 7","40880 Ratingen","Deutschland"],tel:"02102 7708577",mail:"info@ug-alu.de",gf:"Mehmet Ugur Mahsereci",reg:"Amtsgericht Düsseldorf",hrb:"HRB 102744",ust:"DE365327642",resp:"Mehmet Ugur Mahsereci",respAddr:"Holterkamp 7, 40880 Ratingen"},
   heroVideo:{d:"/media/ug-alu/hero-desktop.mp4?v=4",m:"/media/ug-alu/hero-mobile.mp4?v=4",pd:"/media/ug-alu/hero-desktop.jpg?v=4",pm:"/media/ug-alu/hero-mobile.jpg?v=4"},
   sites:{
    101:{enabled:true,kind:'cobrand',status:'live',slug:"krueger",brands:['ua'],products:['UA-CP-300','UA-BU-300','UA-SOL-500','UA-VD-HM'],logo:"Montagebau Krüger",tagline:"Terrassendächer und Carports aus Aluminium – Aufmaß und Montage in Düsseldorf",phone:"+49 211 44 10 20",prices:true,theme:{tpl:'modern',accent:'#d9822b',img:"https://images.ug-alu.de/products/1/terrassenuberdachung_anthrazit_stegplatte_7m_4.jpg"}},
@@ -1328,7 +1336,7 @@ el.querySelectorAll('[data-sgo]').forEach(b=>b.onclick=()=>{const m=el.querySele
     const v=el.querySelector('.vh video');const base=IS_HTTP?'':'https://b2b-portal.foundercheck.de';const mob=()=>matchMedia('(max-width:700px), (orientation:portrait) and (max-width:1000px)').matches;
     const pick=()=>{const m=mob();const src=base+(m?HV.m:HV.d);if(v.dataset.src===src)return;v.dataset.src=src;v.poster=base+(m?HV.pm:HV.pd);v.src=src;if(!matchMedia('(prefers-reduced-motion:reduce)').matches){const p=v.play();if(p&&p.catch)p.catch(()=>{})}else v.removeAttribute('autoplay')};
     v.onerror=()=>v.remove();pick();addEventListener('resize',pick)}
-  el.querySelectorAll('[data-slegal]').forEach(b=>b.onclick=()=>toast(b.dataset.slegal+': wird von '+TD.name+' gepflegt – ohne diesen Text geht die Seite nicht live.'));
+  el.querySelectorAll('[data-slegal]').forEach(b=>b.onclick=()=>b.dataset.slegal==='Impressum'&&TD.impressum?showImpressum(el):toast(b.dataset.slegal+': wird von '+TD.name+' gepflegt – ohne diesen Text geht die Seite nicht live.'));
   $('#sForm').onsubmit=e=>{e.preventDefault();$('#sFormMsg').textContent='Danke! Ihre Anfrage ist im Portal von '+TD.name+' eingegangen und wird einem Fachpartner in Ihrer Region zugewiesen.';e.target.querySelectorAll('input,textarea').forEach(x=>x.value='')};
 }
 /* ---------- Connect model: what the embed looks like on the customer's own site ---------- */
@@ -2116,6 +2124,26 @@ document.addEventListener('click',e=>{const m=document.getElementById('webMenu')
   const g=e.target.closest('[data-wgo]');if(g){m.hidden=true;page=g.dataset.wgo;selDetail=null;render();return}
   if(!e.target.closest('#webMenu'))m.hidden=true;else if(e.target.closest('a'))m.hidden=true});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const m=document.getElementById('webMenu');if(m)m.hidden=true}});
+/* Impressum (B2B site) */
+function showImpressum(host){const I=TD.impressum;const old=host.querySelector('.simp');if(old)old.remove();
+  const d=document.createElement('div');d.className='simp';d.setAttribute('data-notr','');d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','Impressum');
+  d.innerHTML='<div class="simpbox"><button class="simpx" aria-label="Schließen">×</button><h2>Impressum</h2>'+
+   '<p class="simpk">Angaben gemäß § 5 DDG</p><p><b>'+esc(I.firm)+'</b><br>'+I.addr.map(esc).join('<br>')+'</p>'+
+   '<p class="simpk">Kontakt</p><p>Telefon: <a href="tel:'+esc(I.tel.replace(/\s/g,''))+'">'+esc(I.tel)+'</a><br>E-Mail: <a href="mailto:'+esc(I.mail)+'">'+esc(I.mail)+'</a></p>'+
+   '<p class="simpk">Vertreten durch den Geschäftsführer</p><p>'+esc(I.gf)+'</p>'+
+   '<p class="simpk">Registereintrag</p><p>Eintragung im Handelsregister<br>Registergericht: '+esc(I.reg)+'<br>Registernummer: '+esc(I.hrb)+'</p>'+
+   '<p class="simpk">Umsatzsteuer-ID</p><p>Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG:<br>'+esc(I.ust)+'</p>'+
+   '<p class="simpk">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</p><p>'+esc(I.resp)+'<br>'+esc(I.respAddr)+'</p>'+
+   '<p class="simpk">Verbraucherstreitbeilegung</p><p>Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p></div>';
+  host.appendChild(d);const close=()=>{d.remove();document.removeEventListener('keydown',esc_)};const esc_=e=>{if(e.key==='Escape')close()};
+  d.onclick=e=>{if(e.target===d||e.target.closest('.simpx'))close()};document.addEventListener('keydown',esc_);d.querySelector('.simpx').focus()}
+/* password fields: show / hide on request */
+function pwEyes(root){(root||document).querySelectorAll('input[type=password]:not([data-pweye])').forEach(inp=>{inp.setAttribute('data-pweye','');
+  const w=document.createElement('span');w.className='pwwrap';inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+  const b=document.createElement('button');b.type='button';b.className='pweye';b.tabIndex=0;
+  const set=show=>{inp.type=show?'text':'password';b.innerHTML=ico(show?'eyeoff':'eye');b.setAttribute('aria-label',show?L4('Passwort verbergen','Şifreyi gizle','Hide password','Wachtwoord verbergen'):L4('Passwort anzeigen','Şifreyi göster','Show password','Wachtwoord tonen'));b.title=b.getAttribute('aria-label');b.setAttribute('aria-pressed',String(show))};
+  set(false);b.onmousedown=e=>e.preventDefault();b.onclick=()=>{const p=inp.selectionStart;set(inp.type==='password');inp.focus();try{inp.setSelectionRange(p,p)}catch(e){}};w.appendChild(b)})}
+pwEyes();new MutationObserver(ms=>{for(const m of ms)if(m.addedNodes.length){pwEyes();break}}).observe(document.body,{childList:true,subtree:true});
 const platLog=()=>[...AUDIT.filter(a=>a.who==='TechNS'),...PLOG];
 function viewAudit(){
   if(CONSOLE)return `<div class="card"><div class="hd"><h2>${L4('Plattform-Protokoll','Platform kaydı','Platform log','Platformlogboek')}</h2><span class="sp"></span><small style="color:var(--muted)">${L4('Nur Plattform-Ereignisse – keine Daten der Mandanten','Yalnızca platform olayları – firma verisi yok','Platform events only – no tenant data','Alleen platformgebeurtenissen – geen tenantgegevens')}</small></div>
