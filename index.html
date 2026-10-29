@@ -76,6 +76,14 @@ h1{font-size:22px;font-weight:600}h2{font-size:16px;font-weight:600}h3{font-size
 .nav button:focus-visible,.btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .nav .ic{width:18px;text-align:center;opacity:.8}
 .nav .badge{margin-left:auto;background:var(--crit);color:#fff;font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600}
+.webwrap{position:relative}
+.webmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:600;min-width:300px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:6px}
+.webmenu .wsec{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px}
+.webmenu a,.webmenu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none;font:inherit;cursor:pointer}
+.webmenu a:hover,.webmenu button:hover{background:var(--accent-soft)}
+.webmenu .wt{flex:1;min-width:0}.webmenu .wt b{display:block;font-size:13.5px;font-weight:600}.webmenu .wt small{display:block;color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.webmenu .i{flex:none;opacity:.7}
+@media(max-width:700px){#webBtn .wl{display:none}.webmenu{position:fixed;left:12px;right:12px;top:58px;min-width:0}}
 .subtabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:-4px 0 16px}.subtabs button{display:inline-flex;align-items:center;gap:7px;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:500;padding:9px 12px;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;border-radius:6px 6px 0 0}.subtabs button:hover{color:var(--fg);background:var(--accent-soft)}.subtabs button.on{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}.subtabs .ic{display:inline-flex;opacity:.8}.subtabs .ic svg{width:15px;height:15px}.subtabs .badge{background:var(--crit);color:#fff;font-size:10px;padding:1px 6px;border-radius:99px}
 .navlabel{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 2px}
 .rolebox{margin-top:auto;border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--bg)}
@@ -504,7 +512,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
     <span class="demo" data-i="demoNote">Demo · Beispieldaten</span>
     <span class="sp"></span>
     <div class="langs" id="langs"><button data-l="de">DE</button><button data-l="tr">TR</button><button data-l="en">EN</button><button data-l="nl">NL</button></div>
-    <a class="btn sm" id="doorBtn" hidden href="/" target="_blank" rel="noopener"></a><span class="pill" id="expPill" hidden style="color:var(--warn);font-variant-numeric:tabular-nums"></span><span class="pill" id="userPill">👤 —</span><button class="btn sm" id="notesBtn" hidden title="Notizen">📝</button><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
+    <div class="webwrap" id="webWrap" hidden><button class="btn sm" id="webBtn" aria-haspopup="true" aria-expanded="false"></button><div class="webmenu" id="webMenu" hidden></div></div><a class="btn sm" id="doorBtn" hidden href="/" target="_blank" rel="noopener"></a><span class="pill" id="expPill" hidden style="color:var(--warn);font-variant-numeric:tabular-nums"></span><span class="pill" id="userPill">👤 —</span><button class="btn sm" id="notesBtn" hidden title="Notizen">📝</button><button class="btn sm" id="logoutBtn" title="Abmelden">⏻</button>
   </div>
   <div id="view"></div>
 </main>
@@ -2088,6 +2096,26 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-ppau
 /* product slider (B2B site): arrows scroll one card; arrows hide at the ends */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-sarr]');if(!b)return;const w=b.parentNode.querySelector('.sslider');const c=w.querySelector('.scard');w.scrollBy({left:(+b.dataset.sarr)*((c?c.offsetWidth:260)+14),behavior:'smooth'})});
 document.addEventListener('scroll',e=>{const w=e.target;if(!w.classList||!w.classList.contains('sslider'))return;const p=w.parentNode;const l=p.querySelector('.sarr.l'),r=p.querySelector('.sarr.r');if(l)l.disabled=w.scrollLeft<4;if(r)r.disabled=w.scrollLeft+w.clientWidth>=w.scrollWidth-4},true);
+/* topbar: quick access to every public page of this company */
+function webLinks(){
+  const L=[],ext=h=>'https://'+String(h).replace(/^https?:\/\//,''),host=u=>u.replace(/^https?:\/\//,'').replace(/^#/,'');
+  const own=[];const live=h=>IS_HTTP&&h.startsWith('/')?location.host+h:host(h);
+  if(TD&&TD.model==='start')own.push({ic:'globe',n:L4('B2B-Website','B2B web sitesi','B2B website','B2B-website'),d:live(areaHref('site')),h:areaHref('site')});
+  if(TD&&TD.site)own.push({ic:'external',n:L4('Firmen-Website','Firma web sitesi','Company website','Bedrijfswebsite'),d:TD.site,h:ext(TD.site),x:1});
+  const BR=TD&&TD.brands?TD.brands:BRANDS;for(const k in BR){const b=BR[k];if(!b.site||(TD&&(b.site===TD.domain||b.site===TD.site)))continue;own.push({ic:'external',n:b.name,d:b.site,h:ext(b.site),x:1})}
+  if(own.length)L.push({s:L4('Ihre Websites','Web siteleriniz','Your websites','Uw websites'),it:own});
+  const pp=[{ic:'door',n:L4('Partner-Portal (Login)','Partner portalı (giriş)','Partner portal (login)','Partnerportaal (login)'),d:live(areaHref('network')),h:areaHref('network')},
+    {ic:'pen',n:L4('Partner werden – Bewerbung','Partner ol – başvuru','Become a partner – application','Partner worden – aanmelding'),d:live(areaHref('network','join')),h:areaHref('network','join')},
+    {ic:'pin',n:L4('Händlersuche-Widget','Bayi arama widget\'ı','Dealer locator widget','Dealerzoeker-widget'),d:L4('zum Einbinden auf Ihrer Website','web sitenize eklemek için','to embed on your website','om op uw website in te sluiten'),h:areaHref('embed')}];
+  L.push({s:L4('Für Partner','Partnerler için','For partners','Voor partners'),it:pp});
+  if(feat('sites')&&hasP('dam')){const on=PARTNERS.filter(p=>SITES[p.id]&&SITES[p.id].enabled).length;L.push({s:L4('Partner-Websites','Partner web siteleri','Partner websites','Partnerwebsites'),it:[{ic:'layers',n:L4('Alle Partner-Websites','Tüm partner web siteleri','All partner websites','Alle partnerwebsites'),d:on+' '+L4('online','yayında','live','online'),go:'sites'}]})}
+  return L}
+function webMenuHtml(){return webLinks().map(g=>'<div class="wsec">'+esc(g.s)+'</div>'+g.it.map(x=>x.go?'<button data-wgo="'+x.go+'">'+ico(x.ic)+'<span class="wt"><b>'+esc(x.n)+'</b><small>'+esc(x.d||'')+'</small></span></button>':'<a href="'+esc(x.h)+'" target="_blank" rel="noopener">'+ico(x.ic)+'<span class="wt"><b>'+esc(x.n)+'</b><small>'+esc(x.d||'')+'</small></span>'+ico('external')+'</a>').join('')).join('')}
+document.addEventListener('click',e=>{const m=document.getElementById('webMenu');if(!m)return;const b=e.target.closest('#webBtn');
+  if(b){const open=m.hidden;if(open)m.innerHTML=webMenuHtml();m.hidden=!open;b.setAttribute('aria-expanded',String(open));if(open)txAll&&txAll();return}
+  const g=e.target.closest('[data-wgo]');if(g){m.hidden=true;page=g.dataset.wgo;selDetail=null;render();return}
+  if(!e.target.closest('#webMenu'))m.hidden=true;else if(e.target.closest('a'))m.hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const m=document.getElementById('webMenu');if(m)m.hidden=true}});
 const platLog=()=>[...AUDIT.filter(a=>a.who==='TechNS'),...PLOG];
 function viewAudit(){
   if(CONSOLE)return `<div class="card"><div class="hd"><h2>${L4('Plattform-Protokoll','Platform kaydı','Platform log','Platformlogboek')}</h2><span class="sp"></span><small style="color:var(--muted)">${L4('Nur Plattform-Ereignisse – keine Daten der Mandanten','Yalnızca platform olayları – firma verisi yok','Platform events only – no tenant data','Alleen platformgebeurtenissen – geen tenantgegevens')}</small></div>
@@ -3621,6 +3649,7 @@ function render(){
   else{$('#t-brand').textContent=TENANTS[0].name;bs.textContent=TSUB;bm.textContent=TMARK;if(TD)document.body.style.setProperty('--accent',TD.accent)}
   document.querySelector('.rolebox').hidden=true;if(!NET&&!CONSOLE&&!HQ)viewer=VIEWERS[0];
   $('#doorBtn').innerHTML=CONSOLE?ico('external')+' Mandanten-Portal':'';$('#doorBtn').hidden=!CONSOLE;$('#doorBtn').setAttribute('href',portalUrl());
+  {const ww=$('#webWrap');if(ww){ww.hidden=CONSOLE||NET||AREA!=='staff';$('#webBtn').innerHTML=ico('globe')+'<span class="wl"> '+L4('Webseiten','Web sayfaları','Websites','Websites')+' ▾</span>'}}
   const gb=document.querySelector('#gate .brand');if(gb){const M=NET?(PDOOR?DOOR_META[DOOR]:{n:'Partner-Portal',c:'#0f6f8c',ic:'🛰'}):null;gb.querySelector('b').textContent=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':M?M.n:TENANTS[0].name;gb.querySelector('small').textContent=CONSOLE?'Entwickler-Zugang · nur Master-Code':HQ?TENANTS[0].name+' · Zentrale-Code':M?TENANTS[0].name+' · Benutzername & Passwort':TSUB;gb.querySelector('.mark').innerHTML=CONSOLE?'TN':HQ?'HQ':M?deco(M.ic):TMARK;if(!M&&!CONSOLE&&TD)gb.querySelector('.mark').style.background=TD.accent;if(M)gb.querySelector('.mark').style.background=M.c}
   {const gj=$('#gateJoin');if(gj){gj.hidden=!NET;gj.textContent=lang==='tr'?'Henüz partner değil misiniz? Şimdi başvurun →':lang==='en'?'Not a partner yet? Apply now →':'Noch kein Partner? Jetzt bewerben →';gj.href=areaHref('network','join');gj.onclick=e=>{e.preventDefault();try{history.pushState(null,'',areaHref('network','join'))}catch(x){}showJoin()}}}
   $('#gateUserWrap').hidden=!!CONSOLE;$('#gateUserLbl').textContent=NET?L4('Benutzername – leer lassen für Zugangscode','Kullanıcı adı – erişim kodu için boş bırakın','Username – leave empty for an access code','Gebruikersnaam – leeg laten voor een toegangscode'):L4('Benutzername (Team) – leer lassen für Zugangscode','Kullanıcı adı (ekip) – erişim kodu için boş bırakın','Username (team) – leave empty for an access code','Gebruikersnaam (team) – leeg laten voor een toegangscode');$('#gatePwLbl').textContent=NET?L4('Passwort / Zugangscode','Şifre / erişim kodu','Password / access code','Wachtwoord / toegangscode'):CONSOLE?'Master-Code':'Passwort / Zugangscode';
