@@ -271,8 +271,8 @@ function mkMount(ROOT, MK, OPT) {
     var d0 = f.date || dateVal(nextWork());
     view.innerHTML = '<div class="mk-book">' +
       '<form class="card mk-form" id="mkForm">' +
-      '<label>Gerätetyp<select id="mkType">' + MK.kats.map(function (k) { return '<optgroup label="' + esc(k.name) + '">' + TYPES.filter(function (x) { return x.kat === k.slug; }).map(function (x) { return '<option value="' + x.id + '"' + (x.id === st.type ? ' selected' : '') + '>' + esc(x.name) + ' · ' + x.units.length + ' Stk.</option>'; }).join('') + '</optgroup>'; }).join('') + '</select></label>' +
-      '<div class="mk-rate"><img src="' + IMG + t.pic + '.webp" alt="" width="120" height="84"><div><b>' + esc(t.name) + '</b><small>' + esc(t.info) + '</small><span>' + eur(t.rate.std) + '/Std · ' + eur(t.rate.halb) + ' Halbtag · ' + eur(t.rate.tag) + '/Tag · ' + eur(t.rate.woche) + '/Woche</span></div></div>' +
+      '<label>Gerätetyp<select id="mkType">' + MK.kats.map(function (k) { return '<optgroup label="' + esc(k.name) + '">' + TYPES.filter(function (x) { return x.kat === k.slug; }).map(function (x) { return '<option value="' + x.id + '"' + (x.id === st.type ? ' selected' : '') + '>' + esc(x.name) + (MK.public ? '' : ' · ' + x.units.length + ' Stk.') + '</option>'; }).join('') + '</optgroup>'; }).join('') + '</select></label>' +
+      '<div class="mk-rate"><img src="' + IMG + t.pic + '.webp" alt="" width="120" height="84"><div><b>' + esc(t.name) + '</b><small>' + esc(t.info) + '</small>' + (MK.public ? '' : '<span>' + eur(t.rate.std) + '/Std · ' + eur(t.rate.halb) + ' Halbtag · ' + eur(t.rate.tag) + '/Tag · ' + eur(t.rate.woche) + '/Woche</span>') + '</div></div>' +
       '<div class="grid2"><label>Mietbeginn<input type="date" id="mkD1" value="' + (f.d1 || d0) + '" required></label><label>Uhrzeit<select id="mkT1">' + timeOpts(f.t1 || '08:00') + '</select></label></div>' +
       '<div class="grid2"><label>Mietende<input type="date" id="mkD2" value="' + (f.d2 || f.d1 || d0) + '" required></label><label>Uhrzeit<select id="mkT2">' + timeOpts(f.t2 || '16:00') + '</select></label></div>' +
       '<label>PLZ der Baustelle<input id="mkPlz" inputmode="numeric" maxlength="5" placeholder="z. B. 89518" value="' + esc(f.plz || '89518') + '"></label>' +
@@ -289,7 +289,7 @@ function mkMount(ROOT, MK, OPT) {
       '<label class="chk"><input type="checkbox" id="mkFl"' + (f.fl ? ' checked' : '') + '> Freileitung / Oberleitung in der Nähe</label>' +
       '<label class="chk"><input type="checkbox" id="mkVk"' + (f.vk ? ' checked' : '') + '> Gerät steht auf Straße, Gehweg oder Parkfläche (Verkehrssicherung nötig)</label></details>') +
       '</form>' +
-      '<div class="mk-side"><h2 class="h-sm">Verfügbarkeit · ' + esc(t.name) + '</h2><div class="mk-weeknav"><button type="button" class="btn ghost sm" data-wk="-1">← Woche</button><span>' + dlab(st.week) + ' – ' + dlab(st.week + 5 * DAY) + '</span><button type="button" class="btn ghost sm" data-wk="1">Woche →</button></div>' + availStrip(st.type) +
+      '<div class="mk-side">' + (MK.public ? '<h2 class="h-sm">Ihre Anfrage</h2>' : '<h2 class="h-sm">Verfügbarkeit · ' + esc(t.name) + '</h2><div class="mk-weeknav"><button type="button" class="btn ghost sm" data-wk="-1">← Woche</button><span>' + dlab(st.week) + ' – ' + dlab(st.week + 5 * DAY) + '</span><button type="button" class="btn ghost sm" data-wk="1">Woche →</button></div>' + availStrip(st.type)) +
       '<div id="mkResult" aria-live="polite"></div></div></div>';
     $('#mkType').onchange = function () { st.type = this.value; st.form = readForm(); renderBuchen(); };
     $$('#mkForm input, #mkForm select').forEach(function (el) { if (el.id !== 'mkType') el.addEventListener('change', calc); });
@@ -328,7 +328,27 @@ function mkMount(ROOT, MK, OPT) {
     rows.sort(function (a, b) { return a[1] - b[1]; });
     return '<ol class="mk-log">' + rows.map(function (x) { return '<li class="' + x[0] + '"><time>' + dlab(x[1]) + ' ' + hm(x[1]) + '</time><span>' + x[2] + '</span></li>'; }).join('') + '</ol>';
   }
+  /* Kunden-Website: keine Belegung, keine Preise – nur Prüfung, Hinweise und Anfrage ans Portal */
+  function calcPublic() {
+    var req = readReq(), box = $('#mkResult'), f0 = readForm(), t = TYPE[req.type], p = plan(req), sc = siteCheck(t, f0);
+    var badInput = p.err && /PLZ|Postleitzahl|Mietende|Vergangenheit/.test(p.err);
+    var st0 = badInput ? '<div class="card mk-warn"><b>Bitte prüfen:</b> ' + esc(p.err) + '</div>' : p.ok ? '<div class="card done"><b>Ihr Wunschtermin ist möglich.</b><p class="muted small">Wir senden Ihnen das verbindliche Angebot inkl. Lieferung und Abholung.</p></div>' : '<div class="card mk-warn"><b>Zum Wunschtermin ist dieses Gerät bereits verplant.</b><p class="muted small">Senden Sie die Anfrage trotzdem – wir schlagen Ihnen einen Ersatztermin oder ein gleichwertiges Gerät vor.</p></div>';
+    var siteHtml = (sc.warn.length ? '<div class="card mk-warn"><b>Baustellen-Check</b><ul>' + sc.warn.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' + (sc.alt.length ? '<p>Passende Geräte:</p><div class="chips">' + sc.alt.map(function (x) { return '<button type="button" class="btn ghost sm" data-swap="' + x.id + '">' + esc(x.short) + '</button>'; }).join('') + '</div>' : '') + '</div>' : '') +
+      (!MK.noOpCheck && f0.op === 'nein' && f0.mode !== 'bediener' ? '<div class="card mk-warn"><b>Bedienung nur mit Schulungsnachweis</b><p>Hubarbeitsbühnen dürfen nur unterwiesene Personen bedienen (DGUV Grundsatz 308-008). Wählen Sie „Mit Bediener“ oder wir bieten Ihnen eine Schulung an.</p></div>' : '');
+    box.innerHTML = siteHtml + st0 + (badInput ? '' : '<div class="card"><div class="grid2"><input id="mkName" placeholder="Ansprechpartner" aria-label="Ansprechpartner"><input id="mkTel" type="tel" placeholder="Telefon" aria-label="Telefon"></div><input id="mkMail" type="email" placeholder="E-Mail" aria-label="E-Mail" style="margin-top:8px;width:100%"><div class="mk-cta"><input id="mkKunde" placeholder="Firma" aria-label="Firma"><button type="button" class="btn big" id="mkBook" data-track="request_submit">Anfrage senden</button></div><p class="muted small">Wir bestätigen Ihre Anfrage schriftlich, zu Geschäftszeiten innerhalb von 15 Minuten.</p></div>');
+    $$('[data-swap]', box).forEach(function (b) { b.onclick = function () { st.form = readForm(); st.form.siteOpen = true; st.type = b.dataset.swap; renderBuchen(); }; });
+    var bk = $('#mkBook'); if (!bk) return;
+    bk.onclick = function () {
+      var tel = ($('#mkTel').value || '').trim(), mail = ($('#mkMail').value || '').trim();
+      if (!tel && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { var mt = $('#mkTel'); mt.focus(); mt.setAttribute('aria-invalid', 'true'); mt.placeholder = 'Telefon oder E-Mail angeben'; return; }
+      var info = 'Online-Wunschtermin' + (p.ok ? ' (verfügbar)' : ' (Gerät zum Termin verplant – Alternative anbieten)') + (f0.vk ? ' · Verkehrssicherung' : '') + (f0.fl ? ' · Freileitung' : '') + (sc.bad ? ' · Baustellen-Check: Gerät evtl. ungeeignet' : '') + (f0.op === 'nein' && f0.mode !== 'bediener' ? ' · Bediener ohne Schulung' : '');
+      if (window.sendInq) window.sendInq(MK.tenant || 'laggner', MK.brand || '', { firma: ($('#mkKunde').value || '').trim(), name: ($('#mkName').value || '').trim(), tel: tel, mail: mail, plz: req.plz, type: req.type, geraet: t.name, start: req.start, end: req.end, mode: req.mode, preis: p.ok && p.price ? p.price.net : null, info: info }, 'online');
+      (window.dataLayer = window.dataLayer || []).push({ event: 'request_submit', via: 'mietkalender', typ: req.type });
+      box.innerHTML = '<div class="card done"><h3>Danke – Ihre Anfrage ist bei uns.</h3><p>' + esc(t.name) + ', ' + dlab(req.start) + ' ' + hm(req.start) + ' bis ' + dlab(req.end) + ' ' + hm(req.end) + ', PLZ ' + esc(req.plz || '') + '.</p><p class="muted small">Sie erhalten das Angebot per ' + (mail ? 'E-Mail' : 'Rückruf') + '.</p></div>';
+    };
+  }
   function calc() {
+    if (MK.public) return calcPublic();
     var req = readReq(), box = $('#mkResult'), p = plan(req);
     st.last = p;
     if (!p.ok) {
