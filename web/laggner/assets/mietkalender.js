@@ -347,15 +347,15 @@ function mkMount(ROOT, MK, OPT) {
       '<tr class="sum"><td>Summe netto</td><td>' + eur(pr.net) + '</td></tr><tr><td>zzgl. 19 % MwSt.</td><td>' + eur(pr.vat) + '</td></tr><tr class="sum"><td>Gesamt brutto</td><td>' + eur(pr.gross) + '</td></tr></table>' +
       '<p class="muted small">Gerät ' + esc(p.unit.id) + ' · Niederlassung ' + esc(DEPOT[p.unit.depot].name) + (p.zone && p.req.mode !== 'abhol' ? ' · ' + esc(p.zone.name) + ' · ca. ' + p.km + ' km, ' + Math.round(p.drive / MIN) + ' min Fahrt' : '') + '</p>' +
       '<h3>Ablauf</h3>' + logisticsHtml(p) +
-      '<div class="mk-cta"><input id="mkKunde" placeholder="Firma (für die Demo)" aria-label="Firma"><button type="button" class="btn big" id="mkBook" data-track="request_submit">Verbindlich anfragen</button></div><p class="muted small">Demo: Die Buchung wird nur in diesem Browser gespeichert und erscheint sofort in der Disposition.</p></div>';
+      '<div class="mk-cta"><input id="mkKunde" list="mkKdList" placeholder="Firma (für die Demo)" aria-label="Firma"><datalist id="mkKdList">' + (MK.kundenFn ? MK.kundenFn() : []).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist><button type="button" class="btn big" id="mkBook" data-track="request_submit">Verbindlich anfragen</button></div><p class="muted small">Demo: Die Buchung wird nur in diesem Browser gespeichert und erscheint sofort in der Disposition.</p></div>';
     $$('[data-swap]', box).forEach(function (b) { b.onclick = function () { st.form = readForm(); st.form.siteOpen = true; st.type = b.dataset.swap; renderBuchen(); }; });
     $$('[data-opmode]', box).forEach(function (b) { b.onclick = function () { var f = readForm(); f.mode = 'bediener'; st.form = f; renderBuchen(); }; });
     $$('[data-schul]', box).forEach(function (b) { b.onclick = function () { var f = readForm(); f.schul = !f.schul; st.form = f; renderBuchen(); }; });
     $('#mkBook').onclick = function () {
       var k = commit(p, ($('#mkKunde').value || 'Demo-Kunde').slice(0, 40)); var ff = readForm();
-      k.site = { zuf: ff.zuf, ug: ff.ug, gef: ff.gef, inn: ff.inn, fl: ff.fl, vk: ff.vk }; k.op = ff.mode === 'bediener' ? 'bediener' : ff.op; k.schul = ff.op === 'nein' && ff.schul; if (sc.bad) k.siteWarn = true; save();
+      k.site = { zuf: ff.zuf, ug: ff.ug, gef: ff.gef, inn: ff.inn, fl: ff.fl, vk: ff.vk }; k.op = ff.mode === 'bediener' ? 'bediener' : ff.op; k.schul = ff.op === 'nein' && ff.schul; if (sc.bad) k.siteWarn = true; save(); if (MK.onSave) MK.onSave(); var note = MK.afterBook ? MK.afterBook(k) : '';
       (window.dataLayer = window.dataLayer || []).push({ event: 'request_submit', via: 'mietkalender', typ: req.type });
-      box.innerHTML = '<div class="card done"><h3>Danke – Anfrage ' + esc(k.id) + ' ist eingeplant.</h3><p>' + esc(TYPE[k.type].name) + ', ' + dlab(k.start) + ' ' + hm(k.start) + ' bis ' + dlab(k.end) + ' ' + hm(k.end) + ' · ' + eur(k.net) + ' netto.</p><p><button type="button" class="btn ghost sm" id="mkToDispo">In der Disposition ansehen</button></p></div>';
+      box.innerHTML = '<div class="card done"><h3>Danke – Anfrage ' + esc(k.id) + ' ist eingeplant.</h3>' + (note ? '<p class="mk-note">' + esc(note) + '</p>' : '') + '<p>' + esc(TYPE[k.type].name) + ', ' + dlab(k.start) + ' ' + hm(k.start) + ' bis ' + dlab(k.end) + ' ' + hm(k.end) + ' · ' + eur(k.net) + ' netto.</p><p><button type="button" class="btn ghost sm" id="mkToDispo">In der Disposition ansehen</button></p></div>';
       $('#mkToDispo').onclick = function () { st.tab = 'dispo'; st.week = monday(k.start); st.hl = k.id; render(); };
       $$('.mk-av').forEach(function (n) { n.outerHTML = availStrip(st.type); });
     };

@@ -3963,7 +3963,7 @@ function render(){
   $('#pageTitle').textContent=page==='register'?t('reg.nav'):MOD_LABEL(page);
   document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':NET?(PDOOR?DOOR_META[DOOR].n:'Partner-Portal')+' · '+TENANTS[0].name:TENANTS[0].name+' · Verwaltung';
   const v=$('#view');
-  v.innerHTML=deco((page==='notfound'?'':subTabs())+(page==='notfound'?viewNotFound():selDetail&&DTYPE[page]===selDetail.t?viewDetail():({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:()=>(typeof zmDashCard==='function'?zmDashCard():'')+viewDash()+pfMyCard()+f2MyProgram(),partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:()=>viewOrders()+f2MyAccount()+ivPartnerCard()+f2MyReturns(),invoices:viewInvoices,pricing:viewPricing,perf:viewPerf,program:viewProgram,terr:viewTerr,customers:viewCustomers,quotes:viewQuotes,credit:viewCredit,returns:viewReturns,pricelist:()=>feat('pricing')?viewPricelistPro():viewPricelist(),dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot,...(window.RENT_VIEWS||{})})[page]()));
+  v.innerHTML=deco((page==='notfound'?'':subTabs())+(page==='notfound'?viewNotFound():selDetail&&DTYPE[page]===selDetail.t?viewDetail():({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:()=>(typeof rentDashCard==='function'?rentDashCard():'')+(typeof zmDashCard==='function'?zmDashCard():'')+viewDash()+pfMyCard()+f2MyProgram(),partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:()=>viewOrders()+f2MyAccount()+ivPartnerCard()+f2MyReturns(),invoices:viewInvoices,pricing:viewPricing,perf:viewPerf,program:viewProgram,terr:viewTerr,customers:viewCustomers,quotes:viewQuotes,credit:viewCredit,returns:viewReturns,pricelist:()=>feat('pricing')?viewPricelistPro():viewPricelist(),dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot,...(window.RENT_VIEWS||{})})[page]()));
   v.querySelectorAll('[data-subk]').forEach(b=>b.onclick=()=>{page=b.dataset.subk;selPartner=null;selDetail=null;render()});
   syncUrl();
   v.querySelectorAll('[data-dl]').forEach(r=>r.onclick=e=>{if(e.target.closest('button,select,a,input,[data-act]'))return;const [tt,id]=r.dataset.dl.split('|');selDetail={t:tt,id};render();window.scrollTo(0,0)});
@@ -4512,15 +4512,15 @@ function mkMount(ROOT, MK, OPT) {
       '<tr class="sum"><td>Summe netto</td><td>' + eur(pr.net) + '</td></tr><tr><td>zzgl. 19 % MwSt.</td><td>' + eur(pr.vat) + '</td></tr><tr class="sum"><td>Gesamt brutto</td><td>' + eur(pr.gross) + '</td></tr></table>' +
       '<p class="muted small">Gerät ' + esc(p.unit.id) + ' · Niederlassung ' + esc(DEPOT[p.unit.depot].name) + (p.zone && p.req.mode !== 'abhol' ? ' · ' + esc(p.zone.name) + ' · ca. ' + p.km + ' km, ' + Math.round(p.drive / MIN) + ' min Fahrt' : '') + '</p>' +
       '<h3>Ablauf</h3>' + logisticsHtml(p) +
-      '<div class="mk-cta"><input id="mkKunde" placeholder="Firma (für die Demo)" aria-label="Firma"><button type="button" class="btn big" id="mkBook" data-track="request_submit">Verbindlich anfragen</button></div><p class="muted small">Demo: Die Buchung wird nur in diesem Browser gespeichert und erscheint sofort in der Disposition.</p></div>';
+      '<div class="mk-cta"><input id="mkKunde" list="mkKdList" placeholder="Firma (für die Demo)" aria-label="Firma"><datalist id="mkKdList">' + (MK.kundenFn ? MK.kundenFn() : []).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist><button type="button" class="btn big" id="mkBook" data-track="request_submit">Verbindlich anfragen</button></div><p class="muted small">Demo: Die Buchung wird nur in diesem Browser gespeichert und erscheint sofort in der Disposition.</p></div>';
     $$('[data-swap]', box).forEach(function (b) { b.onclick = function () { st.form = readForm(); st.form.siteOpen = true; st.type = b.dataset.swap; renderBuchen(); }; });
     $$('[data-opmode]', box).forEach(function (b) { b.onclick = function () { var f = readForm(); f.mode = 'bediener'; st.form = f; renderBuchen(); }; });
     $$('[data-schul]', box).forEach(function (b) { b.onclick = function () { var f = readForm(); f.schul = !f.schul; st.form = f; renderBuchen(); }; });
     $('#mkBook').onclick = function () {
       var k = commit(p, ($('#mkKunde').value || 'Demo-Kunde').slice(0, 40)); var ff = readForm();
-      k.site = { zuf: ff.zuf, ug: ff.ug, gef: ff.gef, inn: ff.inn, fl: ff.fl, vk: ff.vk }; k.op = ff.mode === 'bediener' ? 'bediener' : ff.op; k.schul = ff.op === 'nein' && ff.schul; if (sc.bad) k.siteWarn = true; save();
+      k.site = { zuf: ff.zuf, ug: ff.ug, gef: ff.gef, inn: ff.inn, fl: ff.fl, vk: ff.vk }; k.op = ff.mode === 'bediener' ? 'bediener' : ff.op; k.schul = ff.op === 'nein' && ff.schul; if (sc.bad) k.siteWarn = true; save(); if (MK.onSave) MK.onSave(); var note = MK.afterBook ? MK.afterBook(k) : '';
       (window.dataLayer = window.dataLayer || []).push({ event: 'request_submit', via: 'mietkalender', typ: req.type });
-      box.innerHTML = '<div class="card done"><h3>Danke – Anfrage ' + esc(k.id) + ' ist eingeplant.</h3><p>' + esc(TYPE[k.type].name) + ', ' + dlab(k.start) + ' ' + hm(k.start) + ' bis ' + dlab(k.end) + ' ' + hm(k.end) + ' · ' + eur(k.net) + ' netto.</p><p><button type="button" class="btn ghost sm" id="mkToDispo">In der Disposition ansehen</button></p></div>';
+      box.innerHTML = '<div class="card done"><h3>Danke – Anfrage ' + esc(k.id) + ' ist eingeplant.</h3>' + (note ? '<p class="mk-note">' + esc(note) + '</p>' : '') + '<p>' + esc(TYPE[k.type].name) + ', ' + dlab(k.start) + ' ' + hm(k.start) + ' bis ' + dlab(k.end) + ' ' + hm(k.end) + ' · ' + eur(k.net) + ' netto.</p><p><button type="button" class="btn ghost sm" id="mkToDispo">In der Disposition ansehen</button></p></div>';
       $('#mkToDispo').onclick = function () { st.tab = 'dispo'; st.week = monday(k.start); st.hl = k.id; render(); };
       $$('.mk-av').forEach(function (n) { n.outerHTML = availStrip(st.type); });
     };
@@ -4607,7 +4607,7 @@ if (window.MK && document.getElementById('mkView')) mkMount(document, window.MK)
 /* ===== /Mietkalender-Modul ===== */
 
 /* ===== Mietkalender als Portal-Modul ===== */
-function mkData(){if(TD&&TD.mietkal){const M=TD.mietkal;M.noLock=!feat('wartung');M.noSiteCheck=!feat('baucheck');M.noOpCheck=!feat('schulung');return M}return {key:TENANT,types:[],kats:[],depots:[],zones:[{n:1,name:'Zone 1',info:'bis 25 km',km:25,anh:59,tief:119},{n:2,name:'Zone 2',info:'bis 50 km',km:50,anh:99,tief:179},{n:3,name:'Zone 3',info:'bis 150 km',km:150,anh:169,tief:289},{n:4,name:'Fernzone',info:'über 150 km',km:99999,anh:0,tief:0}],drivers:[],bediener:65,seed:[],plz3:{},plz2:{},plz1:ZM_EMPTY.plz1}}
+function mkData(){if(TD&&TD.mietkal){const M=TD.mietkal;M.noLock=!feat('wartung');M.noSiteCheck=!feat('baucheck');M.noOpCheck=!feat('schulung');M.onSave=()=>{if(typeof MA!=='undefined')MA.E=null};M.afterBook=k=>typeof rvAfterBook==='function'?rvAfterBook(k):'';M.kundenFn=()=>typeof rvCustomers==='function'?rvCustomers():[];return M}return {key:TENANT,types:[],kats:[],depots:[],zones:[{n:1,name:'Zone 1',info:'bis 25 km',km:25,anh:59,tief:119},{n:2,name:'Zone 2',info:'bis 50 km',km:50,anh:99,tief:179},{n:3,name:'Zone 3',info:'bis 150 km',km:150,anh:169,tief:289},{n:4,name:'Fernzone',info:'über 150 km',km:99999,anh:0,tief:0}],drivers:[],bediener:65,seed:[],plz3:{},plz2:{},plz1:ZM_EMPTY.plz1}}
 function viewMietkal(){const M=mkData();if(!M.types.length)return `<div class="card"><div class="hd"><h2>${L4('Mietkalender','Kiralama takvimi','Rental calendar')}</h2></div><p>${L4('Für diesen Mandanten sind noch keine Mietgeräte, Niederlassungen und Fahrer hinterlegt. Nach dem Import der Flotte erscheinen hier Buchung, Disposition und Preisliste.','Bu firma için henüz kiralık makine, şube ve şoför tanımlı değil. Filo aktarıldıktan sonra rezervasyon, dispozisyon ve fiyat listesi burada görünür.','No rental fleet, depots and drivers set up for this tenant yet.')}</p></div>`;
   const tab=(k,l)=>`<button type="button" role="tab" data-tab="${k}" aria-selected="false">${l}</button>`;
   return `<div class="card mk-root" style="padding:14px 16px"><div class="hd" style="margin-bottom:4px"><h2>${L4('Mietkalender','Kiralama takvimi','Rental calendar')}</h2><span class="sp"></span><small style="color:var(--muted)">${M.types.length} ${L4('Gerätetypen','makine türü','machine types')} · ${M.types.reduce((a,t)=>a+t.units.length,0)} ${L4('Geräte','makine','units')} · ${M.drivers.length} ${L4('Fahrer','şoför','drivers')} · ${L4('Stunden × Gerät = Preis, Lieferung & Abholung eingeplant','saat × makine = fiyat, teslim ve alış planlı','hours × machine = price, delivery & pickup planned')}</small></div>
@@ -5213,7 +5213,7 @@ function kbEngine(){return typeof maEngine==='function'?maEngine():null}
 function kbFree(E){const b=kbBase(),D=864e5,days=[];let t=b;while(days.length<KB.days){if(new Date(t).getDay()!==0)days.push(t);t+=D}
   return E.UNITS.map(u=>{const busy=E.book().filter(k=>k.unit===u.id);const free=days.filter(d=>!busy.some(k=>k.mA<d+20*36e5&&k.mB>d+6*36e5));
     let run=0,best=0,bs=null,cs=null;days.forEach(d=>{if(free.includes(d)){if(!run)cs=d;run++;if(run>best){best=run;bs=cs}}else run=0});
-    return {u,t:E.TYPE[u.type],free:free.length,from:free[0]||null,block:best,blockFrom:bs}}).filter(x=>x.t)}
+    return {u,t:E.TYPE[u.type],free:free.length,from:free[0]||null,block:best,blockFrom:bs}}).filter(x=>x.t&&!(feat('wartung')&&E.lockOf&&E.lockOf(x.u.id,Date.now(),Date.now()+KB.days*864e5)))}
 function kbPrice(t,o){const S=kbState();const r=o&&o.rab!=null?o.rab:S.rab;return Math.round(t.rate.tag*(1-r/100)/5)*5}
 function viewBoerse(){const E=kbEngine();if(!E)return `<div class="card"><div class="hd"><h2>${L4('Kapazitätsbörse','Kapasite borsası','Capacity exchange')}</h2></div><p>${L4('Benötigt das Modul Mietkalender mit Geräten.','Makineli Mietkalender modülü gerekli.','Requires the rental calendar.')}</p></div>`;
   const S=kbState(),F=kbFree(E).sort((a,b)=>b.free-a.free);const offers=Object.entries(S.offers).filter(([,o])=>o.on);const reqs=S.req;
@@ -5321,7 +5321,7 @@ function ugFinish(){const p=ugCur();if(!p)return;const [kid,dir]=UG.open.split('
   ['sicht','funktion','plakette'].forEach(k=>{if(!p.chk[k])miss.push(L4('Prüfung','kontrol','check'))});if(p.photos.length<4)miss.push(L4('Fotos','fotoğraf','photos'));if(!p.sig)miss.push(L4('Unterschrift','imza','signature'));if(!p.signer)miss.push(L4('Name','ad','name'));
   if(miss.length){p.err=L4('Es fehlt: ','Eksik: ','Missing: ')+[...new Set(miss)].join(', ');ugSave();render();return}
   p.err=null;p.done=Date.now();if(dir==='out')p.dmg.forEach(d=>d.neu=false);
-  if(dir==='in'&&typeof maState==='function'){const prev=ugState().prot[kid+'|out']||{};const B=maState().bills[kid]=maState().bills[kid]||{};B.extra=B.extra||[];
+  if(dir==='in'&&typeof maState==='function'&&feat('mietabr')){const prev=ugState().prot[kid+'|out']||{};const B=maState().bills[kid]=maState().bills[kid]||{};B.extra=B.extra||[];
     p.dmg.filter(d=>d.neu).forEach(d=>{const t='Schaden lt. Rückgabeprotokoll: '+ugArea(d.a)+' – '+d.t;if(!B.extra.some(x=>x.t===t))B.extra.push({t,q:1,u:'Pausch.',p:0})});
     const fd=(prev.fuel||100)-(p.fuel||100);if(fd>=20&&!B.extra.some(x=>/Kraftstoff|Akku/.test(x.t)))B.extra.push({t:'Kraftstoff/Akku nachgeladen ('+fd+' %)',q:1,u:'Pausch.',p:Math.round(fd*1.2)});
     maSave()}
@@ -5661,6 +5661,83 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.hasAttribute&&t.h
 window.RENT_VIEWS=Object.assign(window.RENT_VIEWS||{},{sortiment:()=>viewSortiment()});
 /* /MOD:sortiment */
 /* RENT-MODULE */
+/* MOD:verbund *//* ===== Verbund der Vermietungsmodule: Daten fließen dorthin, wo sie gebraucht werden – jeweils nur, wenn Quell- und Zielmodul gebucht sind ===== */
+const RV={read:null};
+const rvOn=k=>typeof featOn==='function'?featOn(k):feat(k);
+const rvWho=()=>{try{return TXV(TEAMNAME||'')||L4('Verwaltung','Yönetim','Admin')}catch(e){return 'Verwaltung'}};
+const rvNow=()=>new Date().toISOString().slice(0,16).replace('T',' ');
+function rvAudit(what){if(!what)return;AUDIT.unshift({who:rvWho(),what,when:rvNow()});if(AUDIT.length>400)AUDIT.length=400}
+function rvEngine(){return rvOn('mietkal')&&typeof maEngine==='function'?maEngine():null}
+
+/* 1) Übergabe/Rückgabe → Prüfungen & Wartung: Zählerstand übernehmen, neue Schäden ins Störungsbuch, gesperrtes Gerät darf nicht raus */
+if(typeof ugFinish==='function'){const _ugFinish=ugFinish;ugFinish=function(){const p=ugCur();if(!p)return _ugFinish();const [kid,dir]=UG.open.split('|');const E=rvEngine();const k=E&&E.book().find(x=>x.id===kid);
+  if(dir==='out'&&k&&rvOn('wartung')){const lk=E.lockOf(k.unit,Date.now(),k.end);if(lk){p.err=L4('Übergabe gesperrt – ','Teslim engellendi – ','Handover blocked – ')+lk.txt.replace(/\.$/,'')+'. '+L4('Gerät tauschen (Prüfungen & Wartung).','Makineyi değiştir (Muayene & bakım).','Swap the machine (inspections).');ugSave();render();return}}
+  const was=p.done;_ugFinish();if(was||!p.done||!k||!E)return;
+  if(rvOn('wartung')){const W=E.wState(),w=W.units[k.unit];W.log=W.log||[];const h=parseFloat(String(p.h||'').replace(',','.'));
+    if(w&&h>w.bh){w.bh=Math.round(h);W.log.unshift({t:Date.now(),unit:k.unit,kind:'bh',txt:wtNum(w.bh)+' h ('+(dir==='out'?L4('Übergabe','teslim','handover'):L4('Rückgabe','iade','return'))+' '+kid+')',by:L4('Übergabeprotokoll','Teslim protokolü','Handover protocol')})}
+    if(dir==='in')(p.dmg||[]).filter(d=>d.neu).forEach(d=>{let i=101+W.faults.length;while(W.faults.some(f=>f.id==='ST-'+i))i++;const crit=/korb|ausleger|steuer|stuetzen/.test(d.a);
+      W.faults.push({id:'ST-'+i,unit:k.unit,t:Date.now(),txt:ugArea(d.a)+': '+d.t+' ('+L4('Rückgabe','iade','return')+' '+kid+')',sperrt:crit,st:'offen',by:L4('Rückgabeprotokoll','İade protokolü','Return protocol')});
+      W.log.unshift({t:Date.now(),unit:k.unit,kind:'stoer',txt:'ST-'+i+': '+d.t+(crit?' ('+L4('gesperrt','kilitlendi','locked')+')':''),by:L4('Rückgabeprotokoll','İade protokolü','Return protocol')})});
+    E.wSave()}
+  rvAudit((dir==='out'?L4('Übergabe','Teslim','Handover'):L4('Rückgabe','İade','Return'))+' '+kid+' · '+k.unit+' '+L4('abgeschlossen','tamamlandı','completed'))}}
+
+/* 2) Schulungen → Firmenkunden: ausgestellte Nachweise landen in der Bedienerliste der Firma (Kundenportal) */
+function rvOpToCustomer(firm,name,cert,valid){if(!rvOn('firmenkd')||typeof fkState!=='function')return false;const E=rvEngine();if(!E)return false;const S=fkState(E);const c=S.kd[firm];if(!c)return false;
+  const o=c.ops.find(x=>x.n===name&&x.c===cert);if(o)o.v=Math.max(o.v,valid);else c.ops.push({n:name,c:cert,v:valid,file:L4('Nachweis Laggner-Schulung','Laggner eğitim belgesi','Laggner training certificate')});fkSave();return true}
+if(typeof scState==='function'){document.addEventListener('click',e=>{const b=e.target.closest('[data-scdone]');if(!b)return;const S=scState(),x=S.kurse.find(v=>v.id===b.dataset.scdone);if(!x||x.done)return;
+  setTimeout(()=>{if(!x.done)return;const K=SC_KURS[x.k];let n=0;x.tn.forEach(p=>{if(rvOpToCustomer(p.f,p.n,K.c,x.t+K.valid*30.44*864e5))n++});if(n){SC.msg+=' '+n+' '+L4('davon in die Bedienerliste der Firmenkunden übernommen.','tanesi kurumsal müşteri operatör listesine eklendi.','added to customer operator lists.');zmKeep(()=>render())}},0)},true)}
+
+/* 3) Telematik „Mietende überschritten“ → Mietabrechnung: Verlängerung als Position auf den Mietvorgang */
+if(typeof tmRe==='function'){document.addEventListener('click',e=>{const b=e.target.closest('[data-tmext]');if(!b||!rvOn('mietabr'))return;const E=rvEngine();if(!E||!TM.st)return;const x=TM.st.ev.find(v=>v.id===b.dataset.tmext);if(!x||x.st!=='offen')return;
+  const k=E.book().filter(v=>v.unit===x.unit&&v.end<Date.now()).sort((a,c)=>c.end-a.end)[0]||E.book().filter(v=>v.kunde===x.kunde).sort((a,c)=>c.end-a.end)[0];
+  if(!k)return;const d=Math.max(1,Math.round((Date.now()-x.end)/864e5));const B=maState().bills[k.id]=maState().bills[k.id]||{};B.extra=B.extra||[];const t=L4('Mietverlängerung lt. Telematik','Telematiğe göre kira uzatma','Extension per telematics')+' ('+d+' '+L4('Tag(e)','gün','day(s)')+')';
+  if(!B.extra.some(v=>v.t===t))B.extra.push({t,q:d,u:L4('Tag','gün','day'),p:E.TYPE[k.type].rate.tag});maSave()},true)}
+
+/* 4) Firmenkunden + Kreditlimit + Schulung in der Buchung (Mietkalender): Hinweis direkt nach dem Buchen */
+function rvAfterBook(k){const out=[];const E=rvEngine();
+  if(rvOn('firmenkd')&&E&&typeof fkState==='function'){const S=fkState(E),c=S.kd[k.kunde];if(c){if(c.rab||c.tr!=null)out.push(L4('Rahmenvertrag erkannt: ','Çerçeve anlaşma: ','Framework agreement: ')+(c.rab?c.rab+' % '+L4('Rabatt','indirim','discount'):'')+(c.tr!=null&&c.tr!==''?(c.rab?', ':'')+L4('Transport','nakliye','transport')+' '+c.tr+' €/'+L4('Fahrt','sefer','trip'):'')+' – '+L4('wird in der Mietabrechnung berücksichtigt.','kira faturasında uygulanır.','applied in billing.'));
+    const X=fkExposure(E,S)[k.kunde];if(X&&X.need.some(n=>n.k.id===k.id))out.push(L4('Kreditlimit überschritten – die Buchung wartet in „Firmenkunden → Freigaben“.','Kredi limiti aşıldı – rezervasyon “Kurumsal müşteriler → Onaylar”da bekliyor.','Credit limit exceeded – booking awaits approval.'))}}
+  if(rvOn('schulung')&&k.schul&&typeof scState==='function'){const S=scState(),nx=scNext(S,/stapler/.test((E&&E.TYPE[k.type]||{}).kat||'')?'stapler':'dguv');if(nx){nx.tn.push({n:L4('Bediener','Operatör','Operator')+' ('+k.id+')',f:k.kunde});S.leads[k.id]='ok';scSave();out.push(L4('Schulungsplatz reserviert: ','Eğitim yeri ayrıldı: ','Training seat reserved: ')+scDT(nx.t)+', '+nx.ort+'.')}}
+  rvAudit(L4('Buchung','Rezervasyon','Booking')+' '+k.id+' · '+k.kunde+' · '+((E&&E.TYPE[k.type]||{}).short||k.type));
+  return out.join(' ')}
+function rvCustomers(){const E=rvEngine();return rvOn('firmenkd')&&E&&typeof fkState==='function'?Object.keys(fkState(E).kd):[]}
+
+/* 5) Benachrichtigungen: Fristen, Alarme, Freigaben aus den Modulen */
+function rvReadSet(){if(!RV.read){try{RV.read=new Set(JSON.parse(localStorage.getItem('b2b-rv-read-'+TENANT)||'[]'))}catch(e){RV.read=new Set()}}return RV.read}
+function rvNotifs(){const E=rvEngine();const L=[];const add=(key,ic,de,tr,en,go)=>L.push({key,ic,txt:{de,tr,en},when:L4('heute','bugün','today'),ch:['Panel','E-Mail'],go,rv:true});if(!E)return L;
+  if(rvOn('wartung')){const now=Date.now(),W=E.wState();const lock=E.UNITS.filter(u=>E.lockOf(u.id,now,now+1));const due=E.UNITS.filter(u=>{const w=W.units[u.id];const d=(E.dayStart(w.uvv)-E.dayStart(now))/864e5;return d>=0&&d<=30});const conf=typeof wtConflicts==='function'?wtConflicts(E):[];
+    if(conf.length)add('wt-conf-'+conf.map(c=>c.k.id).join(','),'⛔',`${conf.length} Buchung(en) auf gesperrten Geräten – umdisponieren`,`${conf.length} rezervasyon kilitli makinede – yeniden planla`,`${conf.length} booking(s) on locked machines`,'wartung');
+    if(lock.length)add('wt-lock-'+lock.map(u=>u.id).join(','),'🔒',`${lock.length} Gerät(e) gesperrt (UVV abgelaufen oder Störung)`,`${lock.length} makine kilitli (UVV veya arıza)`,`${lock.length} machine(s) locked`,'wartung');
+    if(due.length)add('wt-due-'+due.map(u=>u.id).join(','),'🛠',`UVV-Prüfung in den nächsten 30 Tagen fällig: ${due.length} Gerät(e)`,`30 gün içinde UVV muayenesi: ${due.length} makine`,`Inspection due within 30 days: ${due.length}`,'wartung')}
+  if(rvOn('telematik')&&typeof tmState==='function'){const o=tmState(E).ev.filter(x=>x.st==='offen');if(o.length)add('tm-'+o.map(x=>x.id).join(','),'📡',`${o.length} Telematik-Alarm(e) offen`,`${o.length} açık telematik alarmı`,`${o.length} telematics alert(s)`,'telematik')}
+  if(rvOn('firmenkd')&&typeof fkState==='function'){const S=fkState(E),X=fkExposure(E,S);const need=Object.values(X).reduce((a,x)=>a+x.need.length,0),ext=S.ext.filter(x=>x.st==='neu').length;
+    if(need)add('fk-need-'+need,'💳',`${need} Buchung(en) über Kreditlimit – Freigabe nötig`,`${need} rezervasyon kredi limitini aşıyor – onay gerekli`,`${need} booking(s) over credit limit`,'firmenkd');
+    if(ext)add('fk-ext-'+ext,'⏩',`${ext} Verlängerungsanfrage(n) aus dem Kundenportal`,`Müşteri portalından ${ext} uzatma talebi`,`${ext} extension request(s)`,'firmenkd')}
+  if(rvOn('schulung')&&typeof scState==='function'){const S=scState(),n=S.cert.filter(c=>c.v<Date.now()+30*864e5).length;if(n)add('sc-'+n,'🎓',`${n} Bediener-Nachweis(e) laufen ab oder sind abgelaufen`,`${n} operatör belgesi doluyor/doldu`,`${n} operator certificate(s) expiring`,'schulung')}
+  if(rvOn('mietabr')&&typeof maRows==='function'){const R=maRows()||[];const n=R.filter(r=>r.status==='due').length;if(n)add('ma-'+n,'🧮',`${n} Mietvorgang/-vorgänge abrechenbar`,`${n} kira faturalanabilir`,`${n} rental(s) ready to bill`,'mietabr')}
+  return L}
+function rvNotifSync(){if(TENANT!=='laggner'&&!(TD&&TD.mietkal))return;let L=[];try{L=rvNotifs()}catch(e){}const R=rvReadSet();for(let i=NOTIFS.length-1;i>=0;i--)if(NOTIFS[i].rv)NOTIFS.splice(i,1);L.reverse().forEach(n=>{n.un=!R.has(n.key);NOTIFS.unshift(n)})}
+{const _render=render;render=function(){try{rvNotifSync()}catch(e){}return _render.apply(this,arguments)}}
+{const _row=notifRow;notifRow=function(n){const h=_row(n);return n.go?h.replace(/<\/div>$/,`<button class="btn sm" data-goto="${n.go}" style="margin-left:8px;align-self:center">${L4('Öffnen','Aç','Open')} →</button></div>`):h}}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act="readall"]');if(!b)return;const R=rvReadSet();NOTIFS.filter(n=>n.rv).forEach(n=>R.add(n.key));try{localStorage.setItem('b2b-rv-read-'+TENANT,JSON.stringify([...R].slice(-200)))}catch(e){}},true);
+
+/* 6) Protokoll (Audit): Aktionen aus den Modulen */
+if(typeof wtRe==='function'){const f=wtRe;wtRe=function(x){f(x);if(WT.msg)rvAudit(WT.msg)}}
+if(typeof fkRe==='function'){const f=fkRe;fkRe=function(x){f(x);if(FK.msg)rvAudit(FK.msg)}}
+if(typeof tmRe==='function'){const f=tmRe;tmRe=function(x){f(x);if(TM.msg)rvAudit(TM.msg)}}
+if(typeof scRe==='function'){const f=scRe;scRe=function(x){f(x);if(SC.msg)rvAudit(SC.msg)}}
+
+/* 7) Dashboard: Vermietung heute */
+function rentDashCard(){const E=rvEngine();if(!E||!(hasP('orders')||hasP('install')))return '';const now=Date.now(),d0=E.dayStart(now),T=[];
+  const tile=(n,l,go,c)=>`<button class="card" data-goto="${go}" style="text-align:left;padding:10px 12px;cursor:pointer;font:inherit;color:inherit;${c&&n?'border-color:'+c:''}"><div style="font-size:22px;font-weight:700;${c&&n?'color:'+c:''}">${n}</div><small style="color:var(--muted)">${l}</small></button>`;
+  const B=E.book();T.push(tile(B.filter(k=>k.start>=d0&&k.start<d0+864e5).length,L4('Mietbeginne heute','Bugün başlayan kiralar','Rentals starting today'),'mietkal'));
+  T.push(tile(B.filter(k=>k.end>=d0&&k.end<d0+864e5).length,L4('Rückgaben heute','Bugün iadeler','Returns today'),rvOn('uebergabe')?'uebergabe':'mietkal'));
+  if(rvOn('wartung')){const lk=E.UNITS.filter(u=>E.lockOf(u.id,now,now+1)).length;T.push(tile(lk,L4('Geräte gesperrt','Kilitli makine','Machines locked'),'wartung','#c0392b'))}
+  if(rvOn('telematik')&&typeof tmState==='function')T.push(tile(tmState(E).ev.filter(x=>x.st==='offen').length,L4('Telematik-Alarme','Telematik alarmları','Telematics alerts'),'telematik','#c0392b'));
+  if(rvOn('firmenkd')&&typeof fkState==='function'){const S=fkState(E),X=fkExposure(E,S);T.push(tile(Object.values(X).reduce((a,x)=>a+x.need.length,0)+S.ext.filter(x=>x.st==='neu').length,L4('Freigaben & Verlängerungen','Onay & uzatma','Approvals & extensions'),'firmenkd','#b7791f'))}
+  if(rvOn('mietabr')&&typeof maRows==='function')T.push(tile((maRows()||[]).filter(r=>r.status==='due').length,L4('abrechenbar','faturalanabilir','ready to bill'),'mietabr','#2b6cb0'));
+  return `<div class="card" style="margin-bottom:14px"><div class="hd"><h2>${L4('Vermietung heute','Bugün kiralama','Rental today')}</h2><span class="sp"></span><button class="btn sm" data-goto="mietkal">${L4('Mietkalender','Kiralama takvimi','Rental calendar')} →</button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">${T.join('')}</div></div>`}
+/* /MOD:verbund */
 $('#aiFab').onclick=aiOpen;$('#aiClose').onclick=()=>{$('#ai').hidden=true;$('#aiFab').hidden=false};
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const tok=gateToken();const e=tokenExp(tok);if(e&&!isMaster()&&e<=Date.now())lockAt(e)}});
 $('#aiForm').onsubmit=e=>{e.preventDefault();const v=$('#aiIn').value.trim();if(!v)return;$('#aiIn').value='';aiAsk(v)};
