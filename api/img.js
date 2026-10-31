@@ -1,6 +1,6 @@
 // Image pass-through for tenant demo sites (customer-approved images only).
 // GET /api/img?u=<absolute image URL on an allow-listed customer host>
-const ALLOW = ['static.ug-alu.de', 'www.ug-alu.de', 'images.ug-alu.de'];
+const ALLOW = ['static.ug-alu.de', 'www.ug-alu.de', 'images.ug-alu.de', 'lift-laggner.de', 'www.lift-laggner.de'];
 const EXT = /\.(jpe?g|png|webp|avif)$/i;
 
 export default async function handler(req, res) {
@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     if (!type.startsWith('image/')) return res.status(415).end('not an image');
     const buf = Buffer.from(await r.arrayBuffer());
     if (buf.length > 6 * 1024 * 1024) return res.status(413).end('too large');
+    if (req.query && req.query.b64) { res.setHeader('Content-Type', 'text/plain'); return res.status(200).send(type + '\n' + buf.toString('base64')); }
     res.setHeader('Content-Type', type);
     res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
     res.setHeader('X-Content-Type-Options', 'nosniff');
