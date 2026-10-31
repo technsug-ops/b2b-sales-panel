@@ -29,15 +29,15 @@ const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
 const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices'), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
 // ---- tenants: aydemir keeps its original blob paths; others live under gate/t/<slug>/
-const TENANTS = ['aydemir', 'ug-alu', 'sirius'];
+const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
 const pth = (T, kind) => T === 'aydemir' && LEGACY[kind] ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
-const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types } };
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // packages: partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override in cfg.limits
 const PLAN_LIMITS = { Starter: { partners: 25, users: 5 }, Business: { partners: 100, users: 15 }, Group: { partners: 0, users: 0 } };
-const PLAN_DEFAULT = { aydemir: 'Group', 'ug-alu': 'Starter', sirius: 'Business' };
+const PLAN_DEFAULT = { aydemir: 'Group', 'ug-alu': 'Starter', sirius: 'Business', laggner: 'Group' };
 function limitsOf(cfg, T) { const plan = PLAN_LIMITS[cfg && cfg.plan] ? cfg.plan : (PLAN_DEFAULT[T] || 'Starter'); const o = (cfg && cfg.limits) || {}; return { plan, partners: Number.isFinite(+o.partners) && o.partners !== '' && o.partners != null ? +o.partners : PLAN_LIMITS[plan].partners, users: Number.isFinite(+o.users) && o.users !== '' && o.users != null ? +o.users : PLAN_LIMITS[plan].users }; }
 // a token's tenant (tokens minted before tenancy belong to aydemir)
 const tokTenant = d => d && (d.ten || 'aydemir');
@@ -89,6 +89,11 @@ const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
 ], sirius: [
   { id: 1, name: 'Directie', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Sirius-GF-2026' },
   { id: 2, name: 'Verkoop binnendienst', role: 'staff', user: 'verkoop', pass: 'Sirius-Team-2026' },
+], laggner: [
+  { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Laggner-GF-2026' },
+  { id: 2, name: 'Disposition Heidenheim', role: 'staff', user: 'disposition', pass: 'Laggner-Dispo-2026' },
+  { id: 3, name: 'Fahrer / Einweisung', role: 'monteur', user: 'fahrer', pass: 'Laggner-Fahrer-2026' },
+  { id: 4, name: 'Buchhaltung', role: 'buchhaltung', user: 'buchhaltung', pass: 'Laggner-Buha-2026' },
 ] };
 async function loadTeam(T = 'aydemir') {
   const TP = pth(T, 'team');
