@@ -24,7 +24,7 @@ const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
 const TEAM_PATH = 'gate/team.json';
 const TCFG_PATH = 'gate/tenant-t1.json';
 const F2 = ['program', 'terr', 'cust', 'quotes', 'credit', 'returns'];
-const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2, 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'];
+const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'];
 const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
 const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices'), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
@@ -33,9 +33,9 @@ const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
 const pth = (T, kind) => T === 'aydemir' && LEGACY[kind] ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
-const RENT_MIG = [[2, ['mietkal', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'bewert']], [3, ['wartung']], [4, ['telematik', 'firmenkd', 'baucheck', 'schulung']], [5, ['sortiment']]];
-const RENT_V = 5;
-const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2, 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'], types: DEFAULT_TCFG.types } };
+const RENT_MIG = [[2, ['mietkal', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'bewert']], [3, ['wartung']], [4, ['telematik', 'firmenkd', 'baucheck', 'schulung']], [5, ['sortiment']], [6, ['auftrag']]];
+const RENT_V = 6;
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // packages: partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override in cfg.limits
 const PLAN_LIMITS = { Starter: { partners: 25, users: 5 }, Business: { partners: 100, users: 15 }, Group: { partners: 0, users: 0 } };
@@ -182,6 +182,42 @@ async function main(req, res) {
   const SUSP = { ok: false, error: 'suspended' };
   if (['plogin', 'tlogin', 'tpass'].includes(action) || (action && (action.startsWith('team_') || action.startsWith('pcreds_')))) { if (await isSusp(T)) return res.status(403).json(SUSP); }
 
+  // Auftragsmanagement (Mandant): Anfragen von der Website/Online-Buchung landen hier; Team liest und bearbeitet
+  if (action === 'inq_add') {
+    const s = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n);
+    if (s(body.hp, 10)) return res.status(200).json({ ok: true });
+    const q = body.q || {};
+    const name = s(q.name, 80), firma = s(q.firma, 120), tel = s(q.tel, 40), mail = s(q.mail, 120);
+    if (!name && !firma) return res.status(400).json({ ok: false, error: 'input' });
+    if (!tel && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) return res.status(400).json({ ok: false, error: 'contact' });
+    const P = pth(T, 'auftraege'); const L = (await loadJson(P)) || [];
+    if (L.filter(x => x.at > Date.now() - 3600e3 && /^web|online/.test(x.src)).length > 60) return res.status(429).json({ ok: false, error: 'rate' });
+    const id = 'A-' + Date.now().toString(36).toUpperCase().slice(-6) + randomInt(10);
+    const it = { id, at: Date.now(), upd: Date.now(), src: ['web', 'online'].includes(body.src) ? body.src : 'web', st: 'neu', brand: s(body.brand, 4),
+      kunde: { firma, name, tel, mail }, plz: s(q.plz, 10), ort: s(q.ort, 60), kat: s(q.kat, 60), geraet: s(q.geraet, 160), type: s(q.type, 20),
+      von: s(q.von, 20), bis: s(q.bis, 20), start: +q.start || null, end: +q.end || null, mode: s(q.mode, 12), ah: s(q.ah, 12), info: s(q.info, 1500), preis: +q.preis || null,
+      log: [{ t: Date.now(), by: body.src === 'online' ? 'Online-Buchung' : 'Website', txt: 'Anfrage eingegangen' }] };
+    L.unshift(it); await saveJson(P, L.slice(0, 2000));
+    return res.status(200).json({ ok: true, id });
+  }
+  if (action === 'auf_list' || action === 'auf_save') {
+    const d = scoped(verifyToken(body.token));
+    if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
+    const P = pth(T, 'auftraege'); let L = (await loadJson(P)) || [];
+    if (action === 'auf_save') {
+      const items = Array.isArray(body.items) ? body.items.slice(0, 50) : [body.item];
+      for (const it of items) {
+        if (!it || typeof it !== 'object' || !/^[A-Z]-[A-Z0-9]{3,12}$/.test(String(it.id || ''))) continue;
+        const raw = JSON.stringify(it); if (raw.length > 60000) continue;
+        const i = L.findIndex(x => x.id === it.id); const cur = i >= 0 ? L[i] : null;
+        if (cur && (cur.upd || 0) > (it.upd || 0) + 1000) continue;          // neuere Fassung auf dem Server gewinnt
+        const nx = { ...it, upd: Math.max(Date.now(), it.upd || 0) };
+        if (i >= 0) L[i] = nx; else L.unshift(nx);
+      }
+      await saveJson(P, L.slice(0, 2000));
+    }
+    return res.status(200).json({ ok: true, list: L });
+  }
   // Website-Anfragen (Startseite): öffentlich schreiben, nur TechNS-Konsole liest
   if (action === 'contact') {
     const s = v => String(v || '').replace(/[\u0000-\u001f]/g, ' ').trim();

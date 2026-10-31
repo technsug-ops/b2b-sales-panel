@@ -54,6 +54,14 @@
       var d=new FormData(rq),gname=ger.options[ger.selectedIndex].text,kname=kat.options[kat.selectedIndex].text;
       track('request_submit',{kat:kat.value,geraet:ger.value,plz:d.get('plz')});track('request_complete');
       $('#rqSum').textContent=(ger.value?gname:kname)+' · PLZ '+d.get('plz')+' · '+d.get('von')+' bis '+d.get('bis')+(d.get('bediener')?' · mit Bediener':'');
+      var q={name:d.get('name')||'',firma:d.get('firma')||'',tel:d.get('tel')||'',mail:d.get('mail')||'',plz:d.get('plz')||'',kat:kname,geraet:ger.value?gname:kname,von:d.get('von')||'',bis:d.get('bis')||'',ah:d.get('hoehe')||'',mode:d.get('bediener')?'bediener':(d.get('lieferung')==='abhol'?'abhol':'liefer'),info:d.get('info')||''};
+      try{if(q.von){var a=new Date(q.von+'T07:00'),b2=new Date((q.bis||q.von)+'T17:00');if(!isNaN(a))q.start=+a;if(!isNaN(b2))q.end=+b2}}catch(x){}
+      sendInq(rq.dataset.tenant||'laggner',rq.dataset.brand||'',q,'web');
       rq.hidden=true;$('#stepper').hidden=true;$('#rqDone').hidden=false;$('#rqDone').scrollIntoView({block:'start'})});
   }
 })();
+/* Anfragen ins Portal (Anfragen & Aufträge); ohne Server (Vorschau) lokal ablegen */
+function sendInq(tenant,brand,q,src){var local=function(){try{var L=JSON.parse(localStorage.getItem('laggner-inq-local')||'[]');L.unshift({id:'A-L'+Date.now().toString(36).toUpperCase().slice(-6),at:Date.now(),upd:Date.now(),src:src,st:'neu',brand:brand,kunde:{firma:q.firma||'',name:q.name||'',tel:q.tel||'',mail:q.mail||''},plz:q.plz||'',kat:q.kat||'',geraet:q.geraet||'',type:q.type||'',von:q.von||'',bis:q.bis||'',start:q.start||null,end:q.end||null,mode:q.mode||'',info:q.info||'',preis:q.preis||null,log:[{t:Date.now(),by:src==='online'?'Online-Buchung':'Website',txt:'Anfrage eingegangen'}]});localStorage.setItem('laggner-inq-local',JSON.stringify(L.slice(0,50)))}catch(e){}};
+  if(!/^https?:/.test(location.protocol)){local();return}
+  try{fetch('/api/gate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'inq_add',tenant:tenant,brand:brand,src:src,q:q})}).then(function(r){if(!r.ok)local()}).catch(local)}catch(e){local()}}
+window.sendInq=sendInq;
