@@ -715,7 +715,7 @@ nl:{"nav":{"bp":"Best practices","audit":"Audit-log","tenants":"Tenants & white-
 let lang=(()=>{try{return localStorage.getItem('pp-lang')||'de'}catch(e){return 'de'}})();
 /* ---------- tenant (first path segment, or <tenant>.b2b-easy.com) ---------- */
 const EDITION='full';
-const TENANT_LIST=['aydemir','ug-alu','sirius'];
+const TENANT_LIST=['aydemir','ug-alu','sirius','laggner'];
 /* customer domains (CNAME to B2B-Easy): host -> [tenant, area] */
 const HOST_MAP={'b2b.ug-alu.de':['ug-alu','site'],'partner.ug-alu.de':['ug-alu','network'],'team.ug-alu.de':['ug-alu','staff'],
   'partner.aydemir-gruppe.de':['aydemir','network'],'team.aydemir-gruppe.de':['aydemir','staff'],
@@ -723,7 +723,7 @@ const HOST_MAP={'b2b.ug-alu.de':['ug-alu','site'],'partner.ug-alu.de':['ug-alu',
 const CUSTOMHOST=(()=>{try{return location.protocol.startsWith('http')?HOST_MAP[location.hostname.toLowerCase()]||null:null}catch(e){return null}})();
 const TENANT=CUSTOMHOST?CUSTOMHOST[0]:(()=>{try{const http=location.protocol.startsWith('http')&&!/claudeusercontent|claude\.ai/.test(location.host);const raw=http?location.pathname:(location.hash.replace(/^#/,'')||'/');const s=(raw.split('/').filter(Boolean)[0]||'').toLowerCase();if(TENANT_LIST.includes(s))return s;if(http){const m=/^(?:partner\.)?([a-z0-9-]+)\.b2b-easy\.com$/.exec(location.hostname.toLowerCase());if(m&&TENANT_LIST.includes(m[1]))return m[1]}}catch(e){}return 'aydemir'})();
 const F2_FEATS=['program','terr','cust','quotes','credit','returns'];
-const TENANT_FEATURES={'ug-alu':['orders','stock','install','sites','hr','invoices','pricing','perf',...F2_FEATS],'sirius':['orders','stock','pricing','perf',...F2_FEATS]};
+const TENANT_FEATURES={'ug-alu':['orders','stock','install','sites','hr','invoices','pricing','perf',...F2_FEATS],'sirius':['orders','stock','pricing','perf',...F2_FEATS],'laggner':['orders','stock','install','invoices','pricing','perf',...F2_FEATS]};
 const LSK=k=>TENANT==='aydemir'?k:k+':'+TENANT;
 /* Dutch customer: Dutch UI by default (until the user picks a language) */
 try{if(!localStorage.getItem('pp-lang')&&TENANT==='sirius')lang='nl'}catch(e){if(TENANT==='sirius')lang='nl'}
@@ -1070,7 +1070,102 @@ const TENANT_DATA={
   jobs:[],teams:null,
   emp:[{id:1,name:'Directie',pos:'Directeur',dept:'Geschäftsleitung',brand:'all',loc:'Ommen',type:'Vollzeit',start:'2023-01-01',hours:40,vac:25,used:8,probation:null,mail:'',tel:'',access:'Geschäftsführer',user:'geschaeftsfuehrung',status:'aktiv',docs:[]},{id:2,name:'Verkoop binnendienst',pos:'Dealerbegeleiding',dept:'Innendienst',brand:'all',loc:'Ommen',type:'Vollzeit',start:'2024-06-01',hours:40,vac:25,used:12,probation:null,mail:'',tel:'',access:'Verwaltung',user:'verkoop',status:'aktiv',docs:[]}],
   leave:[],
-  tenantRow:{id:'t3',name:"Sirius Windows",domain:"partner.siriuswindows.nl",accent:"#245a8d",plan:"Business",brands:1,partners:()=>8,langs:["NL","DE","EN"],currency:"EUR",pipeline:["Nieuw","Contact","Offerte","Gewonnen","Verloren"],types:["Leadgenerator","Freelancer","Dealer","Groothandel"],tiers:["Basic","Silver","Gold","Premium"],pilot:false,mrr:599}}
+  tenantRow:{id:'t3',name:"Sirius Windows",domain:"partner.siriuswindows.nl",accent:"#245a8d",plan:"Business",brands:1,partners:()=>8,langs:["NL","DE","EN"],currency:"EUR",pipeline:["Nieuw","Contact","Offerte","Gewonnen","Verloren"],types:["Leadgenerator","Freelancer","Dealer","Groothandel"],tiers:["Basic","Silver","Gold","Premium"],pilot:false,mrr:599}},
+ 'laggner':{name:"Laggner Mietservice",sub:"Arbeitsbühnen · Teleskopstapler · Verkehrssicherung",mark:"LM",accent:"#132337",model:'connect',
+  domain:"lift-laggner.de",partnerHost:"partner.lift-laggner.de",teamHost:"team.lift-laggner.de",site:"lift-laggner.de",demoSite:"https://claude.ai/artifact/SM5eshYd8fUDpn4DvQdMv3",
+  features:['orders','stock','install','invoices','pricing','perf','program','terr','cust','quotes','credit','returns'],
+  team:[{id:1,name:'Geschäftsführung',role:'gf',user:'geschaeftsfuehrung',pass:'Laggner-GF-2026'},{id:2,name:'Disposition Heidenheim',role:'staff',user:'disposition',pass:'Laggner-Dispo-2026'},{id:3,name:'Fahrer / Einweisung',role:'monteur',user:'fahrer',pass:'Laggner-Fahrer-2026'},{id:4,name:'Buchhaltung',role:'buchhaltung',user:'buchhaltung',pass:'Laggner-Buha-2026'}],
+  brands:{lg:{name:"Laggner Süd + bundesweit",site:"lift-laggner.de",c:"#f2b705"},ch:{name:"Alpin Hebetechnik AG (CH)",site:"alpin-hebetechnik.ch",c:"#c0392b"},mi:{name:"Mittelland Arbeitsbühnen",site:"mittelland-buehnen.de",c:"#2f8a5a"},no:{name:"Nordwind Lift",site:"nordwind-lift.de",c:"#2a6fb0"}},
+  partners:[
+   {id:301,name:"Alpin Hebetechnik AG",city:"Zürich",lon:8.54,lat:47.38,ind:["Arbeitsbühnen-Vermietung","Schweiz"],roles:[{b:"ch",t:"distributor",tier:"gold"}],status:"active",contact:"Reto Brunner",mail:"info@alpin-hebetechnik.ch",tel:"+41 44 300 12 40",addr:"Industriestrasse 18, 8305 Dietlikon",closings:21,revenue:188000,state:"Schweiz",note:"Beispielfirma · Gesellschaft Schweiz (★★★★)"},
+   {id:302,name:"Mittelland Arbeitsbühnen GmbH",city:"Frankfurt am Main",lon:8.68,lat:50.11,ind:["Arbeitsbühnen-Vermietung"],roles:[{b:"mi",t:"distributor",tier:"silver"}],status:"active",contact:"Sabine Roth",mail:"info@mittelland-buehnen.de",tel:"+49 69 40 80 22 0",addr:"Hanauer Landstraße 300, 60314 Frankfurt am Main",closings:12,revenue:96000,state:"Hessen",note:"Beispielfirma · Gesellschaft Mitte (★★★)"},
+   {id:303,name:"Nordwind Lift GmbH",city:"Hamburg",lon:9.99,lat:53.55,ind:["Arbeitsbühnen-Vermietung"],roles:[{b:"no",t:"distributor",tier:"silver"}],status:"active",contact:"Jan Petersen",mail:"info@nordwind-lift.de",tel:"+49 40 30 60 90 0",addr:"Billstraße 80, 20539 Hamburg",closings:9,revenue:71000,state:"Hamburg",note:"Beispielfirma · Gesellschaft Nord (★★★)"},
+   {id:304,name:"Gerüstbau Maier",city:"Stuttgart",lon:9.18,lat:48.78,ind:["Gerüstbau"],roles:[{b:"lg",t:"leadgen",tier:"silver"}],status:"active",contact:"Thomas Maier",mail:"info@geruestbau-maier.de",tel:"+49 711 50 20 44",addr:"Heilbronner Str. 220, 70191 Stuttgart",closings:0,revenue:0,state:"Baden-Württemberg"},
+   {id:305,name:"Dachdeckerei Hofer",city:"Ulm",lon:9.99,lat:48.40,ind:["Dachdecker"],roles:[{b:"lg",t:"partner",tier:"gold"}],status:"active",contact:"Markus Hofer",mail:"hofer@dachdeckerei-hofer.de",tel:"+49 731 40 20 11",addr:"Blaubeurer Str. 90, 89077 Ulm",closings:16,revenue:42000,state:"Baden-Württemberg"},
+   {id:306,name:"Elektro Baur GmbH",city:"Augsburg",lon:10.90,lat:48.37,ind:["Elektro","Industriemontage"],roles:[{b:"lg",t:"partner",tier:"silver"}],status:"active",contact:"Petra Baur",mail:"info@elektro-baur.de",tel:"+49 821 45 10 30",addr:"Haunstetter Str. 150, 86161 Augsburg",closings:7,revenue:19500,state:"Bayern"},
+   {id:307,name:"Baumpflege Schweizer",city:"Ravensburg",lon:9.61,lat:47.78,ind:["Baumpflege","Garten-/Landschaftsbau"],roles:[{b:"lg",t:"partner",tier:"basic"}],status:"active",contact:"Felix Schweizer",mail:"felix@baumpflege-schweizer.de",tel:"+49 751 36 20 7",addr:"Meersburger Str. 8, 88213 Ravensburg",closings:3,revenue:6800,state:"Baden-Württemberg"},
+   {id:308,name:"Werbetechnik Lindner",city:"Nürnberg",lon:11.08,lat:49.45,ind:["Werbetechnik"],roles:[{b:"lg",t:"partner",tier:"silver"}],status:"active",contact:"Anna Lindner",mail:"info@werbetechnik-lindner.de",tel:"+49 911 20 30 40",addr:"Fürther Str. 300, 90429 Nürnberg",closings:5,revenue:14200,state:"Bayern"},
+   {id:309,name:"Helvetia Mietpark AG",city:"St. Gallen",lon:9.37,lat:47.42,ind:["Mietpark","Untermiete"],roles:[{b:"ch",t:"partner",tier:"silver"}],status:"active",contact:"Urs Keller",mail:"vermietung@helvetia-mietpark.ch",tel:"+41 71 220 44 10",addr:"Zürcher Strasse 500, 9015 St. Gallen",closings:6,revenue:28000,state:"Schweiz",note:"Beispiel · Schweizer Tedarikçi (Untermiete)"},
+   {id:310,name:"Rhein-Main Montage",city:"Mainz",lon:8.27,lat:50.00,ind:["Industriemontage"],roles:[{b:"mi",t:"partner",tier:"basic"}],status:"active",contact:"Kai Berger",mail:"info@rheinmain-montage.de",tel:"+49 6131 60 20 8",addr:"Rheinallee 120, 55120 Mainz",closings:2,revenue:5100,state:"Rheinland-Pfalz"},
+   {id:311,name:"Hafenservice Bremen",city:"Bremen",lon:8.80,lat:53.08,ind:["Hafenlogistik"],roles:[{b:"no",t:"leadgen",tier:"basic"}],status:"pending",contact:"Ole Hansen",mail:"hansen@hafenservice-bremen.de",tel:"+49 421 30 40 50",addr:"Am Industriehafen 4, 28237 Bremen",closings:0,revenue:0,state:"Bremen"},
+   {id:312,name:"Michael Steiner",city:"Heidenheim",lon:10.15,lat:48.68,ind:["Vertrieb","Außendienst"],roles:[{b:"lg",t:"freelancer",tier:"gold"}],status:"active",contact:"Michael Steiner",mail:"m.steiner@outlook.de",tel:"+49 170 44 20 11 9",addr:"Brenzstraße 40, 89518 Heidenheim",closings:11,revenue:34000,state:"Baden-Württemberg"}],
+  contracts:[
+   {p:301,b:"ch",kind:"Gesellschaftsvertrag / Gruppenvereinbarung",status:"signed",until:"2028-12-31",file:"Gruppe_Alpin_CH.pdf",ver:1,signedBy:"Reto Brunner",signedAt:"2026-01-10"},
+   {p:302,b:"mi",kind:"Gesellschaftsvertrag / Gruppenvereinbarung",status:"signed",until:"2028-12-31",file:"Gruppe_Mittelland.pdf"},
+   {p:303,b:"no",kind:"Gesellschaftsvertrag / Gruppenvereinbarung",status:"signed",until:"2028-12-31",file:"Gruppe_Nordwind.pdf"},
+   {p:305,b:"lg",kind:"Mietpartnervertrag",status:"signed",until:"2027-06-30",file:"Mietpartner_Hofer.pdf"},
+   {p:306,b:"lg",kind:"Mietpartnervertrag",status:"expiring",until:"2026-12-31",file:"Mietpartner_Baur.pdf"},
+   {p:309,b:"ch",kind:"Untermietvereinbarung",status:"signed",until:"2027-12-31",file:"Untermiete_Helvetia.pdf"},
+   {p:312,b:"lg",kind:"Freelancer-Vereinbarung",status:"signed",until:"2027-03-31",file:"FL_Steiner.pdf"}],
+  leads:[
+   {id:"L-5112",b:"lg",name:"Bauunternehmen Vogel",city:"München",plz:"80331",seg:"Raupenbühne 46 m",src:"lift-laggner.de · Mietanfrage",stage:"new",val:4200,owner:null},
+   {id:"L-5111",b:"no",name:"Hafenlogistik Nord GmbH",city:"Hamburg",plz:"20457",seg:"Lkw-Arbeitsbühne 90 m",src:"lift-laggner.de · Mietanfrage",stage:"contacted",val:9800,owner:303,assignedAt:NOW-3*3600e3,note:"Gerät nicht in Nord → Zentrale Heidenheim übernimmt"},
+   {id:"L-5110",b:"ch",name:"Immobilien Seefeld AG",city:"Zürich",plz:"8008",seg:"Scherenbühne 32 m",src:"Partner · Alpin Hebetechnik",stage:"quote",val:6100,owner:301,note:"CHF · Gerät über Helvetia Mietpark (Untermiete)"},
+   {id:"L-5109",b:"lg",name:"Stadtwerke Heidenheim",city:"Heidenheim",plz:"89522",seg:"Gelenkteleskopbühne 26 m",src:"Freelancer · Michael Steiner",stage:"won",val:2900,owner:312},
+   {id:"L-5108",b:"mi",name:"Messe Frankfurt Aufbau",city:"Frankfurt am Main",plz:"60327",seg:"6× Scherenbühne 12 m",src:"lift-laggner.de · Mietanfrage",stage:"quote",val:5400,owner:302},
+   {id:"L-5107",b:"lg",name:"Gemeinde Steinheim",city:"Steinheim am Albuch",plz:"89555",seg:"Lkw-Arbeitsbühne 27 m · Baumpflege",src:"Leadgen · Gerüstbau Maier",stage:"contacted",val:1100,owner:307,assignedAt:NOW-30*3600e3},
+   {id:"L-5106",b:"lg",name:"Autohaus Brenz",city:"Giengen",plz:"89537",seg:"Mastbühne 12 m",src:"Telefon · Zentrale",stage:"lost",val:600,owner:305,lostReason:"Preis"}],
+  orders:[
+   {id:"DO-5107",p:305,b:"lg",amount:3980,status:"shipped",date:"2026-10-27",ship:{carrier:"Eigener Fahrer · Tieflader HDH-LM 12",shipped:"2026-10-29",eta:"2026-10-29",no:"Tour 29.10. · 07:30"},install:"2026-10-29"},
+   {id:"DO-5106",p:301,b:"ch",amount:7240,status:"paid",date:"2026-10-22",ship:null,install:"2026-10-27"},
+   {id:"DO-5105",p:302,b:"mi",amount:5400,status:"open",date:"2026-10-24",ship:null,install:null},
+   {id:"DO-5104",p:306,b:"lg",amount:1560,status:"paid",date:"2026-10-14",ship:{carrier:"Eigener Fahrer · Lkw HDH-LM 7",shipped:"2026-10-15",eta:"2026-10-15",no:"Tour 15.10.",done:true},install:"2026-10-15"}],
+  stock:[
+   {b:"lg",sku:"LG-SB12E",name:"Scherenbühne 12 m Elektro",stock:14,res:9,lead:1,next:null},
+   {b:"lg",sku:"LG-RB19",name:"Raupenbühne 19 m",stock:4,res:3,lead:2,next:null},
+   {b:"lg",sku:"LG-LKW27",name:"Lkw-Arbeitsbühne 27 m",stock:6,res:4,lead:1,next:null},
+   {b:"lg",sku:"LG-LKW90",name:"Lkw-Arbeitsbühne 90 m (mit Bediener)",stock:1,res:1,lead:5,next:"2026-11-12"},
+   {b:"lg",sku:"LG-GT26",name:"Gelenkteleskopbühne 26 m Diesel",stock:5,res:2,lead:1,next:null},
+   {b:"lg",sku:"LG-TS17",name:"Teleskopstapler 17 m / 4 t",stock:3,res:2,lead:2,next:null},
+   {b:"ch",sku:"CH-SB12E",name:"Scherenbühne 12 m Elektro (CH-Flotte)",stock:5,res:3,lead:1,next:null},
+   {b:"ch",sku:"CH-SB32",name:"Scherenbühne 32 m (CH – über Helvetia Mietpark)",stock:0,res:1,lead:3,next:"2026-11-05"},
+   {b:"mi",sku:"MI-SB12E",name:"Scherenbühne 12 m Elektro (Mitte)",stock:8,res:6,lead:1,next:null},
+   {b:"no",sku:"NO-GT16E",name:"Gelenkteleskopbühne 16 m Elektro (Nord)",stock:3,res:1,lead:1,next:null}],
+  install:[
+   {region:"Baden-Württemberg / Bayern",team:"Disposition Heidenheim",slot:"2026-11-03",weeks:[["KW 44",9,12],["KW 45",7,12],["KW 46",4,12],["KW 47",2,12]]},
+   {region:"Schweiz",team:"Alpin Hebetechnik AG",slot:"2026-11-04",weeks:[["KW 44",3,4],["KW 45",2,4],["KW 46",1,4],["KW 47",0,4]]},
+   {region:"Mitte (HE, RP, NW, TH, SN)",team:"Mittelland Arbeitsbühnen",slot:"2026-11-05",weeks:[["KW 44",2,3],["KW 45",2,3],["KW 46",1,3],["KW 47",0,3]]},
+   {region:"Nord (HH, HB, NI, SH, BE)",team:"Nordwind Lift",slot:"2026-11-06",weeks:[["KW 44",1,2],["KW 45",1,2],["KW 46",0,2],["KW 47",0,2]]}],
+  assets:[
+   {b:"all",name:"Mietflotten-Katalog 2026 (alle Gesellschaften)",kind:"PDF · 32 S.",min:"basic",types:TYPES,use:["print","web"],ver:"v1"},
+   {b:"all",name:"Mietpreisliste Q4/2026 (EUR) + CHF-Liste Schweiz",kind:"XLSX",min:"basic",types:["partner","distributor"],use:["intern"],ver:"v2"},
+   {b:"all",name:"Bedienerunterweisung DGUV 308-008 – Schulungsunterlagen",kind:"PDF · 18 S.",min:"basic",types:["partner","distributor","freelancer"]},
+   {b:"lg",name:"Datenblätter Lkw-Arbeitsbühnen 27–90 m",kind:"ZIP · 4 PDF",min:"basic",types:TYPES},
+   {b:"ch",name:"Zollablauf DE→CH (Ausnahmefall)",kind:"PDF · 3 S.",min:"basic",types:["distributor"],use:["intern"]},
+   {b:"all",name:"Partnerhandbuch Laggner-Gruppe",kind:"PDF",min:"basic",types:TYPES}],
+  notifs:[
+   {ic:"📥",txt:{de:"Neue Mietanfrage L-5112 über lift-laggner.de (80331 München) – 15-Minuten-Frist läuft",tr:"lift-laggner.de üzerinden yeni kiralama talebi L-5112 (80331 München) – 15 dakika sayacı başladı",en:"New rental enquiry L-5112 via lift-laggner.de (80331 Munich) – 15-minute window running"},when:"09:12",ch:["Panel","E-Mail"],un:true},
+   {ic:"⬆",txt:{de:"L-5111 (Lkw-Bühne 90 m) von Nordwind Lift an die Zentrale übergeben – Gerät nicht in Nord verfügbar",tr:"L-5111 (90 m Lkw platformu) Nordwind Lift'ten merkeze devredildi – cihaz Nord'da yok",en:"L-5111 (90 m truck mount) handed from Nordwind Lift to HQ – unit not available in Nord"},when:"08:40",ch:["Panel"],un:true},
+   {ic:"🙋",txt:{de:"Hafenservice Bremen hat sich als Vermittlungspartner beworben",tr:"Hafenservice Bremen aracı partner olarak başvurdu",en:"Hafenservice Bremen applied as referral partner"},when:"Gestern",ch:["Panel"],un:false},
+   {ic:"📄",txt:{de:"Mietpartnervertrag Elektro Baur läuft am 31.12. aus",tr:"Elektro Baur kiralama partneri sözleşmesi 31.12.'de bitiyor",en:"Rental partner contract Elektro Baur expires 31 Dec"},when:"27.10.",ch:["Panel","E-Mail"],un:false}],
+  audit:[
+   {who:"Disposition Heidenheim",what:"L-5111 übernommen von Nordwind Lift · Grund: Lkw-Bühne 90 m nur in Zentrale",when:"2026-10-31 08:40"},
+   {who:"Geschäftsführung",what:"Stufen festgelegt: Laggner Premium (5★), Schweiz Gold (4★), Mitte/Nord Silver (3★)",when:"2026-10-31 08:05"},
+   {who:"System",what:"L-5110 (Zürich) → Schweiz-Regel: Gerät über Helvetia Mietpark, kein DE-Pool",when:"2026-10-30 14:20"},
+   {who:"Disposition Heidenheim",what:"Partner freigegeben: Baumpflege Schweizer · Partner Basic",when:"2026-10-28 11:15"}],
+  feed:[
+   {c:"warn",de:"L-5112 (München, Raupenbühne 46 m) wartet seit 9 Min. – Angebot bis 09:27",tr:"L-5112 (München, 46 m Raupenbühne) 9 dakikadır bekliyor – teklif 09:27'ye kadar",en:"L-5112 (Munich, 46 m spider lift) waiting 9 min – offer due 09:27",w:"09:12"},
+   {c:"ok",de:"Nordwind Lift hat L-5111 an die Zentrale übergeben (Lkw-Bühne 90 m)",tr:"Nordwind Lift L-5111'i merkeze devretti (90 m Lkw platformu)",en:"Nordwind Lift handed L-5111 to HQ (90 m truck mount)",w:"08:40"},
+   {c:"ok",de:"Alpin Hebetechnik: Angebot L-5110 in CHF versendet (Gerät über Helvetia Mietpark)",tr:"Alpin Hebetechnik: L-5110 teklifi CHF olarak gönderildi (cihaz Helvetia Mietpark'tan)",en:"Alpin Hebetechnik: offer L-5110 sent in CHF (unit via Helvetia Mietpark)",w:"Gestern"},
+   {c:"mut",de:"Scherenbühne 32 m in der Schweiz nicht verfügbar – nächste Rückgabe 05.11.",tr:"İsviçre'de 32 m Scherenbühne yok – sonraki iade 05.11.",en:"32 m scissor lift not available in Switzerland – next return 5 Nov",w:"Gestern"}],
+  price:[{b:"lg",sku:"LG-SB12E",n:"Scherenbühne 12 m Elektro – Tagesmiete",list:75,disc:{basic:5,silver:10,gold:15,premium:20}},{b:"lg",sku:"LG-RB19",n:"Raupenbühne 19 m – Tagesmiete",list:190,disc:{basic:5,silver:10,gold:15,premium:20}},{b:"lg",sku:"LG-LKW27",n:"Lkw-Arbeitsbühne 27 m – Tagesmiete",list:185,disc:{basic:5,silver:10,gold:15,premium:20}},{b:"lg",sku:"LG-LKW90",n:"Lkw-Arbeitsbühne 90 m – Tagesmiete inkl. Bediener",list:1950,disc:{basic:0,silver:5,gold:8,premium:10}},{b:"lg",sku:"LG-GT26",n:"Gelenkteleskopbühne 26 m – Tagesmiete",list:240,disc:{basic:5,silver:10,gold:15,premium:20}},{b:"lg",sku:"LG-TS17",n:"Teleskopstapler 17 m / 4 t – Tagesmiete",list:260,disc:{basic:5,silver:10,gold:15,premium:20}},{b:"ch",sku:"CH-SB12E",n:"Scherenbühne 12 m Elektro – Tagesmiete (CHF 95)",list:98,disc:{basic:5,silver:10,gold:15,premium:20}}],
+  content:{lg:{claim:"Geht nicht – gibt's nicht!",hero:"Arbeitsbühnen mieten – von 6 bis 90 m",sub:"Sieben Niederlassungen in Süddeutschland, Lieferung bundesweit, Angebot in 15 Minuten.",
+   facts:[["15 min","bis zum Angebot"],["7","Niederlassungen"],["90 m","max. Arbeitshöhe"],["DE-weit","Lieferung"]],
+   usps:["Angebot in 15 Minuten","Lieferung und Einweisung durch eigene Fahrer","Bedienerschulung nach DGUV 308-008","Zugriff auf über 20.000 Maschinen"],
+   products:[{sku:"LG-SB12E",n:"Scherenbühne 12 m",d:"Elektro, Innenraum",price:75},{sku:"LG-RB19",n:"Raupenbühne 19 m",d:"79 cm schmal",price:190},{sku:"LG-LKW27",n:"Lkw-Bühne 27 m",d:"Mit Pkw-Führerschein",price:185},{sku:"LG-GT26",n:"Gelenkteleskop 26 m",d:"Diesel 4×4",price:240}],
+   apps:["Fassade","Halle","Baumpflege","Werbetechnik","Dach","Verkehrsraum"],color:"#132337",dark:"#0b1118",
+   steps:[["Anfrage","Gerät, Termin, PLZ"],["Angebot","in 15 Minuten"],["Lieferung","durch eigene Fahrer"],["Abholung","nach Mietende"]],
+   refs:[["Messe Frankfurt","6× Scherenbühne 12 m","Messeaufbau"],["Stadtwerke Heidenheim","Gelenkteleskop 26 m","Leuchtenwartung"]],quotes:[],faq:[],badges:["15-Minuten-Angebot","Bundesweit","Mit Bediener"]}},
+  jobs:[{d:"2026-11-03",team:"t1",o:"DO-5107",p:305,b:"lg",what:"Lieferung Lkw-Bühne 27 m · Ulm",region:"Baden-Württemberg"},{d:"2026-11-04",team:"t2",o:"DO-5106",p:301,b:"ch",what:"Abholung Scherenbühne 12 m · Zürich",region:"Schweiz"},{d:"2026-11-05",team:"t1",o:"DO-5105",p:302,b:"mi",what:"6× Scherenbühne 12 m · Messe Frankfurt",region:"Hessen"}],
+  teams:{t1:{n:"Disposition Heidenheim",base:"Heidenheim"},t2:{n:"Alpin Hebetechnik AG",base:"Dietlikon"},t3:{n:"Mittelland Arbeitsbühnen",base:"Frankfurt"},t4:{n:"Nordwind Lift",base:"Hamburg"}},
+  emp:[
+   {id:1,name:'Geschäftsführung',pos:'Geschäftsführer',dept:'Geschäftsleitung',brand:'all',loc:'Heidenheim',type:'Vollzeit',start:'2020-01-01',hours:40,vac:30,used:9,probation:null,mail:'',tel:'',access:'Geschäftsführer',user:'geschaeftsfuehrung',status:'aktiv',docs:[]},
+   {id:2,name:'Disposition Heidenheim',pos:'Disponent',dept:'Disposition',brand:'all',loc:'Heidenheim',type:'Vollzeit',start:'2022-05-01',hours:40,vac:28,used:12,probation:null,mail:'',tel:'',access:'Verwaltung',user:'disposition',status:'aktiv',docs:[]},
+   {id:3,name:'Fahrer / Einweisung',pos:'Lkw-Fahrer CE',dept:'Logistik',brand:'all',loc:'Heidenheim',type:'Vollzeit',start:'2023-09-01',hours:40,vac:28,used:15,probation:null,mail:'',tel:'',access:'Mitarbeiter',user:'fahrer',status:'aktiv',docs:[]},
+   {id:4,name:'Buchhaltung',pos:'Buchhaltung (alle Gesellschaften)',dept:'Finanzen',brand:'all',loc:'Heidenheim',type:'Teilzeit',start:'2021-02-01',hours:25,vac:20,used:6,probation:null,mail:'',tel:'',access:'Buchhaltung',user:'buchhaltung',status:'aktiv',docs:[]}],
+  leave:[],
+  impressum:{firm:"Laggner Mietservice",addr:["Friedrich-Ebert-Straße 25/7","89522 Heidenheim an der Brenz","Deutschland"],tel:"07321 7545999",mail:"info@lift-laggner.de",gf:"(wird vom Auftraggeber ergänzt)",reg:"(wird ergänzt)",hrb:"(wird ergänzt)",ust:"(wird ergänzt)",resp:"(wird ergänzt)",respAddr:"Friedrich-Ebert-Straße 25/7, 89522 Heidenheim"},
+  tenantRow:{id:'t4',name:"Laggner Mietservice",domain:"partner.lift-laggner.de",accent:"#132337",plan:"Group",brands:4,partners:()=>12,langs:["DE","EN"],currency:"EUR / CHF",pipeline:["Neu","Kontaktiert","Angebot","Gewonnen","Verloren"],types:["Vermittlungspartner","Freelancer","Mietpartner","Gesellschaft"],tiers:["Basic","Silver","Gold","Premium"],pilot:false,mrr:1290}}
 };
 const TD=TENANT_DATA[TENANT]||null;
 const TNAME=TD?TD.name:"Aydemir Gruppe",TSUB=TD?TD.sub:"Moonzelt · Euroconteiner · Wasserernte",TMARK=TD?TD.mark:"A";
@@ -1087,7 +1182,7 @@ if(TD){
 /* late overrides (data defined further down) */
 function applyTenantLate(){
   /* console list: Aydemir + the two demo tenants */
-  if(TENANT_DATA['ug-alu']&&TENANT_DATA['sirius'])TENANTS.splice(1,TENANTS.length-1,TENANT_DATA['ug-alu'].tenantRow,TENANT_DATA['sirius'].tenantRow);
+  if(TENANT_DATA['ug-alu']&&TENANT_DATA['sirius'])TENANTS.splice(1,TENANTS.length-1,TENANT_DATA['ug-alu'].tenantRow,TENANT_DATA['sirius'].tenantRow,TENANT_DATA['laggner'].tenantRow);
   TENANTS[0].domain='partner.aydemir-gruppe.de';
   if(!TD)return;
   const i=TENANTS.findIndex(t=>t.name===TD.name);if(i>0){const [r]=TENANTS.splice(i,1);TENANTS.unshift(r)}
@@ -1150,7 +1245,7 @@ function areaHost(a){return a==='console'?'console.':a==='network'?'partner.'+TE
 function areaPath(a,sub,t){return (areaBase(a,t)+(sub?'/'+sub:''))||'/'}
 function areaHref(a,sub,t){if(CUSTOMHOST){const h=(TARGET_HOSTS[t||TENANT]||{})[a];return h?'https://'+h+(sub?'/'+sub:''):'https://b2b-portal.foundercheck.de'+areaPath(a,sub,t)}if(HOSTMODE)return location.protocol+'//'+areaHost(a)+APP_DOMAIN+(sub?'/'+sub:'');return IS_HTTP?areaPath(a,sub,t):'#'+areaPath(a,sub,t)}
 function absUrl(a,sub,t){return HOSTMODE||CUSTOMHOST?areaHref(a,sub,t):(IS_HTTP?location.origin:'https://b2b-portal.foundercheck.de')+areaPath(a,sub,t)}
-const TARGET_HOSTS={aydemir:{staff:'team.aydemir-gruppe.de',network:'partner.aydemir-gruppe.de'},'ug-alu':{staff:'team.ug-alu.de',network:'partner.ug-alu.de',site:'b2b.ug-alu.de'},sirius:{staff:'team.siriuswindows.nl',network:'partner.siriuswindows.nl'}};
+const TARGET_HOSTS={aydemir:{staff:'team.aydemir-gruppe.de',network:'partner.aydemir-gruppe.de'},'ug-alu':{staff:'team.ug-alu.de',network:'partner.ug-alu.de',site:'b2b.ug-alu.de'},sirius:{staff:'team.siriuswindows.nl',network:'partner.siriuswindows.nl'},laggner:{staff:'team.lift-laggner.de',network:'partner.lift-laggner.de'}};
 function targetUrl(a,sub,t){t=t||TENANT;const h=a==='console'?'console.'+APP_DOMAIN:a==='home'?'www.'+APP_DOMAIN:a==='embed'?'embed.'+APP_DOMAIN:(TARGET_HOSTS[t]||{})[a]||areaHost(a)+APP_DOMAIN;return h+(sub?'/'+sub:'')}
 if(ROUTE.legacy){try{history.replaceState(null,'',IS_HTTP?areaPath(AREA):(AREA==='home'?location.pathname+location.search:'#'+areaPath(AREA)))}catch(e){}}
 let CONSOLE=AREA==='console'||AREA==='home';const HQ=false;
@@ -1282,6 +1377,7 @@ function showHome(){
       ${T('Aydemir Gruppe','Connect','Drei eigene Markenseiten (Moonzelt, Euroconteiner, Wasserernte) binden Formular und Händlersuche ein.',L('staff','Mitarbeiter-Login','aydemir')+L('network','Partner-Login','aydemir')+L('embed','Einbindung auf den Markenseiten','aydemir'))}
       ${T('UG-Alu GmbH','Start','Neue B2B-Website von B2B-Easy vor dem Portal; die bestehende Shop-Seite bleibt getrennt.',L('site','B2B-Website','ug-alu')+L('network','Partner-Login','ug-alu')+L('staff','Mitarbeiter-Login','ug-alu'))}
       ${T('Sirius Windows','Connect','Eigene Website siriuswindows.nl bleibt; Portal und Formular werden angebunden.',L('staff','Mitarbeiter-Login','sirius')+L('network','Partner-Login','sirius')+L('embed','Einbindung auf siriuswindows.nl','sirius'))}
+      ${T('Laggner Mietservice','Connect · Gruppe','Vier Gesellschaften (Süd, Schweiz, Mitte, Nord) in einem Portal; Mietanfragen mit 15-Minuten-Frist, Übergabe an die Zentrale.',L('staff','Mitarbeiter-Login','laggner')+L('network','Partner-Login','laggner')+'<a class="hlink" href="https://claude.ai/artifact/SM5eshYd8fUDpn4DvQdMv3" target="_blank" rel="noopener"><span>Website-Entwurf</span><code>lift-laggner.de</code><em>Demo: Claude-Artefakt</em></a>')}
     </div>
     <h2 class="hsec">Plattform</h2>
     <div class="hgrid3"><div class="hten"><div class="htop"><b>TechNS Console</b><span class="hbadge">TechNS</span></div><p>Mandanten, Module, Rollout und Betrieb. Kein Zugriff auf Daten der Mandanten.</p><div class="hlinks">${L('console','Console')}${L('console','Link-Handbuch',null,'docs/url-handbook')}</div></div></div>
@@ -2109,7 +2205,7 @@ function webLinks(){
   const L=[],ext=h=>'https://'+String(h).replace(/^https?:\/\//,''),host=u=>u.replace(/^https?:\/\//,'').replace(/^#/,'');
   const own=[];const live=h=>IS_HTTP&&h.startsWith('/')?location.host+h:host(h);
   if(TD&&TD.model==='start')own.push({ic:'globe',n:L4('B2B-Website','B2B web sitesi','B2B website','B2B-website'),d:live(areaHref('site')),h:areaHref('site')});
-  if(TD&&TD.site)own.push({ic:'external',n:L4('Firmen-Website','Firma web sitesi','Company website','Bedrijfswebsite'),d:TD.site,h:ext(TD.site),x:1});
+  if(TD&&TD.site)own.push({ic:'external',n:L4('Firmen-Website','Firma web sitesi','Company website','Bedrijfswebsite'),d:TD.site,h:ext(TD.site),x:1});if(TD&&TD.demoSite)own.push({ic:'globe',n:L4('Website-Entwurf (neu)','Web sitesi taslağı (yeni)','Website draft (new)','Website-ontwerp (nieuw)'),d:L4('Demo nach Leistungsbeschreibung','Kapsam belgesine göre demo','Demo per scope document','Demo volgens offerte'),h:TD.demoSite,x:1});
   const BR=TD&&TD.brands?TD.brands:BRANDS;for(const k in BR){const b=BR[k];if(!b.site||(TD&&(b.site===TD.domain||b.site===TD.site)))continue;own.push({ic:'external',n:b.name,d:b.site,h:ext(b.site),x:1})}
   if(own.length)L.push({s:L4('Ihre Websites','Web siteleriniz','Your websites','Uw websites'),it:own});
   const pp=[{ic:'door',n:L4('Partner-Portal (Login)','Partner portalı (giriş)','Partner portal (login)','Partnerportaal (login)'),d:live(areaHref('network')),h:areaHref('network')},
@@ -3462,7 +3558,7 @@ function viewUrls(){
 let TCEDIT=null,CFGT=null,CFGBASE=null;
 /* packages: how many partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override possible */
 const PLAN_LIMITS={Starter:{partners:25,users:5,brands:1},Business:{partners:100,users:15,brands:3},Group:{partners:0,users:0,brands:0}};
-const PLAN_DEFAULT={aydemir:'Group','ug-alu':'Starter',sirius:'Business'};
+const PLAN_DEFAULT={aydemir:'Group','ug-alu':'Starter',sirius:'Business',laggner:'Group'};
 const planOf=(c,t)=>PLAN_LIMITS[(c||{}).plan]?(c||{}).plan:PLAN_DEFAULT[t||TENANT]||'Starter';
 function limitsOf(c,t){const pl=planOf(c,t);const o=(c||{}).limits||{};return {plan:pl,partners:o.partners!=null&&o.partners!==''?+o.partners:PLAN_LIMITS[pl].partners,users:o.users!=null&&o.users!==''?+o.users:PLAN_LIMITS[pl].users,brands:PLAN_LIMITS[pl].brands}}
 const usePartners=()=>PARTNERS.filter(p=>!['pending','paused'].includes(p.status)).length;
