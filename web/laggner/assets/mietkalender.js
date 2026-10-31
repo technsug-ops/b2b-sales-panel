@@ -116,6 +116,7 @@ function mkMount(ROOT, MK, OPT) {
   function wReload() { WST = null; return wState(); }
   /* Sperrgrund für Einheit im Zeitraum [a,b) – null = einsetzbar */
   function lockOf(unitId, a, b) {
+    if (MK.noLock) return null;   // Modul Prüfungen & Wartung nicht gebucht
     var W = wState(), w = W.units[unitId]; if (!w) return null;
     var exp = dayStart(w.uvv) + DAY;   // gültig bis Ende des Fälligkeitstags
     if (exp < b) return { why: 'uvv', from: exp, txt: 'UVV-Prüfung ' + (exp <= Date.now() ? 'abgelaufen seit ' : 'läuft ab am ') + dlab(w.uvv) };
