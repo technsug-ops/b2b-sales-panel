@@ -26,7 +26,8 @@ const TCFG_PATH = 'gate/tenant-t1.json';
 const F2 = ['program', 'terr', 'cust', 'quotes', 'credit', 'returns'];
 const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'];
 const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
-const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices'), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
+const RENT_ONLY = ['auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'];
+const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices' && !RENT_ONLY.includes(x)), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
 // ---- tenants: aydemir keeps its original blob paths; others live under gate/t/<slug>/
 const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner'];
