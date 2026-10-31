@@ -137,6 +137,47 @@ input:invalid.touched,select:invalid.touched{border-color:#c0392b}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hdr .logo img{background:#fff;padding:4px 8px;border-radius:6px}}
 :root[data-theme="dark"] .hdr .logo img{background:#fff;padding:4px 8px;border-radius:6px}
 
+/* ---------- Mietkalender */
+.mk-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 16px;border-bottom:1px solid var(--line)}
+.mk-tabs button{font:inherit;font-weight:600;background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;color:var(--muted);cursor:pointer}
+.mk-tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.mk-book{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:20px;align-items:start}
+.mk-form{display:grid;gap:12px}.mk-form label{display:grid;gap:4px;font-size:14px;font-weight:600}
+.mk-form input,.mk-form select,.mk-cta input{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);min-width:0}
+.mk-mode{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:6px}.mk-mode legend{font-weight:700;padding:0 4px}
+.mk-mode .chk{display:flex;gap:8px;align-items:flex-start;font-weight:500}
+.mk-rate{display:flex;gap:12px;align-items:center;background:var(--bg);border-radius:10px;padding:8px 10px}.mk-rate img{width:90px;height:auto;background:#fff;border-radius:6px;flex:none}
+.mk-rate b{display:block}.mk-rate small{display:block;color:var(--muted);font-size:12.5px}.mk-rate span{display:block;font-size:13px;font-weight:600;color:var(--accent);margin-top:2px}
+.small{font-size:13px}
+.mk-weeknav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 10px}.mk-weeknav span{font-weight:700}
+.mk-av{overflow-x:auto}.mk-av-h,.mk-av-r{display:grid;grid-template-columns:78px repeat(14,minmax(18px,1fr));gap:2px;align-items:center;min-width:360px}
+.mk-av-h{grid-template-columns:78px repeat(7,minmax(36px,2fr));font-size:11.5px;color:var(--muted)}.mk-av-r b{font-size:12.5px;font-weight:600}
+.mk-c{height:26px;border:0;border-radius:4px;cursor:pointer;padding:0}.mk-c.all{background:#3aa76d}.mk-c.some{background:#f2b705}.mk-c.none{background:#d9534f;cursor:not-allowed}.mk-c.past{background:var(--line);cursor:default}
+.mk-c:hover:not(:disabled){outline:2px solid var(--ink)}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mk-legend{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.mk-legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.mk-legend .all{background:#3aa76d}.mk-legend .some{background:#f2b705}.mk-legend .none{background:#d9534f}
+.mk-legend .rent{background:var(--accent)}.mk-legend .trans{background:repeating-linear-gradient(45deg,#9aa6b2 0 3px,#cfd6dd 3px 6px)}.mk-legend .del{background:#1f8a4c}.mk-legend .pick{background:#8e44ad}.mk-legend .op{background:#e67e22}
+#mkResult{margin-top:14px}.mk-price table,.mk-detail table{width:100%;border-collapse:collapse;font-size:14px}.mk-price td,.mk-detail td,.mk-detail th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.mk-price td:last-child{text-align:right;white-space:nowrap}.mk-price .sum td{font-weight:700}.mk-price h3,.mk-detail h3{margin:0 0 8px}.mk-price h3+ol{margin-top:0}
+.mk-log{list-style:none;padding:0;margin:8px 0 14px;display:grid;gap:6px}.mk-log li{display:grid;grid-template-columns:118px 1fr;gap:8px;font-size:14px;padding-left:10px;border-left:4px solid var(--line)}
+.mk-log li.del{border-color:#1f8a4c}.mk-log li.rent{border-color:var(--accent);font-weight:700}.mk-log li.pick{border-color:#8e44ad}.mk-log time{color:var(--muted);font-variant-numeric:tabular-nums}
+.mk-cta{display:flex;gap:8px;flex-wrap:wrap}.mk-cta input{flex:1 1 180px}
+.mk-warn{border-left:4px solid #d9534f}.mk-warn .chips{margin-top:6px}
+.mk-gantt{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.mk-g-row{display:grid;grid-template-columns:170px 1fr;min-width:900px;border-bottom:1px solid var(--line)}
+.mk-g-lab{padding:4px 10px;font-size:12.5px;line-height:1.25;border-right:1px solid var(--line);position:sticky;left:0;background:var(--panel);z-index:2}.mk-g-lab small{display:block;color:var(--muted);font-size:11.5px}
+.mk-g-track{position:relative;min-height:34px;background:repeating-linear-gradient(90deg,transparent 0 calc(100%/6 - 1px),var(--line) calc(100%/6 - 1px) calc(100%/6))}
+.mk-g-head .mk-g-track{min-height:40px}.mk-g-day{position:absolute;top:0;padding:6px 8px;font-size:13px;font-weight:700}.mk-g-day small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.mk-g-sec{min-width:900px;padding:6px 10px;background:var(--bg);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+.mk-bar{position:absolute;top:5px;height:24px;border-radius:5px;font-size:11.5px;line-height:24px;padding:0 6px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;box-sizing:border-box}
+.mk-bar.rent{background:var(--accent)}.mk-bar.trans{background:repeating-linear-gradient(45deg,#9aa6b2 0 4px,#cfd6dd 4px 8px);color:transparent}.mk-bar.del{background:#1f8a4c}.mk-bar.pick{background:#8e44ad}.mk-bar.op,.mk-bar.rent.op{background:#e67e22}
+.mk-bar.hl{outline:3px solid var(--ink);z-index:3}.mk-now{position:absolute;top:0;bottom:0;width:2px;background:#d9534f;z-index:1}
+.mk-kpi .num{font-size:30px}.mk-detail{margin-top:14px}.mk-detail th{width:150px;color:var(--muted);font-weight:600}
+.mk-pl{width:100%;border-collapse:collapse;font-size:14px}.mk-pl th,.mk-pl td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.mk-pl th small,.mk-pl td small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.mk-pl tr.grp td{background:var(--bg);font-weight:700}
+@media(max-width:820px){.mk-book{grid-template-columns:1fr}.mk-g-row{grid-template-columns:120px 1fr}}
+
 /* Markenfarbe Alpin Hebetechnik AG (Demo) */
 :root,:root[data-theme="light"]{--accent:#c8102e}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--accent:#ef5466}}
