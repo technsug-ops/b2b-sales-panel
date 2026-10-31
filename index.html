@@ -7,133 +7,147 @@
 <meta name="description" content="B2B-Easy bündelt Partner, Freelancer, Tippgeber und Händler in einem Portal: Leads, Provision, Material, Bestellungen – mit Branchenmodulen für Handel, Montage und Vermietung.">
 <meta name="robots" content="index,follow">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@500;600&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235a4fe0'/%3E%3Cpath d='M9 22V10h7a3.5 3.5 0 0 1 0 7H9m7 0h1a3 3 0 0 1 0 5H9' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
-:root{--bg:#f6f5f1;--card:#fff;--ink:#16151d;--muted:#5d5b6a;--line:#e3e1da;--acc:#5a4fe0;--acc2:#e8e5ff;--warm:#f2a93b;--ok:#2f855a;--r:16px}
+:root{--bg:#ffffff;--soft:#f5f7fa;--card:#fff;--ink:#0f1b2d;--ink2:#2b3a52;--muted:#5b6678;--line:#e2e7ee;--acc:#1f4fd1;--acc-d:#173da5;--acc2:#eaf0ff;--navy:#0b1830;--ok:#2f855a;--r:8px}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 'Public Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.1;margin:0 0 .4em;letter-spacing:-.02em}
-h1{font-size:clamp(38px,6vw,68px);font-weight:800}h2{font-size:clamp(28px,3.6vw,42px);font-weight:700}h3{font-size:19px;font-weight:600}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:'IBM Plex Sans',Inter,sans-serif;line-height:1.15;margin:0 0 .45em;letter-spacing:-.01em;font-weight:600;color:var(--ink)}
+h1{font-size:clamp(34px,4.6vw,54px)}h2{font-size:clamp(26px,3vw,36px)}h3{font-size:18px}
 a{color:inherit}p{margin:0 0 1em}
-.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
-.btn{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--ink);background:var(--ink);color:#fff;border-radius:999px;padding:12px 22px;font:600 15px 'Public Sans',sans-serif;text-decoration:none;cursor:pointer;transition:transform .15s}
-.btn:hover{transform:translateY(-1px)}.btn.ghost{background:transparent;color:var(--ink)}.btn.acc{background:var(--acc);border-color:var(--acc)}
-header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid transparent}
-header.sc{border-color:var(--line)}
-.hd{display:flex;align-items:center;gap:18px;height:68px}
-.logo{display:flex;align-items:center;gap:10px;font:700 20px 'Bricolage Grotesque',sans-serif;text-decoration:none}
-.logo i{width:32px;height:32px;border-radius:9px;background:var(--acc);display:grid;place-items:center;color:#fff;font-style:normal;font-size:15px}
-nav.mn{display:flex;gap:22px;margin-left:12px}nav.mn a{text-decoration:none;color:var(--muted);font-size:15px}nav.mn a:hover{color:var(--ink)}
-.sp{flex:1}.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}.lang button{border:0;background:none;padding:6px 10px;font:600 12px 'Public Sans';color:var(--muted);cursor:pointer}.lang button.on{background:var(--ink);color:#fff}
-.login{position:relative}.login>button{border:0;background:none;font:500 15px 'Public Sans';cursor:pointer;color:var(--ink)}
-.login .dd{position:absolute;right:0;top:36px;width:290px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 18px 40px -18px rgba(0,0,0,.25);display:none;font-size:14px}
-.login.open .dd{display:block}.login .dd a{display:block;margin-top:10px;font-weight:600;color:var(--acc)}
-.hero{padding:72px 0 40px;position:relative;overflow:hidden}
-.hero .eb{display:inline-flex;gap:8px;align-items:center;background:var(--acc2);color:var(--acc);border-radius:999px;padding:6px 14px;font-weight:600;font-size:13px;margin-bottom:22px}
-.hero p.lead{font-size:20px;color:var(--muted);max-width:640px;margin:18px 0 30px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.over{display:block;font:600 12px Inter;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:6px;padding:12px 22px;font:600 15px Inter,sans-serif;text-decoration:none;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--acc-d)}.btn.ghost{background:#fff;color:var(--ink);border-color:var(--line)}.btn.ghost:hover{border-color:var(--ink2)}.btn.acc{}
+.topbar{background:var(--navy);color:#c6cfdd;font-size:13px}.topbar .wrap{display:flex;gap:22px;height:36px;align-items:center}.topbar .sp{flex:1}
+header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line)}
+.hd{display:flex;align-items:center;gap:28px;height:70px}
+.logo{display:flex;align-items:center;gap:10px;font:600 20px 'IBM Plex Sans',sans-serif;text-decoration:none;color:var(--ink)}
+.logo i{width:30px;height:30px;border-radius:6px;background:var(--acc);display:grid;place-items:center;color:#fff;font-style:normal;font-size:14px;font-weight:700}
+nav.mn{display:flex;gap:26px}nav.mn a{text-decoration:none;color:var(--ink2);font-size:15px;font-weight:500}nav.mn a:hover{color:var(--acc)}
+.sp{flex:1}.lang{display:flex;gap:2px}.lang button{border:0;background:none;padding:4px 6px;font:600 12px Inter;color:#93a0b5;cursor:pointer}.lang button.on{color:#fff}
+.login{position:relative}.login>button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:9px 14px;font:600 14px Inter;cursor:pointer;color:var(--ink)}
+.login .dd{position:absolute;right:0;top:46px;width:300px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px;box-shadow:0 18px 40px -18px rgba(15,27,45,.3);display:none;font-size:14px;color:var(--muted)}
+.login.open .dd{display:block}.login .dd a{display:block;margin-top:10px;font-weight:600;color:var(--acc);text-decoration:none}
+.hero{padding:76px 0 64px;background:linear-gradient(180deg,var(--soft),#fff)}
+.hero .grid{display:grid;grid-template-columns:1fr 1.05fr;gap:56px;align-items:center}
+.hero .eb{display:inline-block;color:var(--acc);font:600 12px Inter;letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px}
+.hero p.lead{font-size:19px;color:var(--muted);max-width:560px;margin:18px 0 30px}
 .hero .cta{display:flex;gap:12px;flex-wrap:wrap}
-.hero h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--warm) 62%,var(--warm) 90%,transparent 90%)}
-.net{margin-top:52px;display:grid;grid-template-columns:1.1fr .9fr;gap:20px}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
-.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:center}
-.node{border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13.5px;background:var(--bg)}
-.node b{display:block;font-size:14px}.node.c{background:var(--ink);color:#fff;border-color:var(--ink);text-align:center}.node.c small{color:#bdb9d6}
-.arr{text-align:center;color:var(--acc);font-weight:700}
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--bg)}.kpi b{display:block;font:700 28px 'Bricolage Grotesque'}.kpi small{color:var(--muted)}
-section{padding:76px 0}section.alt{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.sh{max-width:720px;margin-bottom:34px}.sh p{color:var(--muted);font-size:18px}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px}
-.card .n{font:800 15px 'Bricolage Grotesque';color:var(--acc);margin-bottom:10px}
+.hero h1 em{font-style:normal;color:var(--acc)}
+.facts{display:flex;gap:28px;flex-wrap:wrap;margin-top:34px;padding-top:24px;border-top:1px solid var(--line)}
+.facts div b{display:block;font:600 24px 'IBM Plex Sans'}.facts div small{color:var(--muted);font-size:13px}
+.mock{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 30px 60px -30px rgba(15,27,45,.35);overflow:hidden;font-size:12px}
+.mock .bar{display:flex;gap:6px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--soft)}.mock .bar i{width:9px;height:9px;border-radius:50%;background:#d5dbe4}
+.mock .in{display:grid;grid-template-columns:150px 1fr;min-height:330px}
+.mock .side{background:var(--navy);color:#b9c4d6;padding:14px 12px}.mock .side b{display:block;color:#fff;font-size:12.5px;margin-bottom:14px}.mock .side span{display:block;padding:6px 8px;border-radius:5px;margin-bottom:2px}.mock .side span.on{background:#1d335c;color:#fff}
+.mock .main{padding:16px}.mock .k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.mock .k div{border:1px solid var(--line);border-radius:6px;padding:9px}.mock .k b{display:block;font-size:17px;color:var(--ink)}.mock .k small{color:var(--muted)}
+.mock table{width:100%;border-collapse:collapse}.mock th{text-align:left;color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:6px 4px;border-bottom:1px solid var(--line)}.mock td{padding:7px 4px;border-bottom:1px solid var(--line);color:var(--ink2)}
+.mock .tg{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10.5px;font-weight:600}.tg.g{background:#e6f4ec;color:#2f855a}.tg.b{background:var(--acc2);color:var(--acc)}.tg.y{background:#fdf3dc;color:#9a6700}
+.trust{border-bottom:1px solid var(--line);background:#fff}.trust .wrap{display:flex;gap:34px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:22px 24px;color:var(--muted);font-size:14px}.trust b{color:var(--ink2);font-weight:600}
+section{padding:88px 0}section.alt{background:var(--soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sh{max-width:760px;margin-bottom:40px}.sh p{color:var(--muted);font-size:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px}
+.card .n{font:600 13px Inter;color:var(--acc);margin-bottom:14px;letter-spacing:.08em}
 .card p{color:var(--muted);margin:0}
-.core{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.core div{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--bg);font-weight:600;font-size:15px}
-.core div small{display:block;font-weight:400;color:var(--muted);font-size:13px;margin-top:2px}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
-.tabs button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:9px 16px;font:600 14px 'Public Sans';cursor:pointer;color:var(--muted)}
-.tabs button.on{border-color:var(--ink);color:#fff;background:var(--ink)}
-.line{display:grid;grid-template-columns:.9fr 1.1fr;gap:20px;align-items:start}
-.mods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mod{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card)}
-.mod b{display:block;font-size:15px}.mod small{color:var(--muted);font-size:13px;display:block;line-height:1.45}
-.mod .sz{float:right;font-size:11px;font-weight:700;color:var(--acc);letter-spacing:.06em}
-.case{border-left:4px solid var(--warm);background:#fffaf0;border-radius:0 12px 12px 0;padding:14px 16px;font-size:15px}
-.case b{display:block;margin-bottom:4px}
-.size{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.size .card h3{display:flex;justify-content:space-between;align-items:baseline}.size .card h3 small{font:500 13px 'Public Sans';color:var(--muted)}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.chips span{background:var(--acc2);color:var(--acc);border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:600}
-.sec{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.sec .card b{display:block;margin-bottom:4px}
-form.ct{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-form.ct label{display:grid;gap:6px;font-size:14px;font-weight:600}
-form.ct input,form.ct select,form.ct textarea{font:inherit;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%}
-form.ct input:focus,form.ct select:focus,form.ct textarea:focus{outline:none;border-color:var(--acc)}
+.card.ic h3:before{content:'';display:block;width:34px;height:3px;background:var(--acc);margin-bottom:16px}
+.core{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.core div{padding:18px;background:#fff;font-weight:600;font-size:15px}
+.core div small{display:block;font-weight:400;color:var(--muted);font-size:13px;margin-top:3px}
+.tabs{display:flex;gap:0;flex-wrap:wrap;margin-bottom:26px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;border-bottom:2px solid transparent;background:none;padding:12px 18px;font:600 14.5px Inter;cursor:pointer;color:var(--muted);margin-bottom:-1px}
+.tabs button.on{border-color:var(--acc);color:var(--ink)}
+.line{display:grid;grid-template-columns:.85fr 1.15fr;gap:32px;align-items:start}
+.mods{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mod{border:1px solid var(--line);border-radius:6px;padding:13px 15px;background:var(--card)}
+.mod b{display:block;font-size:15px;font-weight:600}.mod small{color:var(--muted);font-size:13px;display:block;line-height:1.45}
+.mod .sz{float:right;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em}
+.case{border-left:3px solid var(--acc);background:#fff;border-radius:0 6px 6px 0;padding:16px 18px;font-size:15px;color:var(--ink2);border:1px solid var(--line);border-left-width:3px;border-left-color:var(--acc)}
+.case b{display:block;margin-bottom:4px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.size{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.size .card h3{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.size .card h3 small{font:500 13px Inter;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}.chips span{background:var(--soft);border:1px solid var(--line);color:var(--ink2);border-radius:4px;padding:3px 9px;font-size:12.5px;font-weight:500}
+.sec{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.sec .card b{display:block;margin-bottom:6px;font-size:16px}
+.ctgrid{display:grid;grid-template-columns:.8fr 1.2fr;gap:40px;align-items:start}
+.ctside{color:var(--muted)}.ctside ul{padding:0;margin:18px 0 0;list-style:none}.ctside li{padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink2)}.ctside li:before{content:'✓';color:var(--acc);font-weight:700;margin-right:10px}
+form.ct{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+form.ct label{display:grid;gap:6px;font-size:13.5px;font-weight:600;color:var(--ink2)}
+form.ct input,form.ct select,form.ct textarea{font:inherit;padding:11px 12px;border:1px solid #cfd6e0;border-radius:6px;background:#fff;color:var(--ink);width:100%}
+form.ct input:focus,form.ct select:focus,form.ct textarea:focus{outline:2px solid var(--acc2);border-color:var(--acc)}
 form.ct .full{grid-column:1/-1}form.ct .chk{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:13.5px;color:var(--muted)}form.ct .chk input{width:auto;margin-top:3px}
 .hp{position:absolute;left:-9999px}
-.msg{padding:12px 14px;border-radius:10px;font-weight:600}.msg.ok{background:#e6f4ec;color:var(--ok)}.msg.err{background:#fdecea;color:#b42318}
-footer{padding:40px 0 60px;color:var(--muted);font-size:14px}
-footer .row{display:flex;gap:20px;flex-wrap:wrap;align-items:center}
-dialog{max-width:640px;width:calc(100% - 32px);border:1px solid var(--line);border-radius:16px;padding:26px}dialog::backdrop{background:rgba(22,21,29,.45)}
+.msg{padding:10px 14px;border-radius:6px;font-weight:600;font-size:14px}.msg.ok{background:#e6f4ec;color:var(--ok)}.msg.err{background:#fdecea;color:#b42318}
+footer{background:var(--navy);color:#a9b4c6;padding:56px 0 30px;font-size:14px}
+footer .cols{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}footer h4{color:#fff;font:600 13px Inter;letter-spacing:.1em;text-transform:uppercase;margin:0 0 14px}
+footer a{display:block;color:#a9b4c6;text-decoration:none;padding:3px 0}footer a:hover{color:#fff}footer .logo{color:#fff;margin-bottom:12px}
+footer .base{margin-top:40px;padding-top:20px;border-top:1px solid #1e2f4f;display:flex;gap:20px;flex-wrap:wrap;font-size:13px}
+dialog{max-width:640px;width:calc(100% - 32px);border:1px solid var(--line);border-radius:10px;padding:28px}dialog::backdrop{background:rgba(11,24,48,.55)}
 dialog h3{margin-top:0}dialog p{font-size:14.5px;color:var(--muted)}
-@media(max-width:920px){nav.mn{display:none}.net,.line{grid-template-columns:1fr}.g3,.size,.sec{grid-template-columns:1fr}.g4,.core{grid-template-columns:1fr 1fr}.mods{grid-template-columns:1fr}}
-@media(max-width:560px){.g4,.core,.kpis{grid-template-columns:1fr}form.ct{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.arr{transform:rotate(90deg)}.hd{gap:10px}.login>button{font-size:14px}}
+@media(max-width:980px){nav.mn{display:none}.hero .grid,.line,.ctgrid{grid-template-columns:1fr}.g3,.size,.sec{grid-template-columns:1fr}.core{grid-template-columns:1fr 1fr}.mods{grid-template-columns:1fr}footer .cols{grid-template-columns:1fr 1fr}.topbar .hide{display:none}}
+@media(max-width:560px){.core{grid-template-columns:1fr}form.ct{grid-template-columns:1fr}.mock .in{grid-template-columns:1fr}.mock .side{display:none}.hd{gap:12px}footer .cols{grid-template-columns:1fr}.mock .k{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
+<div class="topbar"><div class="wrap"><span class="hide" data-t="tb1"></span><span class="hide" data-t="tb2"></span><span class="sp"></span><div class="lang" id="lang"><button data-l="de">DE</button><button data-l="tr">TR</button><button data-l="en">EN</button><button data-l="nl">NL</button></div></div></div>
 <header id="top"><div class="wrap hd">
-  <a class="logo" href="#"><i>B</i>B2B-Easy</a>
-  <nav class="mn"><a href="#how" data-t="nav1"></a><a href="#mod" data-t="nav2"></a><a href="#size" data-t="nav3"></a><a href="#contact" data-t="nav4"></a></nav>
+  <a class="logo" href="#"><i>B2</i>B2B-Easy</a>
+  <nav class="mn"><a href="#how" data-t="nav1"></a><a href="#mod" data-t="nav2"></a><a href="#size" data-t="nav3"></a><a href="#sec" data-t="nav5"></a></nav>
   <span class="sp"></span>
-  <div class="lang" id="lang"><button data-l="de">DE</button><button data-l="tr">TR</button><button data-l="en">EN</button><button data-l="nl">NL</button></div>
   <div class="login" id="login"><button type="button" data-t="login"></button><div class="dd"><span data-t="loginTxt"></span><a href="/console" data-t="loginCon"></a></div></div>
+  <a class="btn" href="#contact" data-t="cta1"></a>
 </div></header>
 
 <main>
-<div class="hero"><div class="wrap">
-  <span class="eb" data-t="eb"></span>
+<div class="hero"><div class="wrap grid">
+  <div><span class="eb" data-t="eb"></span>
   <h1 data-h="h1"></h1>
   <p class="lead" data-t="lead"></p>
-  <div class="cta"><a class="btn acc" href="#contact" data-t="cta1"></a><a class="btn ghost" href="#how" data-t="cta2"></a></div>
-  <div class="net">
-    <div class="panel"><div class="flow">
-      <div><div class="node"><b data-t="f1"></b><small data-t="f1s"></small></div><div class="node" style="margin-top:8px"><b data-t="f2"></b><small data-t="f2s"></small></div><div class="node" style="margin-top:8px"><b data-t="f3"></b><small data-t="f3s"></small></div></div>
-      <div class="arr">⟶</div>
-      <div class="node c"><b>B2B-Easy</b><small data-t="fc"></small></div>
-    </div></div>
-    <div class="kpis"><div class="kpi"><b>4</b><small data-t="k1"></small></div><div class="kpi"><b>8</b><small data-t="k2"></small></div><div class="kpi"><b>28</b><small data-t="k3"></small></div><div class="kpi"><b>4</b><small data-t="k4"></small></div></div>
-  </div>
+  <div class="cta"><a class="btn" href="#contact" data-t="cta1"></a><a class="btn ghost" href="#how" data-t="cta2"></a></div>
+  <div class="facts"><div><b>4</b><small data-t="k1"></small></div><div><b>8</b><small data-t="k2"></small></div><div><b>28</b><small data-t="k3"></small></div><div><b>4</b><small data-t="k4"></small></div></div></div>
+  <div class="mock" aria-hidden="true"><div class="bar"><i></i><i></i><i></i></div><div class="in">
+    <div class="side"><b>Partnerportal</b><span class="on">Dashboard</span><span>Partnernetz</span><span>Leads</span><span>Aufträge</span><span>Provision</span><span>Material</span><span>Einstellungen</span></div>
+    <div class="main"><div class="k"><div><b>128</b><small>Leads</small></div><div><b>46</b><small>Partner</small></div><div><b>312.400 €</b><small>Umsatz</small></div></div>
+    <table><thead><tr><th>Lead</th><th>Partner</th><th>Gebiet</th><th>Status</th></tr></thead><tbody>
+    <tr><td>L-2041</td><td>Freelancer · Gold</td><td>PLZ 71</td><td><span class="tg b">zugewiesen</span></td></tr>
+    <tr><td>L-2039</td><td>Fachpartner</td><td>PLZ 73</td><td><span class="tg y">Angebot</span></td></tr>
+    <tr><td>L-2036</td><td>Händler · Silver</td><td>PLZ 80</td><td><span class="tg g">Auftrag</span></td></tr>
+    <tr><td>L-2031</td><td>Tippgeber</td><td>PLZ 60</td><td><span class="tg g">Auftrag</span></td></tr>
+    <tr><td>L-2028</td><td>Freelancer · Bronze</td><td>PLZ 69</td><td><span class="tg y">Angebot</span></td></tr></tbody></table></div></div></div>
 </div></div>
+<div class="trust"><div class="wrap"><span><b data-t="tr1"></b></span><span><b data-t="tr2"></b></span><span><b data-t="tr3"></b></span><span><b data-t="tr4"></b></span></div></div>
 
 <section class="alt" id="why"><div class="wrap">
-  <div class="sh"><h2 data-t="whyH"></h2><p data-t="whyP"></p></div>
-  <div class="g3"><div class="card"><h3 data-t="w1"></h3><p data-t="w1p"></p></div><div class="card"><h3 data-t="w2"></h3><p data-t="w2p"></p></div><div class="card"><h3 data-t="w3"></h3><p data-t="w3p"></p></div></div>
+  <div class="sh"><span class="over" data-t="o1"></span><h2 data-t="whyH"></h2><p data-t="whyP"></p></div>
+  <div class="g3"><div class="card ic"><h3 data-t="w1"></h3><p data-t="w1p"></p></div><div class="card ic"><h3 data-t="w2"></h3><p data-t="w2p"></p></div><div class="card ic"><h3 data-t="w3"></h3><p data-t="w3p"></p></div></div>
 </div></section>
 
 <section id="how"><div class="wrap">
-  <div class="sh"><h2 data-t="howH"></h2><p data-t="howP"></p></div>
+  <div class="sh"><span class="over" data-t="o2"></span><h2 data-t="howH"></h2><p data-t="howP"></p></div>
   <div class="g3"><div class="card"><div class="n">01</div><h3 data-t="s1"></h3><p data-t="s1p"></p></div><div class="card"><div class="n">02</div><h3 data-t="s2"></h3><p data-t="s2p"></p></div><div class="card"><div class="n">03</div><h3 data-t="s3"></h3><p data-t="s3p"></p></div></div>
   <h3 style="margin:44px 0 14px" data-t="coreH"></h3>
   <div class="core" id="core"></div>
 </div></section>
 
 <section class="alt" id="mod"><div class="wrap">
-  <div class="sh"><h2 data-t="modH"></h2><p data-t="modP"></p></div>
+  <div class="sh"><span class="over" data-t="o3"></span><h2 data-t="modH"></h2><p data-t="modP"></p></div>
   <div class="tabs" id="tabs"></div>
   <div class="line"><div id="lineTxt"></div><div class="mods" id="mods"></div></div>
 </div></section>
 
 <section id="size"><div class="wrap">
-  <div class="sh"><h2 data-t="sizeH"></h2><p data-t="sizeP"></p></div>
+  <div class="sh"><span class="over" data-t="o4"></span><h2 data-t="sizeH"></h2><p data-t="sizeP"></p></div>
   <div class="size" id="sizes"></div>
 </div></section>
 
-<section class="alt"><div class="wrap">
-  <div class="sh"><h2 data-t="secH"></h2></div>
+<section class="alt" id="sec"><div class="wrap">
+  <div class="sh"><span class="over" data-t="o5"></span><h2 data-t="secH"></h2></div>
   <div class="sec"><div class="card"><b data-t="x1"></b><p data-t="x1p"></p></div><div class="card"><b data-t="x2"></b><p data-t="x2p"></p></div><div class="card"><b data-t="x3"></b><p data-t="x3p"></p></div><div class="card"><b data-t="x4"></b><p data-t="x4p"></p></div><div class="card"><b data-t="x5"></b><p data-t="x5p"></p></div><div class="card"><b data-t="x6"></b><p data-t="x6p"></p></div></div>
 </div></section>
 
-<section id="contact"><div class="wrap" style="max-width:820px">
-  <div class="sh"><h2 data-t="ctH"></h2><p data-t="ctP"></p></div>
+<section id="contact" class="alt"><div class="wrap ctgrid">
+  <div class="ctside"><span class="over" data-t="o6"></span><h2 data-t="ctH"></h2><p data-t="ctP"></p><ul><li data-t="cl1"></li><li data-t="cl2"></li><li data-t="cl3"></li></ul></div>
   <form class="ct card" id="ct" novalidate>
     <label><span data-t="fn"></span><input name="name" required autocomplete="name"></label>
     <label><span data-t="ff"></span><input name="firma" autocomplete="organization"></label>
@@ -148,7 +162,12 @@ dialog h3{margin-top:0}dialog p{font-size:14.5px;color:var(--muted)}
 </div></section>
 </main>
 
-<footer><div class="wrap row"><b style="color:var(--ink)">B2B-Easy</b><span data-t="ftBy"></span><span class="sp"></span><a href="#" data-dlg="imp" data-t="imp"></a><a href="#" data-dlg="ds" data-t="ds"></a><a href="/console" data-t="loginCon"></a></div></footer>
+<footer><div class="wrap"><div class="cols">
+  <div><a class="logo" href="#"><i>B2</i>B2B-Easy</a><p data-t="ftAbout"></p></div>
+  <div><h4 data-t="ftP"></h4><a href="#how" data-t="nav1"></a><a href="#mod" data-t="nav2"></a><a href="#size" data-t="nav3"></a><a href="#sec" data-t="nav5"></a></div>
+  <div><h4 data-t="ftC"></h4><a href="#contact" data-t="cta1"></a><a href="/console" data-t="loginCon"></a></div>
+  <div><h4 data-t="ftL"></h4><a href="#" data-dlg="imp" data-t="imp"></a><a href="#" data-dlg="ds" data-t="ds"></a></div>
+</div><div class="base"><span>© 2026 TechNS UG (haftungsbeschränkt)</span><span data-t="ftBy"></span></div></div></footer>
 
 <dialog id="imp"><h3 data-t="imp"></h3>
 <p><b>TechNS UG (haftungsbeschränkt)</b><br>61440 Oberursel (Taunus)<br>Registergericht: Amtsgericht Bad Homburg v. d. Höhe, HRB 16236<br>USt-IdNr.: DE312006599<br><span data-t="impGf"></span></p>
@@ -158,10 +177,10 @@ dialog h3{margin-top:0}dialog p{font-size:14.5px;color:var(--muted)}
 <script>
 (function(){
 var T={
-de:{nav1:'So funktioniert’s',nav2:'Module',nav3:'Für wen',nav4:'Kontakt',login:'Anmelden',loginTxt:'Partner und Mitarbeiter melden sich über den Link ihres Unternehmens an – z. B. ihr-unternehmen.de/partner.',loginCon:'TechNS Console',
-eb:'Partnerportal · White-Label · modular',h1:'Ihr Vertriebsnetz.<br><em>Ein Portal.</em>',lead:'B2B-Easy bündelt Tippgeber, Freelancer, Fachpartner und Händler in einem Portal – mit Leads, Provision, Material und Bestellungen. Der Kern passt für jede Firma, Branchenmodule kommen dazu, wenn Sie sie brauchen.',cta1:'Demo anfragen',cta2:'So funktioniert’s',
+de:{tb1:'Partnerportal-Software für den B2B-Vertrieb',tb2:'Entwickelt und betrieben von TechNS UG, Oberursel',nav5:'Sicherheit',o1:'Herausforderung',o2:'Einführung',o3:'Module',o4:'Unternehmensgröße',o5:'Sicherheit & Betrieb',o6:'Kontakt',tr1:'White-Label unter Ihrer Domain',tr2:'Rollen- und Rechtekonzept',tr3:'Mehrsprachig: DE · TR · EN · NL',tr4:'Mehrere Gesellschaften in einem Portal',cl1:'Persönliche Vorstellung, online',cl2:'Module passend zu Branche und Größe',cl3:'Einrichtung durch unser Team',ftAbout:'Software für Unternehmen, die über Partner, Freelancer und Händler verkaufen.',ftP:'Produkt',ftC:'Kontakt',ftL:'Rechtliches',nav1:'So funktioniert’s',nav2:'Module',nav3:'Für wen',nav4:'Kontakt',login:'Anmelden',loginTxt:'Partner und Mitarbeiter melden sich über den Link ihres Unternehmens an – z. B. ihr-unternehmen.de/partner.',loginCon:'TechNS Console',
+eb:'Partnerportal · White-Label · modular',h1:'Das Partnerportal für Ihren <em>indirekten Vertrieb</em>',lead:'B2B-Easy bündelt Tippgeber, Freelancer, Fachpartner und Händler in einem Portal – mit Leads, Provision, Material und Bestellungen. Der Kern passt für jede Firma, Branchenmodule kommen dazu, wenn Sie sie brauchen.',cta1:'Demo anfragen',cta2:'So funktioniert’s',
 f1:'Tippgeber',f1s:'melden Kontakte',f2:'Freelancer',f2s:'verkaufen auf Provision',f3:'Fachpartner & Händler',f3s:'bestellen, montieren, vermieten',fc:'Leads · Provision · Material · Aufträge',k1:'Partnertypen mit eigenem Eingang',k2:'Kernmodule für jede Firma',k3:'zuschaltbare Module',k4:'Sprachen: DE · TR · EN · NL',
-whyH:'Schluss mit Excel, WhatsApp und Zurufen',whyP:'Wer über Partner verkauft, verliert Zeit an Listen, Nachfragen und Provisionsabrechnungen. B2B-Easy macht daraus einen Ablauf.',
+whyH:'Partnervertrieb ohne Medienbrüche',whyP:'Wer über Partner verkauft, verliert Zeit an Listen, Nachfragen und Provisionsabrechnungen. B2B-Easy macht daraus einen Ablauf.',
 w1:'Jeder Lead hat ein Zuhause',w1p:'Leads kommen über Referenzcodes und Partner-Eingänge, werden nach Gebiet verteilt und bis zum Auftrag verfolgt.',w2:'Provision ohne Diskussion',w2p:'Verträge, Stufen und Vergütung sind hinterlegt. Partner sehen ihre Abrechnung selbst.',w3:'Ihre Marke, Ihre Adresse',w3p:'Das Portal läuft unter Ihrem Namen und Ihrer Domain – für Partner, Team und Kunden.',
 howH:'In drei Schritten startklar',howP:'Wir richten B2B-Easy für Sie ein. Sie entscheiden, welche Module Ihr Team und Ihre Partner sehen.',
 s1:'Kern einrichten',s1p:'Firmendaten, Marke, Team und Rollen. Der Kern ist bei jedem Paket dabei.',s2:'Partner einladen',s2p:'Jeder Partnertyp bekommt seinen eigenen Eingang mit Zugangsdaten – Sie behalten die Kontrolle.',s3:'Module zuschalten',s3p:'Nach Branche und Firmengröße: Bestellungen, Montage, Mietkalender, Abrechnung – jederzeit an- und abschaltbar.',
@@ -173,10 +192,10 @@ ctH:'Demo anfragen',ctP:'Sagen Sie uns kurz, wie Sie verkaufen. Wir zeigen Ihnen
 ftBy:'ein Produkt der TechNS UG',imp:'Impressum',impGf:'Vertreten durch den Geschäftsführer',impNote:'Angaben gemäß § 5 DDG.',ds:'Datenschutz',ds1:'Diese Seite setzt keine Tracking- oder Werbe-Cookies. Schriften werden von Google Fonts geladen.',ds2:'Anfragen über das Formular (Name, Firma, E-Mail, Branche, Größe, Nachricht) speichern wir ausschließlich zur Bearbeitung Ihrer Anfrage. Sie können die Löschung jederzeit verlangen.',ds3:'Verantwortlich: TechNS UG (haftungsbeschränkt), Oberursel.',
 lines:{base:['Basis','für jede Branche','Preise, Angebote, Kundenschutz, Gebiete, Partnerprogramm und Abrechnung – das Fundament für jedes Vertriebsnetz.',''],trade:['Handel & Produktion','Hersteller mit Händlernetz','Händler bestellen zu ihren Konditionen, sehen Lieferzeiten und melden Reklamationen direkt im Portal.','Ein Hersteller von Containern und Zelten steuert Freelancer, Händler und Distributoren in mehreren Ländern über ein Portal.'],mont:['Montage & Handwerk','Fenster, Fassade, Ausbau','Montagetermine, Teams und Projekte – vom Lead über das Angebot bis zur abgenommenen Montage.','Ein Fensterhersteller vergibt Montagen an Partnerbetriebe und sieht jeden Termin im Kalender.'],rent:['Vermietung & Maschinen','Arbeitsbühnen, Stapler, Baumaschinen','Mietkalender mit Fahrer-Disposition, Prüffristen mit automatischer Sperre, Telematik, Firmenkunden mit Rahmenvertrag, Schulungen und Abrechnung.','Ein Arbeitsbühnen-Vermieter mit vier Gesellschaften: stundengenaue Buchung, abgelaufene UVV-Prüfung sperrt das Gerät, Fremdanmietung aus der Historie.'],mkt:['Marketing & Sichtbarkeit','für alle mit Standorten','Partner-Websites, Bewertungen und Standortseiten bringen Anfragen direkt ins Portal.','']},
 sizes:[['Klein','bis 20 Mitarbeiter','Schnell starten mit Angeboten, Abrechnung und den Kernmodulen Ihrer Branche.'],['Mittel','20–250 Mitarbeiter','Mehr Partner, mehrere Standorte: Konditionen, Gebiete, Performance und Kreditlimits.'],['Groß','über 250 / Gruppe','Gesellschaften, Kapazitätsbörse, Telematik, Firmenkunden und Auswertungen über alle Einheiten.']],sizeAll:'Empfohlen'},
-tr:{nav1:'Nasıl çalışır',nav2:'Modüller',nav3:'Kimler için',nav4:'İletişim',login:'Giriş',loginTxt:'Partnerler ve çalışanlar kendi firmalarının bağlantısıyla giriş yapar – örn. firmaniz.de/partner.',loginCon:'TechNS Console',
-eb:'Partner portalı · White-Label · modüler',h1:'Satış ağınız.<br><em>Tek portal.</em>',lead:'B2B-Easy; referans verenleri, serbest satışçıları, uzman partnerleri ve bayileri tek portalda toplar – lead, provizyon, materyal ve siparişlerle. Çekirdek her firmaya uyar, sektör modüllerini ihtiyaç oldukça eklersiniz.',cta1:'Demo talep et',cta2:'Nasıl çalışır',
+tr:{tb1:'B2B satış için partner portalı yazılımı',tb2:'TechNS UG, Oberursel tarafından geliştirilir ve işletilir',nav5:'Güvenlik',o1:'Sorun',o2:'Kurulum',o3:'Modüller',o4:'Firma büyüklüğü',o5:'Güvenlik & işletim',o6:'İletişim',tr1:'Kendi alan adınızda white-label',tr2:'Rol ve yetki konsepti',tr3:'Çok dilli: DE · TR · EN · NL',tr4:'Birden çok şirket tek portalda',cl1:'Online kişisel tanıtım',cl2:'Sektör ve büyüklüğe uygun modüller',cl3:'Kurulumu ekibimiz yapar',ftAbout:'Partner, freelancer ve bayilerle satış yapan firmalar için yazılım.',ftP:'Ürün',ftC:'İletişim',ftL:'Yasal',nav1:'Nasıl çalışır',nav2:'Modüller',nav3:'Kimler için',nav4:'İletişim',login:'Giriş',loginTxt:'Partnerler ve çalışanlar kendi firmalarının bağlantısıyla giriş yapar – örn. firmaniz.de/partner.',loginCon:'TechNS Console',
+eb:'Partner portalı · White-Label · modüler',h1:'<em>Dolaylı satışınız</em> için partner portalı',lead:'B2B-Easy; referans verenleri, serbest satışçıları, uzman partnerleri ve bayileri tek portalda toplar – lead, provizyon, materyal ve siparişlerle. Çekirdek her firmaya uyar, sektör modüllerini ihtiyaç oldukça eklersiniz.',cta1:'Demo talep et',cta2:'Nasıl çalışır',
 f1:'Referans verenler',f1s:'kontak bildirir',f2:'Freelancer',f2s:'provizyonla satar',f3:'Partner & bayiler',f3s:'sipariş, montaj, kiralama',fc:'Lead · Provizyon · Materyal · Sipariş',k1:'kendi girişi olan partner tipi',k2:'her firma için çekirdek modül',k3:'eklenebilir modül',k4:'dil: DE · TR · EN · NL',
-whyH:'Excel, WhatsApp ve telefonla takip bitsin',whyP:'Partnerle satış yapan firmalar listelere, sorulara ve provizyon hesaplarına zaman kaybeder. B2B-Easy bunu tek bir akışa çevirir.',
+whyH:'Kopuk araçlar olmadan partner satışı',whyP:'Partnerle satış yapan firmalar listelere, sorulara ve provizyon hesaplarına zaman kaybeder. B2B-Easy bunu tek bir akışa çevirir.',
 w1:'Her lead’in bir yeri var',w1p:'Lead’ler referans kodları ve partner girişleriyle gelir, bölgeye göre dağıtılır ve siparişe kadar izlenir.',w2:'Tartışmasız provizyon',w2p:'Sözleşmeler, seviyeler ve ücretler tanımlı. Partner kendi hesap dökümünü görür.',w3:'Sizin markanız, sizin adresiniz',w3p:'Portal sizin adınız ve alan adınızla çalışır – partner, ekip ve müşteriler için.',
 howH:'Üç adımda hazır',howP:'B2B-Easy’yi sizin için kuruyoruz. Ekibinizin ve partnerlerinizin hangi modülleri göreceğine siz karar verirsiniz.',
 s1:'Çekirdeği kur',s1p:'Firma bilgileri, marka, ekip ve roller. Çekirdek her pakette var.',s2:'Partnerleri davet et',s2p:'Her partner tipi kendi girişini ve erişim bilgilerini alır – kontrol sizde kalır.',s3:'Modülleri aç',s3p:'Sektöre ve firma büyüklüğüne göre: sipariş, montaj, kiralama takvimi, faturalama – istediğiniz an açıp kapatın.',
@@ -188,10 +207,10 @@ ctH:'Demo talep edin',ctP:'Nasıl sattığınızı kısaca yazın. Size uygun mo
 ftBy:'TechNS UG ürünüdür',imp:'Künye',impGf:'Temsilen: Genel Müdür',impNote:'§ 5 DDG uyarınca bilgiler.',ds:'Gizlilik',ds1:'Bu sayfa takip veya reklam çerezi kullanmaz. Yazı tipleri Google Fonts’tan yüklenir.',ds2:'Form üzerinden gelen bilgileri (ad, firma, e-posta, sektör, büyüklük, mesaj) sadece talebinizi işlemek için saklarız. Silinmesini her zaman isteyebilirsiniz.',ds3:'Sorumlu: TechNS UG (haftungsbeschränkt), Oberursel.',
 lines:{base:['Temel','her sektör için','Fiyatlar, teklifler, müşteri koruması, bölgeler, partner programı ve faturalama – her satış ağının temeli.',''],trade:['Ticaret & üretim','bayi ağı olan üreticiler','Bayiler kendi koşullarıyla sipariş verir, teslim sürelerini görür, reklamasyonları portaldan bildirir.','Konteyner ve çadır üreten bir firma, birkaç ülkedeki freelancer, bayi ve distribütörlerini tek portaldan yönetiyor.'],mont:['Montaj & zanaat','pencere, cephe, iç yapı','Montaj randevuları, ekipler ve projeler – lead’den tekliften teslim edilen montaja kadar.','Bir pencere üreticisi montajları partner firmalara veriyor ve her randevuyu takvimde görüyor.'],rent:['Kiralama & makine','platform, forklift, iş makinesi','Şoför dispozisyonlu kiralama takvimi, otomatik kilitli muayene takibi, telematik, çerçeve anlaşmalı kurumsal müşteriler, eğitim ve faturalama.','Dört şirketli bir platform kiralama firması: saatlik rezervasyon, süresi geçen UVV muayenesi makineyi kilitler, geçmişten dış kiralama.'],mkt:['Pazarlama & görünürlük','şubesi olan herkes için','Partner siteleri, yorumlar ve şube sayfaları talepleri doğrudan portala getirir.','']},
 sizes:[['Küçük','20 kişiye kadar','Teklif, faturalama ve sektörünüzün temel modülleriyle hızlı başlangıç.'],['Orta','20–250 kişi','Daha çok partner, birden fazla şube: koşullar, bölgeler, performans, kredi limitleri.'],['Büyük','250+ / grup','Şirketler, kapasite borsası, telematik, kurumsal müşteriler ve tüm birimlerde raporlama.']],sizeAll:'Önerilen'},
-en:{nav1:'How it works',nav2:'Modules',nav3:'Who it’s for',nav4:'Contact',login:'Log in',loginTxt:'Partners and staff log in via their company’s link – e.g. your-company.com/partner.',loginCon:'TechNS Console',
-eb:'Partner portal · white label · modular',h1:'Your sales network.<br><em>One portal.</em>',lead:'B2B-Easy brings referrers, freelancers, specialist partners and dealers into one portal – with leads, commission, assets and orders. The core fits every company; add industry modules when you need them.',cta1:'Request a demo',cta2:'How it works',
+en:{tb1:'Partner portal software for B2B sales',tb2:'Developed and operated by TechNS UG, Oberursel, Germany',nav5:'Security',o1:'The challenge',o2:'Onboarding',o3:'Modules',o4:'Company size',o5:'Security & operations',o6:'Contact',tr1:'White label on your domain',tr2:'Roles and permissions',tr3:'Multilingual: DE · TR · EN · NL',tr4:'Several companies in one portal',cl1:'Personal online walkthrough',cl2:'Modules matched to industry and size',cl3:'Set up by our team',ftAbout:'Software for companies that sell through partners, freelancers and dealers.',ftP:'Product',ftC:'Contact',ftL:'Legal',nav1:'How it works',nav2:'Modules',nav3:'Who it’s for',nav4:'Contact',login:'Log in',loginTxt:'Partners and staff log in via their company’s link – e.g. your-company.com/partner.',loginCon:'TechNS Console',
+eb:'Partner portal · white label · modular',h1:'The partner portal for your <em>indirect sales</em>',lead:'B2B-Easy brings referrers, freelancers, specialist partners and dealers into one portal – with leads, commission, assets and orders. The core fits every company; add industry modules when you need them.',cta1:'Request a demo',cta2:'How it works',
 f1:'Referrers',f1s:'submit contacts',f2:'Freelancers',f2s:'sell on commission',f3:'Partners & dealers',f3s:'order, install, rent',fc:'Leads · Commission · Assets · Orders',k1:'partner types with their own entrance',k2:'core modules for every company',k3:'optional modules',k4:'languages: DE · TR · EN · NL',
-whyH:'No more spreadsheets, chats and phone calls',whyP:'Selling through partners eats time in lists, follow-ups and commission statements. B2B-Easy turns it into one flow.',
+whyH:'Partner sales without disconnected tools',whyP:'Selling through partners eats time in lists, follow-ups and commission statements. B2B-Easy turns it into one flow.',
 w1:'Every lead has a home',w1p:'Leads arrive via referral codes and partner entrances, are routed by territory and tracked to the order.',w2:'Commission without debate',w2p:'Contracts, tiers and payouts are defined. Partners see their own statement.',w3:'Your brand, your address',w3p:'The portal runs under your name and domain – for partners, team and customers.',
 howH:'Ready in three steps',howP:'We set up B2B-Easy for you. You decide which modules your team and partners see.',
 s1:'Set up the core',s1p:'Company data, brand, team and roles. The core is part of every package.',s2:'Invite partners',s2p:'Each partner type gets its own entrance and credentials – you stay in control.',s3:'Switch on modules',s3p:'By industry and size: orders, installation, rental calendar, billing – on and off at any time.',
@@ -203,10 +222,10 @@ ctH:'Request a demo',ctP:'Tell us briefly how you sell. We’ll show you B2B-Eas
 ftBy:'a product of TechNS UG',imp:'Legal notice',impGf:'Represented by the managing director',impNote:'Information pursuant to § 5 DDG.',ds:'Privacy',ds1:'This page sets no tracking or advertising cookies. Fonts are loaded from Google Fonts.',ds2:'Details sent via the form (name, company, email, industry, size, message) are stored only to handle your request. You can ask for deletion at any time.',ds3:'Controller: TechNS UG (haftungsbeschränkt), Oberursel, Germany.',
 lines:{base:['Base','every industry','Prices, quotes, customer protection, territories, partner programme and billing – the foundation of every sales network.',''],trade:['Trade & manufacturing','manufacturers with dealers','Dealers order at their terms, see lead times and report returns in the portal.','A container and tent manufacturer runs freelancers, dealers and distributors in several countries from one portal.'],mont:['Installation & trades','windows, façades, fit-out','Installation slots, teams and projects – from lead and quote to the accepted installation.','A window manufacturer assigns installations to partner firms and sees every slot in the calendar.'],rent:['Rental & machinery','platforms, telehandlers, plant','Rental calendar with driver dispatch, inspection deadlines with automatic lock, telematics, corporate customers, training and billing.','A platform rental company with four subsidiaries: hourly booking, an expired inspection locks the machine, sub-rental from history.'],mkt:['Marketing & visibility','for anyone with locations','Partner sites, reviews and location pages bring enquiries straight into the portal.','']},
 sizes:[['Small','up to 20 staff','Start fast with quotes, billing and your industry’s core modules.'],['Medium','20–250 staff','More partners, several sites: terms, territories, performance and credit limits.'],['Large','250+ / group','Subsidiaries, capacity exchange, telematics, corporate customers and group reporting.']],sizeAll:'Recommended'},
-nl:{nav1:'Zo werkt het',nav2:'Modules',nav3:'Voor wie',nav4:'Contact',login:'Inloggen',loginTxt:'Partners en medewerkers loggen in via de link van hun bedrijf – bijv. uw-bedrijf.nl/partner.',loginCon:'TechNS Console',
-eb:'Partnerportaal · white label · modulair',h1:'Uw verkoopnetwerk.<br><em>Eén portaal.</em>',lead:'B2B-Easy brengt aanbrengers, freelancers, vakpartners en dealers samen in één portaal – met leads, provisie, materiaal en bestellingen. De kern past bij elk bedrijf; branchemodules voegt u toe wanneer u ze nodig hebt.',cta1:'Demo aanvragen',cta2:'Zo werkt het',
+nl:{tb1:'Partnerportaalsoftware voor B2B-verkoop',tb2:'Ontwikkeld en beheerd door TechNS UG, Oberursel',nav5:'Beveiliging',o1:'De uitdaging',o2:'Invoering',o3:'Modules',o4:'Bedrijfsgrootte',o5:'Beveiliging & beheer',o6:'Contact',tr1:'White label op uw domein',tr2:'Rollen- en rechtenconcept',tr3:'Meertalig: DE · TR · EN · NL',tr4:'Meerdere bedrijven in één portaal',cl1:'Persoonlijke online presentatie',cl2:'Modules passend bij branche en grootte',cl3:'Inrichting door ons team',ftAbout:'Software voor bedrijven die via partners, freelancers en dealers verkopen.',ftP:'Product',ftC:'Contact',ftL:'Juridisch',nav1:'Zo werkt het',nav2:'Modules',nav3:'Voor wie',nav4:'Contact',login:'Inloggen',loginTxt:'Partners en medewerkers loggen in via de link van hun bedrijf – bijv. uw-bedrijf.nl/partner.',loginCon:'TechNS Console',
+eb:'Partnerportaal · white label · modulair',h1:'Het partnerportaal voor uw <em>indirecte verkoop</em>',lead:'B2B-Easy brengt aanbrengers, freelancers, vakpartners en dealers samen in één portaal – met leads, provisie, materiaal en bestellingen. De kern past bij elk bedrijf; branchemodules voegt u toe wanneer u ze nodig hebt.',cta1:'Demo aanvragen',cta2:'Zo werkt het',
 f1:'Aanbrengers',f1s:'melden contacten',f2:'Freelancers',f2s:'verkopen op provisie',f3:'Partners & dealers',f3s:'bestellen, monteren, verhuren',fc:'Leads · Provisie · Materiaal · Orders',k1:'partnertypes met eigen ingang',k2:'kernmodules voor elk bedrijf',k3:'optionele modules',k4:'talen: DE · TR · EN · NL',
-whyH:'Weg met Excel, WhatsApp en telefoontjes',whyP:'Wie via partners verkoopt, verliest tijd aan lijsten, navragen en provisieafrekeningen. B2B-Easy maakt er één proces van.',
+whyH:'Partnerverkoop zonder losse systemen',whyP:'Wie via partners verkoopt, verliest tijd aan lijsten, navragen en provisieafrekeningen. B2B-Easy maakt er één proces van.',
 w1:'Elke lead heeft een plek',w1p:'Leads komen via referentiecodes en partneringangen, worden per gebied verdeeld en gevolgd tot de order.',w2:'Provisie zonder discussie',w2p:'Contracten, niveaus en vergoedingen liggen vast. Partners zien hun eigen afrekening.',w3:'Uw merk, uw adres',w3p:'Het portaal draait onder uw naam en domein – voor partners, team en klanten.',
 howH:'In drie stappen klaar',howP:'Wij richten B2B-Easy voor u in. U bepaalt welke modules uw team en partners zien.',
 s1:'Kern inrichten',s1p:'Bedrijfsgegevens, merk, team en rollen. De kern zit in elk pakket.',s2:'Partners uitnodigen',s2p:'Elk partnertype krijgt een eigen ingang en inloggegevens – u houdt de controle.',s3:'Modules aanzetten',s3p:'Per branche en grootte: orders, montage, huurkalender, facturatie – altijd aan en uit te zetten.',
