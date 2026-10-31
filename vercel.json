@@ -1,11 +1,26 @@
 {
   "cleanUrls": true,
   "redirects": [
-    { "source": "/zentrale", "destination": "/aydemir", "permanent": true },
-    { "source": "/:door(partner|freelancer|leadgen|distributor)", "destination": "/aydemir/partner", "permanent": true }
+    {
+      "source": "/zentrale",
+      "destination": "/aydemir",
+      "permanent": true
+    },
+    {
+      "source": "/:door(partner|freelancer|leadgen|distributor)",
+      "destination": "/aydemir/partner",
+      "permanent": true
+    }
   ],
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/" }
+    {
+      "source": "/((?!api/).+)",
+      "destination": "/app"
+    }
   ],
-  "functions": { "api/gate.js": { "maxDuration": 10 } }
+  "functions": {
+    "api/gate.js": {
+      "maxDuration": 10
+    }
+  }
 }

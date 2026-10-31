@@ -182,6 +182,27 @@ async function main(req, res) {
   const SUSP = { ok: false, error: 'suspended' };
   if (['plogin', 'tlogin', 'tpass'].includes(action) || (action && (action.startsWith('team_') || action.startsWith('pcreds_')))) { if (await isSusp(T)) return res.status(403).json(SUSP); }
 
+  // Website-Anfragen (Startseite): öffentlich schreiben, nur TechNS-Konsole liest
+  if (action === 'contact') {
+    const s = v => String(v || '').replace(/[\u0000-\u001f]/g, ' ').trim();
+    if (s(body.hp)) return res.status(200).json({ ok: true });            // Honeypot
+    const name = s(body.name).slice(0, 80), firma = s(body.firma).slice(0, 120), email = s(body.email).slice(0, 120), msg = s(body.msg).slice(0, 1500);
+    const branche = s(body.branche).slice(0, 40), groesse = s(body.groesse).slice(0, 10), lang = s(body.lang).slice(0, 2);
+    if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || body.consent !== true) return res.status(400).json({ ok: false, error: 'input' });
+    const P = 'gate/techns/contacts.json'; const L = (await loadJson(P)) || [];
+    if (L.filter(x => x.at > Date.now() - 3600e3).length > 30) return res.status(429).json({ ok: false, error: 'rate' });
+    L.unshift({ id: 'W-' + Date.now().toString(36).toUpperCase(), at: Date.now(), name, firma, email, branche, groesse, msg, lang, st: 'neu' });
+    await saveJson(P, L.slice(0, 500));
+    return res.status(200).json({ ok: true });
+  }
+  if (action === 'contact_list' || action === 'contact_set') {
+    const d = verifyToken(body.token);
+    if (!d || d.sub !== 'master') return res.status(403).json({ ok: false, error: 'forbidden' });
+    const P = 'gate/techns/contacts.json'; const L = (await loadJson(P)) || [];
+    if (action === 'contact_set') { const x = L.find(v => v.id === body.id); if (x) { x.st = ['neu', 'kontaktiert', 'erledigt'].includes(body.st) ? body.st : x.st; await saveJson(P, L); } }
+    return res.status(200).json({ ok: true, list: L });
+  }
+
   if (action === 'tenant_status_list' || action === 'tenant_status_set') {
     const d = verifyToken(body.token);
     if (!d || d.sub !== 'master') return res.status(403).json({ ok: false, error: 'forbidden' });
