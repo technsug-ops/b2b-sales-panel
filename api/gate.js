@@ -55,13 +55,14 @@ const BUILTIN_ROLES = [
   { key: 'buchhaltung', name: 'Buchhaltung', perms: ['acct'], builtin: true },
 ];
 // Laggner: Rollen für Vermietung (Büro, Disposition, Werkstatt, Fahrer, Außendienst, Marketing, Web-Admin)
-const LAGGNER_ROLES = [{"key": "buero", "name": "Büro / Innendienst", "perms": ["leads", "orders", "rent", "acct", "dam"], "builtin": true}, {"key": "vermietung", "name": "Vermietung / Disposition", "perms": ["rent", "leads", "orders", "drive", "garage"], "builtin": true}, {"key": "werkstatt", "name": "Werkstatt / Garage", "perms": ["garage", "drive"], "builtin": true}, {"key": "fahrer", "name": "Fahrer", "perms": ["drive"], "builtin": true}, {"key": "aussendienst", "name": "Außendienst / Vertrieb", "perms": ["leads", "partners", "rent"], "builtin": true}, {"key": "marketing", "name": "Marketing", "perms": ["dam", "web", "leads"], "builtin": true}, {"key": "webadmin", "name": "Web-Admin", "perms": ["web", "settings", "dam"], "builtin": true}];
+const LAGGNER_ROLES = [{"key": "buero", "name": "Büro / Innendienst & Disposition", "perms": ["leads", "orders", "rent", "acct", "dam", "drive", "garage"], "builtin": true}, {"key": "vermietung", "name": "Vermietung / Mietberatung", "perms": ["rent", "leads", "orders"], "builtin": true}, {"key": "werkstatt", "name": "Werkstatt / Garage", "perms": ["garage", "drive"], "builtin": true}, {"key": "fahrer", "name": "Fahrer", "perms": ["drive"], "builtin": true}, {"key": "aussendienst", "name": "Außendienst / Vertrieb", "perms": ["leads", "partners", "rent"], "builtin": true}, {"key": "marketing", "name": "Marketing", "perms": ["dam", "web", "leads"], "builtin": true}, {"key": "webadmin", "name": "Web-Admin", "perms": ["web", "settings", "dam"], "builtin": true}];
 async function loadRoles(T = 'aydemir') {
   const RP = pth(T, 'roles');
   let r = await loadJson(RP);
   if (!r) { r = BUILTIN_ROLES.map(x => ({ ...x, fixMa: true, migratedProjects: true })); await saveJson(RP, r); }
   let changed = false;
   for (const b of BUILTIN_ROLES) if (!r.some(x => x.key === b.key)) { r.push({ ...b, fixMa: true, migratedProjects: true, migratedInstall: true }); changed = true; }
+  if (T === 'laggner') for (const b of LAGGNER_ROLES) { const x = r.find(y => y.key === b.key); if (x && (b.key === 'buero' || b.key === 'vermietung') && !x.lag2) { x.name = b.name; x.perms = b.perms.slice(); x.lag2 = true; changed = true; } }
   if (T === 'laggner') for (const b of LAGGNER_ROLES) if (!r.some(x => x.key === b.key)) { r.push({ ...b, fixMa: true, migratedProjects: true, migratedInstall: true }); changed = true; }
   for (const x of r) if (!x.migratedInstall) { if (x.perms.includes('orders') && !x.perms.includes('install')) x.perms.push('install'); x.migratedInstall = true; changed = true; }
   for (const x of r) { if (x.key === 'gf' && x.perms.length !== PERMS.length) { x.perms = PERMS.slice(); changed = true; } if (x.key === 'mitarbeiter' && !x.fixMa) { x.perms = x.perms.filter(p => p !== 'projects'); x.fixMa = true; changed = true; }
@@ -110,6 +111,7 @@ async function loadTeam(T = 'aydemir') {
   if (T === 'aydemir' && !t.some(x => x.user === 'personal')) { const x = SEED_TEAM[4]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
   if (T === 'ug-alu' && !t.some(x => x.user === 'buchhaltung')) { const x = SEEDS['ug-alu'][3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
   if (T === 'laggner') for (const x of t) if (!x.lagRole && ((x.user === 'disposition' && x.role === 'staff') || (x.user === 'fahrer' && x.role === 'monteur'))) { x.role = x.user === 'fahrer' ? 'fahrer' : 'vermietung'; x.lagRole = true; tc = true; }
+  if (T === 'laggner') for (const x of t) if (x.user === 'disposition' && x.role === 'vermietung' && !x.lag2) { x.role = 'buero'; x.lag2 = true; tc = true; }
   if (tc) await saveJson(TP, t);
   if (T === 'aydemir' && !t.some(x => x.user === 'mehmet')) { const x = SEED_TEAM[3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); await saveJson(TP, t); }
   return t;
