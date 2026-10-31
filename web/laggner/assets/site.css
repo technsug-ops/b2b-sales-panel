@@ -132,3 +132,7 @@ input:invalid.touched,select:invalid.touched{border-color:#c0392b}
 .legal h2{font-size:20px;margin-top:22px}
 @media(max-width:900px){.ftr-grid{grid-template-columns:1fr 1fr}}@media(max-width:520px){.ftr-grid{grid-template-columns:1fr}.nl-list{columns:1}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.kcard{transition:none}}
+
+/* Logo im Dunkelmodus lesbar halten */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hdr .logo img{background:#fff;padding:4px 8px;border-radius:6px}}
+:root[data-theme="dark"] .hdr .logo img{background:#fff;padding:4px 8px;border-radius:6px}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /anfrage.html
+Sitemap: https://www.alpin-hebetechnik.ch/sitemap.xml

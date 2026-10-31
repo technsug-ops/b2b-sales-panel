@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /anfrage.html
+Sitemap: https://www.nordwind-lift.de/sitemap.xml

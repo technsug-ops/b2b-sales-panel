@@ -38,10 +38,10 @@
     try{var sp=new URLSearchParams(location.search);if(sp.get('kat')){kat.value=sp.get('kat')}if(sp.get('plz'))plz.value=sp.get('plz');if(sp.get('hoehe'))$('#rAh').value=sp.get('hoehe');
       var h=/geraet=([a-z0-9-]+)/.exec(location.hash);if(h){var g=G.filter(function(x){return x.slug===h[1]})[0];if(g){kat.value=g.kat;fillGer();ger.value=g.slug;if(g.ah)$('#rAh').value=g.ah+' m'}}else fillGer()}catch(e){fillGer()}
     /* Zuständigkeit nach PLZ */
-    function zustText(){var v=plz.value.replace(/\D/g,'');if(v.length<5){zust.textContent='';zust.className='hint';return}
+    function zustText(){var v=plz.value.replace(/\D/g,'');var C=window.SITE_CFG||{plzLen:5};if(v.length<C.plzLen){zust.textContent='';zust.className='hint';return}
       var hit=null,best=0;Object.keys(L).forEach(function(k){L[k].plz.forEach(function(p){if(v.indexOf(p)===0&&p.length>best){best=p.length;hit=L[k]}})});
-      if(!hit){zust.textContent='PLZ außerhalb Deutschlands – wir prüfen die Lieferung individuell.';zust.className='hint';return}
-      zust.textContent=hit.typ==='nl'?'Zuständig: Niederlassung in '+hit.name+' – Lieferung meist am nächsten Werktag.':'Liefergebiet '+hit.name+' – Lieferung aus Süddeutschland oder über Partner, Ansprechpartner Zentrale Heidenheim.';zust.className='hint ok'}
+      if(!hit){zust.textContent=C.out||'PLZ außerhalb Deutschlands – wir prüfen die Lieferung individuell.';zust.className='hint';return}
+      zust.textContent=hit.typ==='nl'?'Zuständig: Niederlassung in '+hit.name+' – Lieferung meist am nächsten Werktag.':(C.lg?C.lg.replace('{name}',hit.name):'Liefergebiet '+hit.name+' – Lieferung aus Süddeutschland oder über Partner, Ansprechpartner Zentrale Heidenheim.');zust.className='hint ok'}
     plz.addEventListener('input',zustText);zustText();
     /* Datum: Mietende nicht vor Beginn */
     var von=$('#rVon'),bis=$('#rBis');var today=new Date().toISOString().slice(0,10);von.min=today;bis.min=today;
