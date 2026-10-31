@@ -24,7 +24,7 @@ const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
 const TEAM_PATH = 'gate/team.json';
 const TCFG_PATH = 'gate/tenant-t1.json';
 const F2 = ['program', 'terr', 'cust', 'quotes', 'credit', 'returns'];
-const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2, 'mietkal', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'bewert'];
+const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2, 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'];
 const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
 const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices'), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
@@ -33,7 +33,7 @@ const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
 const pth = (T, kind) => T === 'aydemir' && LEGACY[kind] ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
-const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2, 'mietkal', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'bewert'], types: DEFAULT_TCFG.types } };
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2, 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // packages: partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override in cfg.limits
 const PLAN_LIMITS = { Starter: { partners: 25, users: 5 }, Business: { partners: 100, users: 15 }, Group: { partners: 0, users: 0 } };
@@ -237,7 +237,7 @@ async function main(req, res) {
     if (c.updated && !c.migF2) { for (const f of F2) if (!c.features.includes(f)) c.features.push(f); c.migF2 = true; await saveJson(pth(T, 'tcfg'), c); }
     if (c.updated && !c.migPP) { for (const f of ['pricing', 'perf']) if (!c.features.includes(f)) c.features.push(f); c.migPP = true; await saveJson(pth(T, 'tcfg'), c); }
     // Laggner: Mietkalender + Fremdanmietung als Module (10/2026)
-    if (T === 'laggner' && c.updated && (c.migRentV || 0) < 2) { for (const f of ['mietkal', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'bewert']) if (!c.features.includes(f)) c.features.push(f); c.migRent = true; c.migRentV = 2; await saveJson(pth(T, 'tcfg'), c); }
+    if (T === 'laggner' && c.updated && (c.migRentV || 0) < 5) { for (const f of ['mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert']) if (!c.features.includes(f)) c.features.push(f); c.migRent = true; c.migRentV = 5; await saveJson(pth(T, 'tcfg'), c); }
     if (T === 'ug-alu' && c.updated && !c.migInv) { if (!c.features.includes('invoices')) c.features.push('invoices'); c.migInv = true; await saveJson(pth(T, 'tcfg'), c); }
     return res.status(200).json({ ok: true, cfg: c, tenant: T, suspended: await isSusp(T) });
   }

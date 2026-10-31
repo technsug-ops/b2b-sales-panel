@@ -35,7 +35,7 @@
     function fillGer(){var k=kat.value;ger.innerHTML='<option value="">noch offen – bitte beraten</option>'+G.filter(function(g){return g.kat===k}).map(function(g){return '<option value="'+g.slug+'">'+g.name+'</option>'}).join('')}
     kat.addEventListener('change',fillGer);
     /* Vorbelegung aus URL (?kat=…&plz=… oder #geraet=…) */
-    try{var sp=new URLSearchParams(location.search);if(sp.get('kat')){kat.value=sp.get('kat')}if(sp.get('plz'))plz.value=sp.get('plz');if(sp.get('hoehe'))$('#rAh').value=sp.get('hoehe');
+    try{var sp=new URLSearchParams(location.search);if(sp.get('kat')){kat.value=sp.get('kat')}if(sp.get('plz'))plz.value=sp.get('plz');if(sp.get('hoehe'))$('#rAh').value=sp.get('hoehe');if(sp.get('artikel')){var ta=document.querySelector('textarea[name=info]');if(ta&&!ta.value)ta.value='Anfrage aus dem Sortiment: '+sp.get('artikel').slice(0,160)+'\n'}
       var h=/geraet=([a-z0-9-]+)/.exec(location.hash);if(h){var g=G.filter(function(x){return x.slug===h[1]})[0];if(g){kat.value=g.kat;fillGer();ger.value=g.slug;if(g.ah)$('#rAh').value=g.ah+' m'}}else fillGer()}catch(e){fillGer()}
     /* Zuständigkeit nach PLZ */
     function zustText(){var v=plz.value.replace(/\D/g,'');var C=window.SITE_CFG||{plzLen:5};if(v.length<C.plzLen){zust.textContent='';zust.className='hint';return}

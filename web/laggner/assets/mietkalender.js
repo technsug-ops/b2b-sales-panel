@@ -83,6 +83,48 @@ function mkMount(ROOT, MK, OPT) {
     return { lines: lines, net: sum, vat: sum * 0.19, gross: sum * 1.19 };
   }
 
+  /* ---------- Prüfungen & Wartung: UVV/DGUV-Prüfung abgelaufen oder sperrende Störung = Gerät gesperrt */
+  var WKEY = MK.wkey || 'laggner-wartung-v1';
+  var SVC = function (kat) { return /stapler/.test(kat) ? 250 : /raupe/.test(kat) ? 300 : /schere|mast|lkw/.test(kat) ? 500 : 400; };
+  function hsh(s) { var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) % 100003; return x; }
+  function wSeed() {
+    var d0 = dayStart(Date.now()), W = { v: 1, units: {}, faults: [], log: [] };
+    UNITS.forEach(function (u, i) {
+      var h = hsh(u.id), t = TYPE[u.type], iv = SVC(t.kat || ''), bh = 250 + h % 2600;
+      W.units[u.id] = { uvv: d0 + (25 + h % 320) * DAY, bh: bh, iv: iv, last: bh - (h % iv) };
+    });
+    var pick = function (type, n) { var us = UNITS.filter(function (u) { return u.type === type; }); return us[Math.min(n, us.length - 1)]; };
+    var set = function (type, n, f) { var u = pick(type, n); if (u) f(W.units[u.id], u); };
+    set('kt180', 1, function (w) { w.uvv = d0 - 4 * DAY; });                 // Prüfung abgelaufen → gesperrt
+    set('s99', 2, function (w) { w.uvv = d0 + 9 * DAY; });                   // läuft in 9 Tagen ab
+    set('tl330', 1, function (w) { w.uvv = d0 + 20 * DAY; });
+    set('g99', 0, function (w) { w.last = w.bh - w.iv - 18; });              // Wartung überfällig
+    set('ts1335', 0, function (w) { w.last = w.bh - w.iv + 12; });          // Wartung bald fällig
+    set('ts1840', 1, function (w, u) { W.faults.push({ id: 'ST-101', unit: u.id, t: d0 - 2 * DAY + 9 * H, txt: 'Hydraulikleck am Teleskopzylinder', sperrt: true, st: 'offen', by: 'Werkstatt' }); });
+    set('s78', 0, function (w, u) { W.faults.push({ id: 'ST-100', unit: u.id, t: d0 - 6 * DAY + 14 * H, txt: 'Akku-Ladegerät defekt, getauscht', sperrt: false, st: 'behoben', by: 'Fahrer', done: d0 - 5 * DAY }); });
+    return W;
+  }
+  var WST = null;
+  function wState() {
+    if (WST) return WST;
+    try { WST = JSON.parse(localStorage.getItem(WKEY) || 'null'); } catch (e) {}
+    if (!WST || !WST.units) { WST = wSeed(); wSave(); }
+    UNITS.forEach(function (u) { if (!WST.units[u.id]) WST.units[u.id] = wSeed().units[u.id]; });
+    return WST;
+  }
+  function wSave() { try { localStorage.setItem(WKEY, JSON.stringify(WST)); } catch (e) {} }
+  function wReload() { WST = null; return wState(); }
+  /* Sperrgrund für Einheit im Zeitraum [a,b) – null = einsetzbar */
+  function lockOf(unitId, a, b) {
+    var W = wState(), w = W.units[unitId]; if (!w) return null;
+    var exp = dayStart(w.uvv) + DAY;   // gültig bis Ende des Fälligkeitstags
+    if (exp < b) return { why: 'uvv', from: exp, txt: 'UVV-Prüfung ' + (exp <= Date.now() ? 'abgelaufen seit ' : 'läuft ab am ') + dlab(w.uvv) };
+    var f = W.faults.filter(function (x) { return x.unit === unitId && x.sperrt && x.st !== 'behoben'; })[0];
+    if (f) return { why: 'stoer', from: f.t, txt: 'Gesperrt wegen Störung: ' + f.txt };
+    return null;
+  }
+  function svcOf(unitId) { var w = wState().units[unitId]; if (!w) return null; var next = w.last + w.iv; return { next: next, left: next - w.bh, over: w.bh >= next }; }
+
   /* ---------- Buchungen + Planung */
   var KEY = 'laggner-mietkalender-v1';
   var BOOK = [];
@@ -90,7 +132,7 @@ function mkMount(ROOT, MK, OPT) {
     var us = UNITS.filter(function (u) { return u.type === typeId && (!only || u.id === only); });
     for (var i = 0; i < us.length; i++) {
       var busy = BOOK.some(function (k) { return k.unit === us[i].id && k !== ignore && overlap(a, b, k.mA, k.mB); });
-      if (!busy) return us[i];
+      if (!busy && !lockOf(us[i].id, a, b)) return us[i];
     }
     return null;
   }
@@ -145,7 +187,7 @@ function mkMount(ROOT, MK, OPT) {
         if (!SEEDING && del.a < Date.now()) { why = 'Lieferung bis zum gewünschten Mietbeginn nicht mehr möglich.'; continue; }
       }
       var mA = needDriver ? del.a : req.start - 30 * MIN, mB = (needDriver ? pick.b : req.end + 30 * MIN) + CHECK;
-      if (!freeUnit(req.type, mA, mB, null, c.u.id)) { why = why || 'Kein ' + t.name + ' in diesem Zeitraum frei.'; continue; }
+      if (!freeUnit(req.type, mA, mB, null, c.u.id)) { var lk = lockOf(c.u.id, mA, mB); if (lk && !why) why = 'Kein ' + t.name + ' frei (ein Gerät gesperrt: Prüfung/Wartung).'; why = why || 'Kein ' + t.name + ' in diesem Zeitraum frei.'; continue; }
       res.ok = true; res.unit = c.u; res.mA = mA; res.mB = mB; res.del = del; res.pick = pick; res.drive = drive; res.km = c.km; res.zone = z; res.depot = c.u.depot;
       res.price = price(req.type, req.start, req.end, req.mode, needDriver ? z : null);
       return res;
@@ -186,7 +228,10 @@ function mkMount(ROOT, MK, OPT) {
   function save() { try { localStorage.setItem(KEY, JSON.stringify(BOOK.filter(function (k) { return !k.seed; }))); } catch (e) {} }
 
   /* Nur Rechenkern (z. B. für Mietabrechnung im Portal) */
-  if (OPT && OPT.engine) { load(); return { book: function () { return BOOK; }, TYPE: TYPE, UNITS: UNITS, DEPOT: DEPOT, DRIVERS: DRIVERS, price: price, km: km, zoneOf: zoneOf, save: save }; }
+  /* Buchung auf andere freie Einheit desselben Typs umsetzen (z. B. weil Gerät gesperrt) */
+  function reassign(k) { var u = freeUnit(k.type, k.mA, k.mB, k); if (!u) return null; k.unit = u.id; if (k.seed) k.seed = false; save(); return u; }
+  if (OPT && OPT.engine) { load(); return { book: function () { return BOOK; }, TYPE: TYPE, UNITS: UNITS, DEPOT: DEPOT, DRIVERS: DRIVERS, price: price, km: km, zoneOf: zoneOf, save: save, plan: plan, commit: commit,
+    wState: wState, wSave: wSave, wReload: wReload, lockOf: lockOf, svcOf: svcOf, reassign: reassign, freeUnit: freeUnit, dayStart: dayStart }; }
   /* ---------- UI: Buchen */
   var st = (window.__mkSt && window.__mkSt.key === MK.key) ? window.__mkSt : (window.__mkSt = { key: MK.key, tab: 'buchen', week: monday(nextWork()), type: MK.defaultType, last: null });
   var view = ROOT.querySelector('#mkView');
@@ -204,6 +249,7 @@ function mkMount(ROOT, MK, OPT) {
       for (var h2 = 6; h2 < 20; h2++) {
         var a = at(day, h2), b = a + H, n = t.units.length;
         var busy = BOOK.filter(function (k) { return k.type === typeId && overlap(a, b, k.mA, k.mB); }).map(function (k) { return k.unit; });
+        t.units.forEach(function (u) { if (busy.indexOf(u.id) < 0 && lockOf(u.id, a, b)) busy.push(u.id); });
         var free = n - Array.from(new Set(busy)).length, past = b < Date.now();
         var cls = past ? 'past' : free === 0 ? 'none' : free < n ? 'some' : 'all';
         html += '<button type="button" class="mk-c ' + cls + '" data-t="' + a + '" ' + (past ? 'disabled' : '') + ' title="' + dlab(day) + ' ' + pad(h2) + ':00 – ' + free + ' von ' + n + ' frei"><span class="sr">' + free + '</span></button>';
@@ -232,7 +278,15 @@ function mkMount(ROOT, MK, OPT) {
       '<fieldset class="mk-mode"><legend>Logistik</legend>' +
       [['liefer', 'Lieferung & Abholung durch unseren Fahrer'], ['abhol', 'Selbstabholung in der Niederlassung'], ['bediener', 'Mit Bediener (Fahrer bleibt vor Ort)']].map(function (m) { return '<label class="chk"><input type="radio" name="mkMode" value="' + m[0] + '"' + ((f.mode || 'liefer') === m[0] ? ' checked' : '') + (m[0] === 'abhol' && t.transport === 'tief' ? ' disabled' : '') + '> ' + m[1] + '</label>'; }).join('') +
       (t.transport === 'tief' ? '<p class="muted small">Dieses Gerät wird per Tieflader geliefert – keine Selbstabholung.</p>' : '') +
-      (t.transport === 'selbst' ? '<p class="muted small">Lkw-Bühne: Überführung durch unseren Fahrer oder Abholung mit Führerschein ' + esc(t.fs) + '.</p>' : '') + '</fieldset>' +
+      (t.transport === 'selbst' ? '<p class="muted small">Lkw-Bühne: Überführung durch unseren Fahrer oder Abholung mit Führerschein ' + esc(t.fs) + '.</p>' : '') +
+      (!MK.noOpCheck && (f.mode || 'liefer') !== 'bediener' ? '<div class="mk-op"><span>Haben Ihre Bediener eine gültige Schulung (DGUV 308-008 / IPAF)?</span>' + [['ja', 'Ja'], ['nein', 'Nein / weiß nicht']].map(function (o) { return '<label class="chk"><input type="radio" name="mkOp" value="' + o[0] + '"' + ((f.op || 'ja') === o[0] ? ' checked' : '') + '> ' + o[1] + '</label>'; }).join('') + '</div>' : '') + '</fieldset>' +
+      (MK.noSiteCheck ? '' : '<details class="mk-site"' + (f.siteOpen ? ' open' : '') + '><summary>Baustellen-Check <small>– damit das passende Gerät kommt</small></summary><div class="grid2">' +
+      '<label>Zufahrt / Durchgang (Breite)<select id="mkZuf">' + [['', 'keine Einschränkung'], ['0.8', 'unter 0,9 m (Tür)'], ['1.2', 'bis 1,2 m'], ['1.6', 'bis 1,6 m'], ['2.3', 'bis 2,3 m'], ['3', 'bis 3 m']].map(function (o) { return '<option value="' + o[0] + '"' + ((f.zuf || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+      '<label>Untergrund<select id="mkUg">' + [['fest', 'befestigt (Asphalt, Beton)'], ['schotter', 'Schotter / verdichtet'], ['weich', 'Rasen, Erde, weich']].map(function (o) { return '<option value="' + o[0] + '"' + ((f.ug || 'fest') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+      '<label>Gefälle<select id="mkGef">' + [['0', 'eben'], ['5', 'bis 5 %'], ['10', 'über 5 %']].map(function (o) { return '<option value="' + o[0] + '"' + ((f.gef || '0') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+      '<label>Einsatzort<select id="mkIn">' + [['aussen', 'im Freien'], ['innen', 'in der Halle / innen']].map(function (o) { return '<option value="' + o[0] + '"' + ((f.inn || 'aussen') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label></div>' +
+      '<label class="chk"><input type="checkbox" id="mkFl"' + (f.fl ? ' checked' : '') + '> Freileitung / Oberleitung in der Nähe</label>' +
+      '<label class="chk"><input type="checkbox" id="mkVk"' + (f.vk ? ' checked' : '') + '> Gerät steht auf Straße, Gehweg oder Parkfläche (Verkehrssicherung nötig)</label></details>') +
       '</form>' +
       '<div class="mk-side"><h2 class="h-sm">Verfügbarkeit · ' + esc(t.name) + '</h2><div class="mk-weeknav"><button type="button" class="btn ghost sm" data-wk="-1">← Woche</button><span>' + dlab(st.week) + ' – ' + dlab(st.week + 5 * DAY) + '</span><button type="button" class="btn ghost sm" data-wk="1">Woche →</button></div>' + availStrip(st.type) +
       '<div id="mkResult" aria-live="polite"></div></div></div>';
@@ -243,7 +297,25 @@ function mkMount(ROOT, MK, OPT) {
     $$('[data-wk]').forEach(function (b) { b.onclick = function () { st.week += (+b.dataset.wk) * 7 * DAY; st.form = readForm(); renderBuchen(); }; });
     calc();
   }
-  function readForm() { return { d1: $('#mkD1').value, t1: $('#mkT1').value, d2: $('#mkD2').value, t2: $('#mkT2').value, plz: $('#mkPlz').value, mode: ($('[name=mkMode]:checked') || {}).value || 'liefer' }; }
+  function readForm() { var g = function (s) { var e = $(s); return e ? e.value : ''; }, c = function (s) { var e = $(s); return !!(e && e.checked); };
+    return { d1: $('#mkD1').value, t1: $('#mkT1').value, d2: $('#mkD2').value, t2: $('#mkT2').value, plz: $('#mkPlz').value, mode: ($('[name=mkMode]:checked') || {}).value || 'liefer',
+      op: ($('[name=mkOp]:checked') || {}).value || 'ja', zuf: g('#mkZuf'), ug: g('#mkUg') || 'fest', gef: g('#mkGef') || '0', inn: g('#mkIn') || 'aussen', fl: c('#mkFl'), vk: c('#mkVk'), siteOpen: !!($('.mk-site') && $('.mk-site').open), schul: !!(st.form && st.form.schul) }; }
+  /* Baustellen-Check: passt das Gerät? Alternativen + Zusatzleistungen */
+  function tAttr(t) { var b = /([\d,]+) m breit/.exec(t.info || ''), a = /([\d,]+) m$/.exec(t.short || ''); return { b: b ? parseFloat(b[1].replace(',', '.')) : null, ah: a ? parseFloat(a[1].replace(',', '.')) : 0, raupe: /raupe/.test(t.kat), diesel: /diesel/i.test(t.info + ' ' + t.name), elektro: /elektro|akku/i.test(t.info + ' ' + t.name) }; }
+  function siteCheck(t, f) {
+    var A = tAttr(t), w = [], need = {}, extra = [], zuf = parseFloat(f.zuf);
+    if (zuf && A.b && A.b > zuf) { w.push(t.short + ' ist ' + String(A.b).replace('.', ',') + ' m breit – passt nicht durch die Zufahrt.'); need.b = zuf; }
+    if ((f.ug === 'weich' || +f.gef >= 10) && !A.raupe && !/stapler|lkw/.test(t.kat)) { w.push((f.ug === 'weich' ? 'Weicher Untergrund' : 'Gefälle über 5 %') + ': Raupenbühne mit Niveauausgleich empfohlen.'); need.raupe = true; }
+    if (f.inn === 'innen' && A.diesel && !A.elektro) { w.push('Dieselgerät nicht für Innenräume geeignet (Abgase).'); need.el = true; }
+    if (f.fl) w.push('Freileitung: Sicherheitsabstand einhalten – bis 1 kV 1 m, bis 110 kV 3 m, bis 220 kV 4 m, bis 380 kV 5 m. Wir klären die Abschaltung mit dem Netzbetreiber.');
+    if (f.vk) extra.push(['Verkehrssicherung: Absperrung, Beschilderung, Antrag verkehrsrechtliche Anordnung (pauschal)', MK.vsich || 189]);
+    if (f.op === 'nein' && f.mode !== 'bediener' && f.schul) extra.push(['Bedienerschulung DGUV 308-008 (1 Teilnehmer, 1 Tag)', MK.schulung || 249]);
+    var alt = [];
+    if (need.b || need.raupe || need.el) alt = TYPES.filter(function (x) { if (x.id === t.id) return false; var B = tAttr(x); return (!need.b || (B.b && B.b <= need.b)) && (!need.raupe || B.raupe) && (!need.el || !B.diesel || B.elektro) && B.ah >= A.ah * 0.8; })
+      .sort(function (a, b) { return Math.abs(tAttr(a).ah - A.ah) - Math.abs(tAttr(b).ah - A.ah); }).slice(0, 3);
+    if (!alt.length && need.b && need.raupe) { w.push('Kein Gerät erfüllt alle Bedingungen zugleich – wir beraten Sie gern (z. B. schmale Bühne mit Lastverteilplatten).'); alt = TYPES.filter(function (x) { var B = tAttr(x); return x.id !== t.id && ((B.b && B.b <= need.b) || B.raupe) && B.ah >= A.ah * 0.8; }).slice(0, 3); }
+    return { warn: w, alt: alt, extra: extra, bad: !!(need.b || need.raupe || need.el) };
+  }
   function readReq() { var f = readForm(); return { type: st.type, start: parseDT(f.d1, f.t1), end: parseDT(f.d2, f.t2), plz: f.plz, mode: f.mode }; }
   function logisticsHtml(p) {
     var r = p.req, rows = [], dep = DEPOT[p.depot] ? DEPOT[p.depot].name : '';
@@ -260,18 +332,27 @@ function mkMount(ROOT, MK, OPT) {
     st.last = p;
     if (!p.ok) {
       var sg = p.err && !/PLZ|Postleitzahl|Mietende|Fernzone|Vergangenheit/.test(p.err) ? suggest(req) : [];
-      box.innerHTML = '<div class="card mk-warn"><b>Nicht möglich:</b> ' + esc(p.err || '') + (sg.length ? '<p>Freie Alternativen:</p><div class="chips">' + sg.map(function (r) { return '<button type="button" class="btn ghost sm" data-alt="' + r.start + '">' + dlab(r.start) + ' ' + hm(r.start) + '</button>'; }).join('') + '</div>' : '') + '</div>';
+      var scF = siteCheck(TYPE[req.type], readForm());
+      box.innerHTML = (scF.warn.length ? '<div class="card mk-warn"><b>Baustellen-Check</b><ul>' + scF.warn.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' + (scF.alt.length ? '<p>Passende Geräte:</p><div class="chips">' + scF.alt.map(function (x) { return '<button type="button" class="btn ghost sm" data-swap="' + x.id + '">' + esc(x.short) + '</button>'; }).join('') + '</div>' : '') + '</div>' : '') + '<div class="card mk-warn"><b>Nicht möglich:</b> ' + esc(p.err || '') + (sg.length ? '<p>Freie Alternativen:</p><div class="chips">' + sg.map(function (r) { return '<button type="button" class="btn ghost sm" data-alt="' + r.start + '">' + dlab(r.start) + ' ' + hm(r.start) + '</button>'; }).join('') + '</div>' : '') + '</div>';
+      $$('[data-swap]', box).forEach(function (b) { b.onclick = function () { st.form = readForm(); st.form.siteOpen = true; st.type = b.dataset.swap; renderBuchen(); }; });
       $$('[data-alt]', box).forEach(function (b) { b.onclick = function () { var a = +b.dataset.alt, dur = req.end - req.start, f = readForm(); f.d1 = dateVal(a); f.t1 = hm(a); f.d2 = dateVal(a + dur); f.t2 = hm(a + dur); st.form = f; st.week = monday(a); renderBuchen(); }; });
       return;
     }
-    var pr = p.price;
-    box.innerHTML = '<div class="card mk-price"><h3>Ihr Preis (Demo)</h3><table>' + pr.lines.map(function (l) { return '<tr><td>' + esc(l[0]) + '</td><td>' + (l[1] ? eur(l[1]) : '–') + '</td></tr>'; }).join('') +
+    var f0 = readForm(), sc = siteCheck(TYPE[req.type], f0), pr = p.price;
+    if (sc.extra.length) { var L2 = pr.lines.slice(-1), L1 = pr.lines.slice(0, -1).concat(sc.extra, L2), sm = L1.reduce(function (s, l) { return s + l[1]; }, 0); pr = p.price = { lines: L1, net: sm, vat: sm * 0.19, gross: sm * 1.19 }; }
+    var siteHtml = (sc.warn.length ? '<div class="card mk-warn"><b>Baustellen-Check</b><ul>' + sc.warn.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' + (sc.alt.length ? '<p>Passende Geräte:</p><div class="chips">' + sc.alt.map(function (x) { return '<button type="button" class="btn ghost sm" data-swap="' + x.id + '">' + esc(x.short) + '</button>'; }).join('') + '</div>' : '') + '</div>' : '') +
+      (!MK.noOpCheck && f0.op === 'nein' && f0.mode !== 'bediener' ? '<div class="card mk-warn"><b>Bedienung nur mit Schulungsnachweis</b><p>Hubarbeitsbühnen dürfen nur unterwiesene, schriftlich beauftragte Personen bedienen (DGUV Grundsatz 308-008).</p><div class="chips"><button type="button" class="btn ghost sm" data-opmode="bediener">Mit unserem Bediener buchen</button><button type="button" class="btn ghost sm" data-schul="1">' + (f0.schul ? '✓ Schulung dazugebucht' : 'Schulung dazubuchen (' + eur(MK.schulung || 249) + ')') + '</button></div></div>' : '');
+    box.innerHTML = siteHtml + '<div class="card mk-price"><h3>Ihr Preis (Demo)</h3><table>' + pr.lines.map(function (l) { return '<tr><td>' + esc(l[0]) + '</td><td>' + (l[1] ? eur(l[1]) : '–') + '</td></tr>'; }).join('') +
       '<tr class="sum"><td>Summe netto</td><td>' + eur(pr.net) + '</td></tr><tr><td>zzgl. 19 % MwSt.</td><td>' + eur(pr.vat) + '</td></tr><tr class="sum"><td>Gesamt brutto</td><td>' + eur(pr.gross) + '</td></tr></table>' +
       '<p class="muted small">Gerät ' + esc(p.unit.id) + ' · Niederlassung ' + esc(DEPOT[p.unit.depot].name) + (p.zone && p.req.mode !== 'abhol' ? ' · ' + esc(p.zone.name) + ' · ca. ' + p.km + ' km, ' + Math.round(p.drive / MIN) + ' min Fahrt' : '') + '</p>' +
       '<h3>Ablauf</h3>' + logisticsHtml(p) +
       '<div class="mk-cta"><input id="mkKunde" placeholder="Firma (für die Demo)" aria-label="Firma"><button type="button" class="btn big" id="mkBook" data-track="request_submit">Verbindlich anfragen</button></div><p class="muted small">Demo: Die Buchung wird nur in diesem Browser gespeichert und erscheint sofort in der Disposition.</p></div>';
+    $$('[data-swap]', box).forEach(function (b) { b.onclick = function () { st.form = readForm(); st.form.siteOpen = true; st.type = b.dataset.swap; renderBuchen(); }; });
+    $$('[data-opmode]', box).forEach(function (b) { b.onclick = function () { var f = readForm(); f.mode = 'bediener'; st.form = f; renderBuchen(); }; });
+    $$('[data-schul]', box).forEach(function (b) { b.onclick = function () { var f = readForm(); f.schul = !f.schul; st.form = f; renderBuchen(); }; });
     $('#mkBook').onclick = function () {
-      var k = commit(p, ($('#mkKunde').value || 'Demo-Kunde').slice(0, 40)); save();
+      var k = commit(p, ($('#mkKunde').value || 'Demo-Kunde').slice(0, 40)); var ff = readForm();
+      k.site = { zuf: ff.zuf, ug: ff.ug, gef: ff.gef, inn: ff.inn, fl: ff.fl, vk: ff.vk }; k.op = ff.mode === 'bediener' ? 'bediener' : ff.op; k.schul = ff.op === 'nein' && ff.schul; if (sc.bad) k.siteWarn = true; save();
       (window.dataLayer = window.dataLayer || []).push({ event: 'request_submit', via: 'mietkalender', typ: req.type });
       box.innerHTML = '<div class="card done"><h3>Danke – Anfrage ' + esc(k.id) + ' ist eingeplant.</h3><p>' + esc(TYPE[k.type].name) + ', ' + dlab(k.start) + ' ' + hm(k.start) + ' bis ' + dlab(k.end) + ' ' + hm(k.end) + ' · ' + eur(k.net) + ' netto.</p><p><button type="button" class="btn ghost sm" id="mkToDispo">In der Disposition ansehen</button></p></div>';
       $('#mkToDispo').onclick = function () { st.tab = 'dispo'; st.week = monday(k.start); st.hl = k.id; render(); };
@@ -301,7 +382,9 @@ function mkMount(ROOT, MK, OPT) {
         s += bar(k.end, k.mB, mo, 'trans', '', 'Rücktransport + Prüfung ' + k.id, k.id);
         return s;
       }).join('');
-      return '<div class="mk-g-row"><span class="mk-g-lab"><b>' + esc(TYPE[u.type].short) + '</b><small>' + esc(u.id) + ' · ' + esc(DEPOT[u.depot].name) + '</small></span><div class="mk-g-track">' + bs + nowLine + '</div></div>';
+      var lk = lockOf(u.id, mo, end), lb = '';
+      if (lk) { var la = Math.max(mo, lk.from); lb = '<span class="mk-bar lock" style="left:' + (xOf(la, mo) / 6 * 100) + '%;width:' + ((6 - xOf(la, mo)) / 6 * 100) + '%" title="' + esc(lk.txt) + '">gesperrt</span>'; }
+      return '<div class="mk-g-row' + (lk ? ' locked' : '') + '"><span class="mk-g-lab"><b>' + esc(TYPE[u.type].short) + (lk ? ' <em class="mk-lock">gesperrt</em>' : '') + '</b><small>' + esc(u.id) + ' · ' + esc(DEPOT[u.depot].name) + '</small></span><div class="mk-g-track">' + lb + bs + nowLine + '</div></div>';
     }).join('') + '<div class="mk-g-sec">Fahrer &amp; Fahrzeuge</div>' + DRIVERS.map(function (d) {
       var bs = wk.map(function (k) {
         var s = '';
