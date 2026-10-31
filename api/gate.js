@@ -44,7 +44,7 @@ const PLAN_DEFAULT = { aydemir: 'Group', 'ug-alu': 'Starter', sirius: 'Business'
 function limitsOf(cfg, T) { const plan = PLAN_LIMITS[cfg && cfg.plan] ? cfg.plan : (PLAN_DEFAULT[T] || 'Starter'); const o = (cfg && cfg.limits) || {}; return { plan, partners: Number.isFinite(+o.partners) && o.partners !== '' && o.partners != null ? +o.partners : PLAN_LIMITS[plan].partners, users: Number.isFinite(+o.users) && o.users !== '' && o.users != null ? +o.users : PLAN_LIMITS[plan].users }; }
 // a token's tenant (tokens minted before tenancy belong to aydemir)
 const tokTenant = d => d && (d.ten || 'aydemir');
-const PERMS = ['partners', 'leads', 'projects', 'orders', 'install', 'dam', 'settings', 'hr', 'creds', 'team', 'acct', 'prices'];
+const PERMS = ['partners', 'leads', 'projects', 'orders', 'install', 'dam', 'settings', 'hr', 'creds', 'team', 'acct', 'prices', 'rent', 'garage', 'drive', 'web'];
 const BUILTIN_ROLES = [
   { key: 'gf', name: 'Geschäftsführer', perms: PERMS.slice(), builtin: true, locked: true },
   { key: 'tech', name: 'Technik-Verantwortlicher', perms: ['partners', 'leads', 'projects', 'orders', 'dam', 'settings', 'creds'], builtin: true },
@@ -54,12 +54,15 @@ const BUILTIN_ROLES = [
   { key: 'hr', name: 'Personalabteilung', perms: ['hr'], builtin: true },
   { key: 'buchhaltung', name: 'Buchhaltung', perms: ['acct'], builtin: true },
 ];
+// Laggner: Rollen für Vermietung (Büro, Disposition, Werkstatt, Fahrer, Außendienst, Marketing, Web-Admin)
+const LAGGNER_ROLES = [{"key": "buero", "name": "Büro / Innendienst", "perms": ["leads", "orders", "rent", "acct", "dam"], "builtin": true}, {"key": "vermietung", "name": "Vermietung / Disposition", "perms": ["rent", "leads", "orders", "drive", "garage"], "builtin": true}, {"key": "werkstatt", "name": "Werkstatt / Garage", "perms": ["garage", "drive"], "builtin": true}, {"key": "fahrer", "name": "Fahrer", "perms": ["drive"], "builtin": true}, {"key": "aussendienst", "name": "Außendienst / Vertrieb", "perms": ["leads", "partners", "rent"], "builtin": true}, {"key": "marketing", "name": "Marketing", "perms": ["dam", "web", "leads"], "builtin": true}, {"key": "webadmin", "name": "Web-Admin", "perms": ["web", "settings", "dam"], "builtin": true}];
 async function loadRoles(T = 'aydemir') {
   const RP = pth(T, 'roles');
   let r = await loadJson(RP);
   if (!r) { r = BUILTIN_ROLES.map(x => ({ ...x, fixMa: true, migratedProjects: true })); await saveJson(RP, r); }
   let changed = false;
   for (const b of BUILTIN_ROLES) if (!r.some(x => x.key === b.key)) { r.push({ ...b, fixMa: true, migratedProjects: true, migratedInstall: true }); changed = true; }
+  if (T === 'laggner') for (const b of LAGGNER_ROLES) if (!r.some(x => x.key === b.key)) { r.push({ ...b, fixMa: true, migratedProjects: true, migratedInstall: true }); changed = true; }
   for (const x of r) if (!x.migratedInstall) { if (x.perms.includes('orders') && !x.perms.includes('install')) x.perms.push('install'); x.migratedInstall = true; changed = true; }
   for (const x of r) { if (x.key === 'gf' && x.perms.length !== PERMS.length) { x.perms = PERMS.slice(); changed = true; } if (x.key === 'mitarbeiter' && !x.fixMa) { x.perms = x.perms.filter(p => p !== 'projects'); x.fixMa = true; changed = true; }
     if (x.builtin && x.key !== 'mitarbeiter' && !x.migratedProjects) { if (!x.perms.includes('projects')) x.perms.push('projects'); x.migratedProjects = true; changed = true; } }
@@ -94,8 +97,8 @@ const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
   { id: 2, name: 'Verkoop binnendienst', role: 'staff', user: 'verkoop', pass: 'Sirius-Team-2026' },
 ], laggner: [
   { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Laggner-GF-2026' },
-  { id: 2, name: 'Disposition Heidenheim', role: 'staff', user: 'disposition', pass: 'Laggner-Dispo-2026' },
-  { id: 3, name: 'Fahrer / Einweisung', role: 'monteur', user: 'fahrer', pass: 'Laggner-Fahrer-2026' },
+  { id: 2, name: 'Disposition Heidenheim', role: 'vermietung', user: 'disposition', pass: 'Laggner-Dispo-2026' },
+  { id: 3, name: 'Fahrer / Einweisung', role: 'fahrer', user: 'fahrer', pass: 'Laggner-Fahrer-2026' },
   { id: 4, name: 'Buchhaltung', role: 'buchhaltung', user: 'buchhaltung', pass: 'Laggner-Buha-2026' },
 ] };
 async function loadTeam(T = 'aydemir') {
@@ -106,6 +109,7 @@ async function loadTeam(T = 'aydemir') {
   for (const x of t) if ((x.user === 'mehmet' || x.user === 'montage') && x.role === 'mitarbeiter' && !x.roleMig) { x.role = 'monteur'; x.roleMig = true; tc = true; }
   if (T === 'aydemir' && !t.some(x => x.user === 'personal')) { const x = SEED_TEAM[4]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
   if (T === 'ug-alu' && !t.some(x => x.user === 'buchhaltung')) { const x = SEEDS['ug-alu'][3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
+  if (T === 'laggner') for (const x of t) if (!x.lagRole && ((x.user === 'disposition' && x.role === 'staff') || (x.user === 'fahrer' && x.role === 'monteur'))) { x.role = x.user === 'fahrer' ? 'fahrer' : 'vermietung'; x.lagRole = true; tc = true; }
   if (tc) await saveJson(TP, t);
   if (T === 'aydemir' && !t.some(x => x.user === 'mehmet')) { const x = SEED_TEAM[3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); await saveJson(TP, t); }
   return t;
