@@ -1,8 +1,8 @@
 /* Mietkalender (Demo): Gerätetyp + Stunden = Preis, Lieferung/Abholung durch Fahrer mit Disposition.
    Daten: window.MK (Typen, Depots, Fahrer) aus build.py. Buchungen: Demo-Seed + localStorage (nur dieser Browser). */
-function mkMount(ROOT, MK) {
+function mkMount(ROOT, MK, OPT) {
   'use strict';
-  if (!MK || !ROOT) return;
+  if (!MK || (!ROOT && !(OPT && OPT.engine))) return;
   var IMG = MK.imgBase || 'assets/img/';
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -185,6 +185,8 @@ function mkMount(ROOT, MK) {
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(BOOK.filter(function (k) { return !k.seed; }))); } catch (e) {} }
 
+  /* Nur Rechenkern (z. B. für Mietabrechnung im Portal) */
+  if (OPT && OPT.engine) { load(); return { book: function () { return BOOK; }, TYPE: TYPE, UNITS: UNITS, DEPOT: DEPOT, DRIVERS: DRIVERS, price: price, km: km, zoneOf: zoneOf, save: save }; }
   /* ---------- UI: Buchen */
   var st = (window.__mkSt && window.__mkSt.key === MK.key) ? window.__mkSt : (window.__mkSt = { key: MK.key, tab: 'buchen', week: monday(nextWork()), type: MK.defaultType, last: null });
   var view = ROOT.querySelector('#mkView');
