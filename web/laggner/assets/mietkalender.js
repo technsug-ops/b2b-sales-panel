@@ -1,8 +1,9 @@
 /* Mietkalender (Demo): Gerätetyp + Stunden = Preis, Lieferung/Abholung durch Fahrer mit Disposition.
    Daten: window.MK (Typen, Depots, Fahrer) aus build.py. Buchungen: Demo-Seed + localStorage (nur dieser Browser). */
-(function () {
+function mkMount(ROOT, MK) {
   'use strict';
-  var MK = window.MK; if (!MK) return;
+  if (!MK || !ROOT) return;
+  var IMG = MK.imgBase || 'assets/img/';
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var H = 3600e3, MIN = 60e3, DAY = 24 * H;
@@ -185,9 +186,9 @@
   function save() { try { localStorage.setItem(KEY, JSON.stringify(BOOK.filter(function (k) { return !k.seed; }))); } catch (e) {} }
 
   /* ---------- UI: Buchen */
-  var st = { tab: 'buchen', week: monday(nextWork()), type: MK.defaultType, last: null };
-  var view = $('#mkView');
-  function tabs() { $$('.mk-tabs button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === st.tab)); }); }
+  var st = (window.__mkSt && window.__mkSt.key === MK.key) ? window.__mkSt : (window.__mkSt = { key: MK.key, tab: 'buchen', week: monday(nextWork()), type: MK.defaultType, last: null });
+  var view = ROOT.querySelector('#mkView');
+  function tabs() { $$('.mk-tabs button', ROOT).forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === st.tab)); }); }
   function timeOpts(sel) { var o = ''; for (var h = 6; h <= 20; h++) for (var m = 0; m < 60; m += 30) { if (h === 20 && m) continue; var v = pad(h) + ':' + pad(m); o += '<option' + (v === sel ? ' selected' : '') + '>' + v + '</option>'; } return o; }
   function dateVal(t) { var d = new Date(t); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function parseDT(dv, tv) { var p = dv.split('-'), q = tv.split(':'); return new Date(+p[0], +p[1] - 1, +p[2], +q[0], +q[1]).getTime(); }
@@ -222,7 +223,7 @@
     view.innerHTML = '<div class="mk-book">' +
       '<form class="card mk-form" id="mkForm">' +
       '<label>Gerätetyp<select id="mkType">' + MK.kats.map(function (k) { return '<optgroup label="' + esc(k.name) + '">' + TYPES.filter(function (x) { return x.kat === k.slug; }).map(function (x) { return '<option value="' + x.id + '"' + (x.id === st.type ? ' selected' : '') + '>' + esc(x.name) + ' · ' + x.units.length + ' Stk.</option>'; }).join('') + '</optgroup>'; }).join('') + '</select></label>' +
-      '<div class="mk-rate"><img src="assets/img/' + t.pic + '.webp" alt="" width="120" height="84"><div><b>' + esc(t.name) + '</b><small>' + esc(t.info) + '</small><span>' + eur(t.rate.std) + '/Std · ' + eur(t.rate.halb) + ' Halbtag · ' + eur(t.rate.tag) + '/Tag · ' + eur(t.rate.woche) + '/Woche</span></div></div>' +
+      '<div class="mk-rate"><img src="' + IMG + t.pic + '.webp" alt="" width="120" height="84"><div><b>' + esc(t.name) + '</b><small>' + esc(t.info) + '</small><span>' + eur(t.rate.std) + '/Std · ' + eur(t.rate.halb) + ' Halbtag · ' + eur(t.rate.tag) + '/Tag · ' + eur(t.rate.woche) + '/Woche</span></div></div>' +
       '<div class="grid2"><label>Mietbeginn<input type="date" id="mkD1" value="' + (f.d1 || d0) + '" required></label><label>Uhrzeit<select id="mkT1">' + timeOpts(f.t1 || '08:00') + '</select></label></div>' +
       '<div class="grid2"><label>Mietende<input type="date" id="mkD2" value="' + (f.d2 || f.d1 || d0) + '" required></label><label>Uhrzeit<select id="mkT2">' + timeOpts(f.t2 || '16:00') + '</select></label></div>' +
       '<label>PLZ der Baustelle<input id="mkPlz" inputmode="numeric" maxlength="5" placeholder="z. B. 89518" value="' + esc(f.plz || '89518') + '"></label>' +
@@ -343,10 +344,12 @@
   }
 
   function render() { tabs(); if (st.tab === 'buchen') renderBuchen(); else if (st.tab === 'dispo') renderDispo(); else renderPreise(); }
-  $$('.mk-tabs button').forEach(function (b) { b.onclick = function () { st.tab = b.dataset.tab; render(); }; });
+  $$('.mk-tabs button', ROOT).forEach(function (b) { b.onclick = function () { st.tab = b.dataset.tab; render(); }; });
   load();
   st.dispoWeek = BASE;
   try { var h = /tab=(\w+)/.exec(location.hash); if (h) st.tab = h[1]; } catch (e) {}
   render();
   window.__mk = { BOOK: BOOK, plan: plan, price: price };
-})();
+}
+window.mkMount = mkMount;
+if (window.MK && document.getElementById('mkView')) mkMount(document, window.MK);

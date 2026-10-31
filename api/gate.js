@@ -24,7 +24,7 @@ const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
 const TEAM_PATH = 'gate/team.json';
 const TCFG_PATH = 'gate/tenant-t1.json';
 const F2 = ['program', 'terr', 'cust', 'quotes', 'credit', 'returns'];
-const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2];
+const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2, 'mietkal', 'zumiet'];
 const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
 const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices'), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
@@ -33,7 +33,7 @@ const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
 const pth = (T, kind) => T === 'aydemir' && LEGACY[kind] ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
-const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types } };
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2, 'mietkal', 'zumiet'], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // packages: partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override in cfg.limits
 const PLAN_LIMITS = { Starter: { partners: 25, users: 5 }, Business: { partners: 100, users: 15 }, Group: { partners: 0, users: 0 } };
@@ -236,6 +236,8 @@ async function main(req, res) {
     // partner-programme, territories, customer protection, quotes, credit, returns: on for every tenant (10/2026)
     if (c.updated && !c.migF2) { for (const f of F2) if (!c.features.includes(f)) c.features.push(f); c.migF2 = true; await saveJson(pth(T, 'tcfg'), c); }
     if (c.updated && !c.migPP) { for (const f of ['pricing', 'perf']) if (!c.features.includes(f)) c.features.push(f); c.migPP = true; await saveJson(pth(T, 'tcfg'), c); }
+    // Laggner: Mietkalender + Fremdanmietung als Module (10/2026)
+    if (T === 'laggner' && c.updated && !c.migRent) { for (const f of ['mietkal', 'zumiet']) if (!c.features.includes(f)) c.features.push(f); c.migRent = true; await saveJson(pth(T, 'tcfg'), c); }
     if (T === 'ug-alu' && c.updated && !c.migInv) { if (!c.features.includes('invoices')) c.features.push('invoices'); c.migInv = true; await saveJson(pth(T, 'tcfg'), c); }
     return res.status(200).json({ ok: true, cfg: c, tenant: T, suspended: await isSusp(T) });
   }
@@ -249,7 +251,7 @@ async function main(req, res) {
     if (!PTYPES.some(k => types[k].on)) return res.status(400).json({ ok: false, error: 'notype' });
     const plan = PLAN_LIMITS[inp.plan] ? inp.plan : (PLAN_DEFAULT[T] || 'Starter');
     const lim = {}; for (const k of ['partners', 'users']) { const v = inp.limits && inp.limits[k]; if (v !== undefined && v !== null && v !== '') lim[k] = Math.max(0, Math.min(100000, Math.floor(+v) || 0)); }
-    const cfg = { features, types, plan, ...(Object.keys(lim).length ? { limits: lim } : {}), updated: Date.now(), migInv: true, migPP: true, migF2: true };
+    const cfg = { features, types, plan, ...(Object.keys(lim).length ? { limits: lim } : {}), updated: Date.now(), migInv: true, migPP: true, migF2: true, migRent: true };
     await saveJson(pth(T, 'tcfg'), cfg);
     return res.status(200).json({ ok: true, cfg });
   }
