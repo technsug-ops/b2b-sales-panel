@@ -267,7 +267,7 @@ async function main(req, res) {
     const buf = Buffer.from(String(body.data || ''), 'base64'); if (!buf.length || buf.length > 3_100_000) return res.status(400).json({ ok: false, error: 'size' });
     const id = 'd' + Date.now().toString(36) + randomInt(1e6).toString(36);
     await put(docPath(T, id), buf, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: mime });
-    const doc = { id, name: String(body.name || 'Dokument').replace(/[^\w äöüÄÖÜß.,()+-]/g, '').slice(0, 100) || 'Dokument', cat: String(body.cat || 'datenblatt').slice(0, 20), types: (Array.isArray(body.types) ? body.types : []).map(String).slice(0, 20), mime, size: buf.length, at: Date.now(), by: String(body.by || '').slice(0, 60) };
+    const doc = { id, name: String(body.name || 'Dokument').replace(/[^\w äöüÄÖÜß.,()+-]/g, '').slice(0, 100) || 'Dokument', cat: String(body.cat || 'datenblatt').slice(0, 20), types: (Array.isArray(body.types) ? body.types : []).map(String).slice(0, 20), units: (Array.isArray(body.units) ? body.units : []).map(x => String(x).slice(0, 30)).slice(0, 20), valid: /^\d{4}-\d{2}-\d{2}$/.test(String(body.valid || '')) ? String(body.valid) : '', mime, size: buf.length, at: Date.now(), by: String(body.by || '').slice(0, 60) };
     L.unshift(doc); await saveJson(P, L.slice(0, 500)); return res.status(200).json({ ok: true, doc });
   }
   // E-Mail (Resend): Versand aus dem Auftrag, Antworten kommen über /api/mail-in zurück
