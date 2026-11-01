@@ -251,6 +251,21 @@ async function main(req, res) {
     if (Array.isArray(inc.cands)) c.cands = inc.cands.slice(0, 200).map(x => ({ n: String(x.n || '').slice(0, 80), k: String(x.k || '').slice(0, 80), st: ['offen', 'kontaktiert', 'gewonnen', 'verworfen'].includes(x.st) ? x.st : 'offen', note: String(x.note || '').slice(0, 300), at: Number(x.at) || Date.now() })).filter(x => x.n);
     c.at = Date.now(); await saveJson(PC, c); return res.status(200).json({ ok: true, cfg: c });
   }
+  // Preismodell (Staffel, Transportmatrix) + Verbund-Richtpreise (z. B. Systemlift): privat im Blob. Lesen: alle mit Vermiet-/Angebotsrechten; Ändern: Geschäftsführung/Abrechnung
+  if (['tarif_get', 'tarif_put', 'richt_put', 'richt_del'].includes(action)) {
+    const d = scoped(verifyToken(body.token));
+    if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
+    let pm = null; if (d.sub !== 'master') { pm = await permsOf(d.sub, T); if (!pm || !['leads', 'orders', 'rent', 'acct', 'web'].some(x => pm.includes(x))) return res.status(403).json({ ok: false, error: 'forbidden' }); }
+    const canEdit = !pm || ['acct', 'web'].some(x => pm.includes(x));
+    const PT = pth(T, 'tarif'), PR = pth(T, 'richt');
+    if (action === 'tarif_get') { const [t, r] = await Promise.all([loadJson(PT), loadJson(PR)]); return res.status(200).json({ ok: true, tarif: t || null, richt: r || null, edit: canEdit }); }
+    if (!canEdit) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (action === 'richt_del') { await saveJson(PR, null); return res.status(200).json({ ok: true }); }
+    const raw = action === 'tarif_put' ? body.tarif : body.richt; const js = JSON.stringify(raw || null);
+    if (!raw || typeof raw !== 'object' || js.length > 200000) return res.status(400).json({ ok: false, error: 'format' });
+    if (action === 'richt_put' && (raw.kind !== 'verbund-richtpreise' || !Array.isArray(raw.cats))) return res.status(400).json({ ok: false, error: 'format' });
+    const o = JSON.parse(js); o.at = Date.now(); await saveJson(action === 'tarif_put' ? PT : PR, o); return res.status(200).json({ ok: true, at: o.at });
+  }
   // Dokumente (Datenblätter, Anleitungen, Prüfberichte): privat im Blob, als Anhang für E-Mails
   if (['doc_list', 'doc_put', 'doc_del', 'doc_get'].includes(action)) {
     const d = scoped(verifyToken(body.token));
