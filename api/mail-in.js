@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     let T = process.env.MAIL_IN_TENANT || 'laggner', ref = '';
     for (const a of rcpt) { const m = a.match(/^([a-z0-9-]+)\.([a-z0-9-]{3,24})@/); if (m && TENANTS.includes(m[1])) { T = m[1]; ref = m[2].toUpperCase(); break; } }
     const subject = String(d.subject || full.subject || '').slice(0, 200);
-    if (!ref) { const m = subject.match(/\b((?:[ATM]-[A-Z0-9]{4,12})|PA-\d{3,6})\b/); if (m) ref = m[1]; }
+    if (!ref) { const m = subject.match(/\b((?:[ATM]-[A-Z0-9]{4,12})|PA-\d{3,6}|SF-\d{2}-\d{4})\b/); if (m) ref = m[1]; }
     const text = clip(full.text || strip(full.html)).slice(0, 6000);
     const P = pth(T, 'mails'); const L = (await loadJson(P)) || [];
     if (L.some(m => m.id === d.email_id)) return res.status(200).json({ ok: true, dup: true });
