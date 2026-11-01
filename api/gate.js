@@ -226,9 +226,10 @@ async function main(req, res) {
     return res.status(200).json({ ok: true, list: L });
   }
   // E-Mail (Resend): Versand aus dem Auftrag, Antworten kommen über /api/mail-in zurück
-  if (['mail_cfg', 'mail_send', 'mail_list', 'mail_seen'].includes(action)) {
+  if (['mail_cfg', 'mail_send', 'mail_list', 'mail_seen', 'mail_assign'].includes(action)) {
     const d = scoped(verifyToken(body.token));
     if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (d.sub !== 'master') { const pm = await permsOf(d.sub, T); if (!pm || !['leads', 'orders', 'rent', 'acct'].some(x => pm.includes(x))) return res.status(403).json({ ok: false, error: 'forbidden' }); }
     const KEY = process.env.RESEND_API_KEY || '', FROM = process.env.MAIL_FROM || '', IN = process.env.MAIL_IN_DOMAIN || '';
     const P = pth(T, 'mails');
     if (action === 'mail_cfg') return res.status(200).json({ ok: true, send: !!(KEY && FROM), inbound: !!IN, from: FROM.replace(/^.*<|>.*$/g, '') });
@@ -239,6 +240,7 @@ async function main(req, res) {
       const out = L.filter(m => !ref || m.ref === ref || (m.refs || []).includes(ref)).slice(0, 200);
       return res.status(200).json({ ok: true, list: out, unseen: L.filter(m => m.dir === 'in' && !m.seen).length });
     }
+    if (action === 'mail_assign') { const m = L.find(x => x.id === String(body.id || '')); if (!m) return res.status(404).json({ ok: false }); m.ref = okRef(body.ref) ? String(body.ref) : ''; await saveJson(P, L); return res.status(200).json({ ok: true, mail: m }); }
     if (action === 'mail_seen') { const ids = new Set((body.ids || []).map(String)); let n = 0; for (const m of L) if (ids.has(m.id) && !m.seen) { m.seen = Date.now(); n++; } if (n) await saveJson(P, L); return res.status(200).json({ ok: true }); }
     // mail_send
     if (!KEY || !FROM) return res.status(200).json({ ok: false, error: 'not_configured' });
