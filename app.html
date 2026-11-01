@@ -4249,8 +4249,31 @@ function mkMount(ROOT, MK, OPT) {
     if (/stapler/.test(k)) return h <= 14 ? 'M' : 'L'; if (/teleskop/.test(k)) return h <= 20 ? 'M' : 'L'; return 'M'; }
   function hbOf(typeId) { var t = TYPE[typeId] || {}, c = hbCfg(), id = c.map[typeId] || hbAuto(t), k = c.classes.filter(function (x) { return x.id === id; })[0] || c.classes[0];
     return { id: k.id, name: k.name, pct: +k.pct || 0, min: +k.min || 0, sb: k.sb === '' || k.sb == null ? null : +k.sb, auto: !c.map[typeId] }; }
+  /* Preismodell (im Portal unter Mietabrechnung einstellbar, MK.tarif): Wochentarif oder Staffel nach Mietdauer + Monatspauschale,
+     Zählweise der Miettage, Transport nach Zone oder nach Gerätegewicht × Entfernung, Haftungsbeschränkung je Miete oder je Kalendertag.
+     Ohne Einstellung: bisheriges Modell; Matrix- und Staffelwerte sind Beispielwerte. */
+  var TR0 = { model: 'woche', zaehl: 'mosa', st: [{ ab: 1, pct: 100 }, { ab: 5, pct: 90 }, { ab: 15, pct: 80 }], monat: { on: false, ab: 20, faktor: 15 }, map: {},
+    tmode: 'zone', km: [15, 30, 50, 75, 100, 150, 200],
+    w: [{ id: 'a', name: 'Gerätegewicht bis 4,3 t', max: 4.3 }, { id: 'b', name: 'Gerätegewicht bis 8,9 t', max: 8.9 }, { id: 'c', name: 'Gerätegewicht ab 9 t', max: null }, { id: 'l', name: 'Lkw-Arbeitsbühne (Selbstfahrer)', lkw: 1 }],
+    tp: { a: [70, 85, 105, 130, 160, 210, 280], b: [85, 105, 135, 165, 200, 260, 350], c: [110, 140, 190, 230, 290, 380, 520], l: [80, 100, 130, 160, 0, 0, 0] }, hbKal: false };
+  function trCfg() { var c = MK.tarif || {}, o = {}; for (var k in TR0) o[k] = c[k] != null ? c[k] : JSON.parse(JSON.stringify(TR0[k])); return o; }
+  function tWeight(t) { var m = /(\d+(?:,\d+)?)\s*t\s*$/.exec(t.info || ''); return m ? parseFloat(m[1].replace(',', '.')) : null; }
+  function tHeight(t) { var m = /(\d+(?:,\d+)?)\s*m\b/.exec(t.name || ''); return m ? parseFloat(m[1].replace(',', '.')) : 0; }
+  function wClass(t, c) { c = c || trCfg(); if (t.transport === 'selbst') return c.w.filter(function (x) { return x.lkw; })[0] || null;
+    var g = tWeight(t), L = c.w.filter(function (x) { return !x.lkw; });
+    return L.filter(function (x) { return x.max != null && x.max !== '' && g != null && g <= +x.max; })[0] || L.filter(function (x) { return x.max == null || x.max === ''; })[0] || L[L.length - 1] || null; }
+  function trMatrix(t, dist, c) { c = c || trCfg(); var w = wClass(t, c); if (!w || dist == null) return null; var i = -1;
+    for (var j = 0; j < c.km.length; j++) if (dist <= +c.km[j]) { i = j; break; }
+    return { w: w, i: i, band: i >= 0 ? +c.km[i] : null, p: i >= 0 ? (+((c.tp[w.id] || [])[i]) || 0) : 0 }; }
+  function tiers(c) { return (c.st || []).slice().sort(function (a, b) { return a.ab - b.ab; }); }
+  function tierRate(t, n, c) { c = c || trCfg(); var T = tiers(c), idx = 0; T.forEach(function (x, i) { if (n >= +x.ab) idx = i; });
+    var ov = (c.map[t.id] || {}).s, r = ov && ov[idx] != null && ov[idx] !== '' ? +ov[idx] : Math.round(t.rate.tag * (+T[idx].pct || 100) / 100);
+    return { r: r, idx: idx, tier: T[idx], next: T[idx + 1] || null }; }
+  function monatOf(t, c) { c = c || trCfg(); var ov = (c.map[t.id] || {}).m; return ov != null && ov !== '' ? +ov : Math.round(tierRate(t, 1, c).r * (+c.monat.faktor || 15) / 5) * 5; }
+  function tierLabel(x, nx) { return nx ? (+x.ab === +nx.ab - 1 ? x.ab + ' Tag' : x.ab + '–' + (nx.ab - 1) + ' Tage') : 'ab ' + x.ab + ' Tagen'; }
+  function countDays(start, end, zaehl) { var n = 0, skip = 0; for (var d = dayStart(start); d < end; d += DAY) { var wd = new Date(d).getDay(); if ((zaehl === 'mosa' && wd === 0) || (zaehl === 'mofr' && (wd === 0 || wd === 6))) skip++; else n++; } return { n: Math.max(1, n), skip: skip }; }
   function price(typeId, start, end, mode, z, opt) {
-    var t = TYPE[typeId], r = t.rate, lines = [], hours = (end - start) / H;
+    var t = TYPE[typeId], r = t.rate, lines = [], hours = (end - start) / H, TC = trCfg(), nDays = 1;
     if (!(hours > 0)) return null;
     var miete = 0, label = '';
     if (dayStart(start) === dayStart(end - 1)) {
@@ -4258,11 +4281,16 @@ function mkMount(ROOT, MK, OPT) {
       if (hours <= 5) opts.push(['Halbtagestarif (bis 5 h)', r.halb]);
       opts.push(['Tagestarif', r.tag]);
       opts.sort(function (a, b) { return a[1] - b[1]; }); label = opts[0][0]; miete = opts[0][1];
+    } else if (TC.model === 'staffel') {
+      var cd = countDays(start, end, TC.zaehl), tr = tierRate(t, cd.n, TC), cal = Math.max(1, Math.round((dayStart(end - 1) - dayStart(start)) / DAY) + 1);
+      miete = cd.n * tr.r; nDays = cd.n;
+      label = 'Staffeltarif ' + tierLabel(tr.tier, tr.next) + ': ' + cd.n + ' ' + (TC.zaehl === 'kal' ? 'Kalendertage' : 'Miettage') + ' × ' + eur(tr.r) + (cd.skip ? (TC.zaehl === 'mofr' ? ' (Sa/So frei)' : ' (Sonntag frei)') : '');
+      if (TC.monat && TC.monat.on && cd.n >= (+TC.monat.ab || 20)) { var mp = monatOf(t, TC), mm = Math.round(mp * cal / 30); if (mm < miete) { miete = mm; label = 'Monatstarif (Pauschale ' + eur(mp) + ' je 30 Tage): ' + cal + ' Kalendertage anteilig'; } }
     } else {
       var days = 0, sun = 0;
       for (var d = dayStart(start); d < end; d += DAY) { if (new Date(d).getDay() === 0) sun++; else days++; }
       var wk = Math.floor(days / 6), rest = days - wk * 6;
-      miete = wk * r.woche + Math.min(rest * r.tag, rest ? r.woche : 0);
+      miete = wk * r.woche + Math.min(rest * r.tag, rest ? r.woche : 0); nDays = Math.max(1, days);
       label = (wk ? wk + ' × Wochentarif' + (rest ? ' + ' : '') : '') + (rest ? rest + ' × Tagestarif' : '') + (sun ? ' (Sonntag frei)' : '');
     }
     lines.push([t.name + ' – ' + label, miete]);
@@ -4272,14 +4300,21 @@ function mkMount(ROOT, MK, OPT) {
       bh = Math.max(4, Math.ceil(bh * 2) / 2);
       lines.push(['Bediener ' + String(bh).replace('.', ',') + ' h × ' + eur(MK.bediener), bh * MK.bediener]);
     }
-    if (mode !== 'abhol' && t.transport !== 'selbst') {
+    var TM = TC.tmode === 'matrix' && z && z.dist != null && mode !== 'abhol' ? trMatrix(t, z.dist, TC) : null;
+    if (TM) {
+      var wn = TM.w.name.replace(/^Gerätegewicht\s*/, '');
+      if (TM.i < 0 || !TM.p) lines.push(['Transport ' + wn + ' (' + z.dist + ' km) – Preis auf Anfrage', 0]);
+      else if (t.transport === 'selbst') lines.push(['Überführung ' + (mode === 'bediener' ? 'durch Bediener' : 'durch Fahrer') + ' bis ' + TM.band + ' km (2 × ' + eur(TM.p) + ')', 2 * TM.p]);
+      else lines.push(['Lieferung + Abholung ' + wn + ', bis ' + TM.band + ' km (2 × ' + eur(TM.p) + ')', 2 * TM.p]);
+    } else if (mode !== 'abhol' && t.transport !== 'selbst') {
       if (!z) lines.push(['Transport – bitte PLZ angeben', 0]);
       else if (z.n === 4) lines.push(['Transport Fernzone – Preis nach Entfernung im Angebot', 0]);
       else { var f = t.transport === 'tief' ? z.tief : z.anh; lines.push(['Lieferung + Abholung ' + z.name + ' (2 × ' + eur(f) + ')', 2 * f]); }
     } else if (t.transport === 'selbst' && mode !== 'abhol' && z) {
       lines.push(['Überführung ' + (mode === 'bediener' ? 'durch Bediener' : 'durch Fahrer') + ' (' + z.name + ')', z.n === 4 ? 0 : 2 * z.anh]);
     }
-    if (!(opt && opt.noHb)) { var hb = hbOf(typeId); if (hb.pct > 0 || hb.min > 0) lines.push(['Haftungsbeschränkung ' + String(hb.pct).replace('.', ',') + ' %' + (hb.sb != null ? ' (Selbstbeteiligung ' + eur(hb.sb) + ' je Schadenfall)' : ''), Math.max(hb.min, Math.round(miete * hb.pct / 100))]); }
+    if (!(opt && opt.noHb)) { var hb = hbOf(typeId); if (hb.pct > 0 || hb.min > 0) { var kt = Math.max(1, Math.round((dayStart(end - 1) - dayStart(start)) / DAY) + 1), hbv = TC.hbKal ? Math.round(miete / nDays * hb.pct / 100 * kt) : Math.round(miete * hb.pct / 100);
+      lines.push(['Haftungsbeschränkung ' + String(hb.pct).replace('.', ',') + ' %' + (TC.hbKal ? ' je Kalendertag (' + kt + ' KT)' : '') + (hb.sb != null ? ' (Selbstbeteiligung ' + eur(hb.sb) + ' je Schadenfall)' : ''), Math.max(hb.min, hbv)]); } }
     var sum = lines.reduce(function (s, l) { return s + l[1]; }, 0);
     return { lines: lines, net: sum, vat: sum * 0.19, gross: sum * 1.19 };
   }
@@ -4392,7 +4427,7 @@ function mkMount(ROOT, MK, OPT) {
       var mA = needDriver ? del.a : req.start - 30 * MIN, mB = (needDriver ? pick.b : req.end + 30 * MIN) + CHECK;
       if (!freeUnit(req.type, mA, mB, null, c.u.id)) { var lk = lockOf(c.u.id, mA, mB); if (lk && !why) why = 'Kein ' + t.name + ' frei (ein Gerät gesperrt: Prüfung/Wartung).'; why = why || 'Kein ' + t.name + ' in diesem Zeitraum frei.'; continue; }
       res.ok = true; res.unit = c.u; res.mA = mA; res.mB = mB; res.del = del; res.pick = pick; res.drive = drive; res.km = c.km; res.zone = z; res.depot = c.u.depot;
-      res.price = price(req.type, req.start, req.end, req.mode, needDriver ? z : null);
+      res.price = price(req.type, req.start, req.end, req.mode, needDriver && z ? Object.assign({ dist: c.km }, z) : null);
       return res;
     }
     res.err = why || 'Kein ' + t.name + ' in diesem Zeitraum frei.'; return res;
@@ -4434,7 +4469,7 @@ function mkMount(ROOT, MK, OPT) {
   /* Nur Rechenkern (z. B. für Mietabrechnung im Portal) */
   /* Buchung auf andere freie Einheit desselben Typs umsetzen (z. B. weil Gerät gesperrt) */
   function reassign(k) { var u = freeUnit(k.type, k.mA, k.mB, k); if (!u) return null; k.unit = u.id; if (k.seed) k.seed = false; save(); return u; }
-  if (OPT && OPT.engine) { load(); return { book: function () { return BOOK; }, TYPE: TYPE, UNITS: UNITS, DEPOT: DEPOT, DRIVERS: DRIVERS, price: price, km: km, zoneOf: zoneOf, save: save, plan: plan, commit: commit,
+  if (OPT && OPT.engine) { load(); return { trCfg: trCfg, TR0: TR0, tierRate: tierRate, monatOf: monatOf, tierLabel: tierLabel, wClass: wClass, trMatrix: trMatrix, tWeight: tWeight, tHeight: tHeight, book: function () { return BOOK; }, TYPE: TYPE, UNITS: UNITS, DEPOT: DEPOT, DRIVERS: DRIVERS, price: price, km: km, zoneOf: zoneOf, save: save, plan: plan, commit: commit,
     wState: wState, wSave: wSave, wReload: wReload, lockOf: lockOf, svcOf: svcOf, reassign: reassign, freeUnit: freeUnit, dayStart: dayStart, hbOf: hbOf, hbCfg: hbCfg, hbAuto: hbAuto, MK: MK }; }
   /* ---------- UI: Buchen */
   var st = (window.__mkSt && window.__mkSt.key === MK.key) ? window.__mkSt : (window.__mkSt = { key: MK.key, tab: 'buchen', week: monday(nextWork()), type: MK.defaultType, last: null });
@@ -4696,7 +4731,7 @@ if (window.MK && document.getElementById('mkView')) mkMount(document, window.MK)
 /* ===== /Mietkalender-Modul ===== */
 
 /* ===== Mietkalender als Portal-Modul ===== */
-function mkData(){if(TD&&TD.mietkal){const M=TD.mietkal;if(typeof hbLoad==='function'&&hbLoad())M.hb=hbLoad();M.noLock=!feat('wartung');M.noSiteCheck=!feat('baucheck');M.noOpCheck=!feat('schulung');M.onSave=()=>{if(typeof MA!=='undefined')MA.E=null};M.afterBook=k=>typeof rvAfterBook==='function'?rvAfterBook(k):'';M.onOffer=typeof auFromDispo==='function'&&feat('auftrag')?(o=>auFromDispo(o)):null;M.kundenFn=()=>typeof rvCustomers==='function'?rvCustomers():[];return M}return {key:TENANT,types:[],kats:[],depots:[],zones:[{n:1,name:'Zone 1',info:'bis 25 km',km:25,anh:59,tief:119},{n:2,name:'Zone 2',info:'bis 50 km',km:50,anh:99,tief:179},{n:3,name:'Zone 3',info:'bis 150 km',km:150,anh:169,tief:289},{n:4,name:'Fernzone',info:'über 150 km',km:99999,anh:0,tief:0}],drivers:[],bediener:65,seed:[],plz3:{},plz2:{},plz1:ZM_EMPTY.plz1}}
+function mkData(){if(TD&&TD.mietkal){const M=TD.mietkal;if(typeof hbLoad==='function'&&hbLoad())M.hb=hbLoad();if(typeof trLoad==='function'&&trLoad())M.tarif=trLoad();M.noLock=!feat('wartung');M.noSiteCheck=!feat('baucheck');M.noOpCheck=!feat('schulung');M.onSave=()=>{if(typeof MA!=='undefined')MA.E=null};M.afterBook=k=>typeof rvAfterBook==='function'?rvAfterBook(k):'';M.onOffer=typeof auFromDispo==='function'&&feat('auftrag')?(o=>auFromDispo(o)):null;M.kundenFn=()=>typeof rvCustomers==='function'?rvCustomers():[];return M}return {key:TENANT,types:[],kats:[],depots:[],zones:[{n:1,name:'Zone 1',info:'bis 25 km',km:25,anh:59,tief:119},{n:2,name:'Zone 2',info:'bis 50 km',km:50,anh:99,tief:179},{n:3,name:'Zone 3',info:'bis 150 km',km:150,anh:169,tief:289},{n:4,name:'Fernzone',info:'über 150 km',km:99999,anh:0,tief:0}],drivers:[],bediener:65,seed:[],plz3:{},plz2:{},plz1:ZM_EMPTY.plz1}}
 function viewMietkal(){const M=mkData();if(!M.types.length)return `<div class="card"><div class="hd"><h2>${L4('Mietkalender','Kiralama takvimi','Rental calendar')}</h2></div><p>${L4('Für diesen Mandanten sind noch keine Mietgeräte, Niederlassungen und Fahrer hinterlegt. Nach dem Import der Flotte erscheinen hier Buchung, Disposition und Preisliste.','Bu firma için henüz kiralık makine, şube ve şoför tanımlı değil. Filo aktarıldıktan sonra rezervasyon, dispozisyon ve fiyat listesi burada görünür.','No rental fleet, depots and drivers set up for this tenant yet.')}</p></div>`;
   const tab=(k,l)=>`<button type="button" role="tab" data-tab="${k}" aria-selected="false">${l}</button>`;
   return `<div class="card mk-root" style="padding:14px 16px"><div class="hd" style="margin-bottom:4px"><h2>${L4('Mietkalender','Kiralama takvimi','Rental calendar')}</h2><span class="sp"></span><small style="color:var(--muted)">${M.types.length} ${L4('Gerätetypen','makine türü','machine types')} · ${M.types.reduce((a,t)=>a+t.units.length,0)} ${L4('Geräte','makine','units')} · ${M.drivers.length} ${L4('Fahrer','şoför','drivers')} · ${L4('Stunden × Gerät = Preis, Lieferung & Abholung eingeplant','saat × makine = fiyat, teslim ve alış planlı','hours × machine = price, delivery & pickup planned')}</small></div>
@@ -5138,7 +5173,7 @@ function maState(){if(!MA.st){try{MA.st=JSON.parse(localStorage.getItem('b2b-mie
 function maSave(){try{localStorage.setItem('b2b-mietabr-'+TENANT,JSON.stringify(MA.st))}catch(e){}}
 const maD=t=>new Date(t).toLocaleDateString(LOC(),{day:'2-digit',month:'2-digit'})+' '+new Date(t).toLocaleTimeString(LOC(),{hour:'2-digit',minute:'2-digit'});
 const maDay=t=>{const d=new Date(t);d.setHours(0,0,0,0);return +d};
-function maZone(E,k){const u=E.UNITS.find(x=>x.id===k.unit);return k.mode==='abhol'?null:E.zoneOf(E.km(k.plz,u?u.depot:'heidenheim'))}
+function maZone(E,k){const u=E.UNITS.find(x=>x.id===k.unit);if(k.mode==='abhol')return null;const d=E.km(k.plz,u?u.depot:'heidenheim'),z=E.zoneOf(d);return z?Object.assign({dist:d},z):z}
 /* Positionen für einen Abrechnungszeitraum [a,b) */
 function maLines(E,k,a,b,bill){const p=E.price(k.type,a,b,k.mode,maZone(E,k),{noHb:!!k.noHb});if(!p)return [];
   const L=p.lines.map(l=>({t:l[0],q:1,u:'Pausch.',p:Math.round(l[1]*100)/100,auto:1}));
@@ -5177,7 +5212,7 @@ function viewMietabr(){const R=maRows();if(!R)return `<div class="card"><div cla
     ${tile(L4('Laufend aufgelaufen','Devam eden (birikmiş)','Running accrued'),eur(run.reduce((s,r)=>s+r.net,0)),`${run.length} ${L4('laufende Mieten','süren kira','running rentals')}`)}
     ${tile(L4('Abgerechnet','Faturalandı','Billed'),eur(done.reduce((s,r)=>s+(r.b.net||0),0)+Object.values(S.bills).reduce((s,b)=>s+(b.partNet||0),0)),`${done.length} ${L4('Rechnungsentwürfe','fatura taslağı','invoice drafts')}`)}
     ${tile(L4('Fremdanmietung','Dış kiralama','Sub-rentals'),eur(zm.reduce((s,r)=>{const x=r.rcp.find(y=>y.status==='zuschlag');return s+(x&&typeof zmQuote==='function'?zmQuote(r,x).marge:0)},0)),L4('Marge aus vergebenen Preisanfragen','verilen taleplerden kâr','margin from awarded requests'))}</div>
-   ${typeof hbCard==='function'?hbCard():''}${typeof kdCard==='function'?kdCard():''}
+   ${typeof trCard==='function'?trCard():''}${typeof hbCard==='function'?hbCard():''}${typeof kdCard==='function'?kdCard():''}
    <div class="card"><div class="subtabs" style="margin:0 0 10px">${tab('due',L4('Abrechenbar','Faturalanabilir','Billable'),due.length)}${tab('run',L4('Laufend','Devam eden','Running'),run.length)}${tab('plan',L4('Geplant','Planlı','Planned'),plan.length)}${tab('done',L4('Abgerechnet','Faturalandı','Billed'),done.length)}${feat('zumiet')?tab('zm',L4('Fremdanmietung EK/VK','Dış kiralama alış/satış','Sub-rental cost/sale'),zm.length):''}</div>
     ${MA.tab==='zm'&&feat('zumiet')?maZmTable(zm):list.length?`<div class="tw"><table><thead><tr><th>${L4('Auftrag','İş','Order')}</th><th>${L4('Kunde','Müşteri','Customer')}</th><th>${L4('Gerät','Makine','Machine')}</th><th>${L4('Zeitraum','Süre','Period')}</th><th style="text-align:right">${L4('Netto','Net','Net')}</th><th>Status</th></tr></thead><tbody>${list.map(row).join('')}</tbody></table></div>`:`<p style="color:var(--muted);margin:0">${L4('Keine Einträge.','Kayıt yok.','Nothing here.')}</p>`}
     <p style="margin:10px 0 0;font-size:12px;color:var(--muted)">${L4('Quelle: Buchungen aus dem Mietkalender (Portal und Website). Tarife, Transportzonen, Bediener und Haftungsbeschränkung werden automatisch übernommen.','Kaynak: Mietkalender rezervasyonları (portal ve web sitesi). Tarifeler, nakliye bölgeleri, operatör ve sorumluluk sınırlaması otomatik gelir.','Source: rental calendar bookings.')}</p></div>
@@ -5320,7 +5355,7 @@ function viewBoerse(){const E=kbEngine();if(!E)return `<div class="card"><div cl
   let body='';
   if(KB.tab==='frei')body=`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:13px;padding:8px 10px;background:var(--bg);border-radius:8px"><b>${L4('Kollegenrabatt (Standard)','Meslektaş indirimi (varsayılan)','Colleague discount (default)')}</b><input data-kbrab value="${S.rab}" inputmode="decimal" style="width:52px;height:30px;text-align:right"> % ${L4('auf den Tagespreis','günlük fiyattan','off daily rate')} · ${L4('Zeitraum','Dönem','Window')}: ${L4('nächste','sonraki','next')} ${KB.days} ${L4('Werktage','iş günü','working days')}</div>
    <div class="tw"><table><thead><tr><th>${L4('Gerät','Makine','Machine')}</th><th>${L4('Niederlassung','Şube','Depot')}</th><th>${L4('frei','boş','free')}</th><th>${L4('längster Block','en uzun blok','longest block')}</th><th style="text-align:right">${L4('Liste/Tag','Liste/gün','List/day')}</th><th style="text-align:right">${L4('Kollegenpreis','Meslektaş fiyatı','Colleague price')}</th><th>${L4('Sichtbar für','Görünür','Visible to')}</th><th></th></tr></thead><tbody>
-   ${F.filter(x=>x.free>=4).map(x=>{const o=S.offers[x.u.id]||{};return `<tr style="cursor:default"><td><b>${esc(x.t.name)}</b><br><small style="color:var(--muted)">${esc(x.u.id)}</small></td><td>${esc((E.DEPOT[x.u.depot]||{}).name||x.u.depot)}</td><td>${flBar?flBar(x.free/KB.days,60,1):x.free}<br><small style="color:var(--muted)">${x.free}/${KB.days} ${L4('Tage','gün','days')}</small></td><td><small>${x.block} ${L4('Tage ab','gün,','days from')} ${x.blockFrom?new Date(x.blockFrom).toLocaleDateString(LOC()):''}</small></td><td style="text-align:right">${eur(x.t.rate.tag)}</td>
+   ${F.filter(x=>x.free>=4).map(x=>{const o=S.offers[x.u.id]||{};return `<tr style="cursor:default"><td><b>${esc(x.t.name)}</b><br><small style="color:var(--muted)">${esc(x.u.id)}</small></td><td>${esc((E.DEPOT[x.u.depot]||{}).name||x.u.depot)}</td><td>${flBar?flBar(x.free/KB.days,60,1):x.free}<br><small style="color:var(--muted)">${x.free}/${KB.days} ${L4('Tage','gün','days')}</small></td><td><small>${x.block} ${L4('Tage ab','gün,','days from')} ${x.blockFrom?new Date(x.blockFrom).toLocaleDateString(LOC()):''}</small></td><td style="text-align:right">${eur(x.t.rate.tag)}${(()=>{const rr=typeof trRichtOf==='function'?trRichtOf(x.t,E):null;return rr&&rr.band?`<br><small style="color:var(--muted)" title="${esc(rr.cat.name+' · '+rr.band[1])}">${esc((trRichtLocal()||{}).short||'Verbund')}: ${eur(rr.band[2])}</small>`:''})()}</td>
      <td style="text-align:right;white-space:nowrap"><input data-kbo="${x.u.id}|rab" value="${o.rab!=null?o.rab:S.rab}" inputmode="decimal" style="width:44px;height:28px;text-align:right"> %<br><b>${eur(kbPrice(x.t,o))}</b></td>
      <td style="font-size:12.5px;white-space:nowrap"><label><input type="checkbox" data-kbo="${x.u.id}|g" ${o.g!==false?'checked':''}> ${L4('Gruppe','Grup','Group')}</label><br><label><input type="checkbox" data-kbo="${x.u.id}|p" ${o.p?'checked':''}> ${L4('Partner','Partner','Partners')}</label><br><label><input type="checkbox" data-kbo="${x.u.id}|n" ${o.n?'checked':''}> ${L4('Branchennetz','Sektör ağı','Network')}</label></td>
      <td>${o.on?`<span class="tag ok">${L4('angeboten','sunuldu','offered')}</span><br><a href="#" data-kboff="${x.u.id}" style="font-size:12px">${L4('zurückziehen','geri çek','withdraw')}</a>`:`<button class="btn p sm" data-kbon="${x.u.id}">${L4('Anbieten','Sun','Offer')}</button>`}</td></tr>`}).join('')}</tbody></table></div>
@@ -5650,6 +5685,106 @@ document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!KD.o
   if(t.dataset.kdn){const [i,f]=t.dataset.kdn.split('|');c.neben[+i][f]=f==='on'?t.checked:t.value;return}
   if(t.dataset.kdf){const f=t.dataset.kdf;c[f]=f==='terms'?t.value.split('\n').map(x=>x.trim()).filter(Boolean):t.value}});
 /* /MOD:kond */
+/* MOD:tarif *//* ===== Preismodell & Transport: Staffel nach Mietdauer, Monatspauschale, Transportmatrix Gewicht × Entfernung, Verbund-Richtpreise =====
+   Werte liegen im privaten Speicher (Server) und lokal; Verbund-Richtpreise (z. B. Systemlift) werden als Datei importiert und nie im Code abgelegt. */
+const TR={open:false,msg:'',draft:null,richt:undefined,synced:false,pv:{type:'',days:8,km:40}};
+function trLoad(){if(TR.st===undefined){try{TR.st=JSON.parse(localStorage.getItem('b2b-tarif-'+TENANT)||'null')}catch(e){TR.st=null}}return TR.st}
+function trRichtLocal(){if(TR.richt===undefined){try{TR.richt=JSON.parse(localStorage.getItem('b2b-richt-'+TENANT)||'null')}catch(e){TR.richt=null}}return TR.richt}
+function trApply(c){if(typeof TD!=='undefined'&&TD&&TD.mietkal){if(c)TD.mietkal.tarif=c;else delete TD.mietkal.tarif}if(typeof MA!=='undefined')MA.E=null}
+function trStore(c,noSync){TR.st=c;try{c?localStorage.setItem('b2b-tarif-'+TENANT,JSON.stringify(c)):localStorage.removeItem('b2b-tarif-'+TENANT)}catch(e){}trApply(c);
+  if(!noSync&&typeof gateApi==='function'&&typeof gateToken==='function'&&gateToken())gateApi({action:'tarif_put',token:gateToken(),tarif:c||{reset:1}}).catch(()=>{})}
+function trRichtStore(r){TR.richt=r;try{r?localStorage.setItem('b2b-richt-'+TENANT,JSON.stringify(r)):localStorage.removeItem('b2b-richt-'+TENANT)}catch(e){}}
+function trSync(){if(TR.synced||typeof gateApi!=='function'||typeof gateToken!=='function'||!gateToken())return;TR.synced=true;
+  gateApi({action:'tarif_get',token:gateToken()}).then(r=>{if(!r||!r.ok)return;let ch=false;
+    if(r.tarif&&!r.tarif.reset&&(!TR.st||(r.tarif.at||0)>(TR.st.at||0))){trStore(r.tarif,true);ch=true}
+    if(r.richt&&r.richt.kind){trRichtStore(r.richt);ch=true}else if(r.richt===null&&TR.richt){trRichtStore(null);ch=true}
+    TR.canEdit=r.edit!==false;if(ch&&typeof render==='function')zmKeep(()=>render())}).catch(()=>{})}
+function trE(){return typeof maEngine==='function'?maEngine():null}
+function trCur(){const E=trE();if(!E||!E.trCfg)return null;return JSON.parse(JSON.stringify(E.trCfg()))}
+/* Verbund-Richtpreis je Gerät: Kategorie nach Art/Antrieb/Gewicht, Spalte nach Arbeitshöhe */
+function trRichtOf(t,E){const R=trRichtLocal();E=E||trE();if(!R||!R.cats||!t||!E)return null;const g=E.tWeight(t),h=E.tHeight(t),txt=(t.name||'')+' '+(t.info||'');
+  for(const c of R.cats){try{if(c.kat&&!new RegExp(c.kat).test(t.kat||''))continue;if(c.info&&!new RegExp(c.info,'i').test(txt))continue;if(c.noinfo&&new RegExp(c.noinfo,'i').test(txt))continue}catch(e){continue}
+    if(c.wmax!=null&&!(g!=null&&g<=c.wmax))continue;if(c.wmin!=null&&!(g!=null&&g>c.wmin))continue;
+    const b=(c.bands||[]).find(x=>h<=x[0]+0.3);return {cat:c,band:b||null,h}}return null}
+function trTierHead(c,E){return E.TR0&&c.st?c.st.slice().sort((a,b)=>a.ab-b.ab).map((x,i,A)=>E.tierLabel(x,A[i+1])):[]}
+function trCard(){const E=trE();if(!E||!E.trCfg)return '';trSync();const ed=TR.open;const c=ed?(TR.draft=TR.draft||trCur()):trCur();const own=!!trLoad();const R=trRichtLocal();const types=Object.values(E.TYPE);
+  const st=c.st.slice().sort((a,b)=>a.ab-b.ab);const heads=trTierHead(c,E);const nf=v=>v==null?'':String(v);
+  const inp=(a,v,w,al)=>`<input ${a} value="${esc(nf(v))}" ${al?'inputmode="decimal"':''} style="width:${w||'100%'};${al?'text-align:right':''}">`;
+  const rad=(n,v,cur,lab)=>`<label style="display:inline-flex;gap:5px;align-items:center;margin-right:14px;font-weight:400"><input type="radio" name="tr${n}" data-trf="${n}" value="${v}" ${cur===v?'checked':''} ${ed?'':'disabled'}>${lab}</label>`;
+  const sec=t=>`<h3 style="margin:14px 0 6px;font-size:14px">${t}</h3>`;
+  /* Vorschau mit dem Entwurf */
+  let pvHtml='';{const pt=TR.pv.type&&E.TYPE[TR.pv.type]?TR.pv.type:types[0]&&types[0].id;if(pt){const old=TD.mietkal.tarif;TD.mietkal.tarif=c;const s0=new Date();s0.setDate(s0.getDate()+7);s0.setHours(7,0,0,0);const d=Math.max(1,parseInt(TR.pv.days,10)||1),e0=new Date(+s0);e0.setDate(e0.getDate()+d-1);e0.setHours(17,0,0,0);
+    let p=null;try{const z=E.zoneOf(+TR.pv.km||0);p=E.price(pt,+s0,+e0,'liefer',z?Object.assign({dist:+TR.pv.km||0},z):null)}catch(e){}if(old)TD.mietkal.tarif=old;else delete TD.mietkal.tarif;
+    pvHtml=`<div style="margin-top:14px;padding:10px 12px;background:var(--bg);border-radius:10px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px"><b>${L4('Probe-Rechnung','Deneme hesap','Preview')}</b>
+      <select data-trpv="type">${types.map(t=>`<option value="${t.id}" ${t.id===pt?'selected':''}>${esc(t.name)}</option>`).join('')}</select>
+      <label>${inp('data-trpv="days"',TR.pv.days,'52px',1)} ${L4('Tage ab','gün,','days from')} ${s0.toLocaleDateString(LOC())}</label><label>${inp('data-trpv="km"',TR.pv.km,'52px',1)} km</label></div>
+      ${p?`<table style="margin-top:6px;font-size:13px;width:100%">${p.lines.map(l=>`<tr><td>${esc(l[0])}</td><td style="text-align:right;white-space:nowrap">${l[1]?eur(l[1]):'–'}</td></tr>`).join('')}<tr><td><b>${L4('Netto','Net','Net')}</b></td><td style="text-align:right"><b>${eur(p.net)}</b></td></tr></table>`:''}</div>`}}
+  /* Geräte-Tabelle */
+  const rows=types.map(t=>{const ov=c.map[t.id]||{};const rr=trRichtOf(t,E);const w=E.wClass(t,c);
+    const tierCells=st.map((x,i)=>{const auto=Math.round(t.rate.tag*(+x.pct||100)/100);return `<td style="text-align:right">${ed&&c.model==='staffel'?`<input data-trm="${t.id}|s|${i}" value="${esc(nf(ov.s&&ov.s[i]))}" placeholder="${auto}" inputmode="decimal" style="width:62px;text-align:right">`:eur(ov.s&&ov.s[i]!=null&&ov.s[i]!==''?+ov.s[i]:auto)}</td>`}).join('');
+    const mo=c.monat&&c.monat.on?`<td style="text-align:right">${ed?`<input data-trm="${t.id}|m" value="${esc(nf(ov.m))}" placeholder="${E.monatOf(t,Object.assign({},c,{map:Object.assign({},c.map,{[t.id]:{s:(c.map[t.id]||{}).s}})}))}" inputmode="decimal" style="width:72px;text-align:right">`:eur(E.monatOf(t,c))}</td>`:'';
+    return `<tr style="cursor:default"><td><b>${esc(t.name)}</b><br><small style="color:var(--muted)">${esc((w&&w.name)||'')}</small></td><td style="text-align:right">${eur(t.rate.tag)}</td>${c.model==='staffel'?tierCells+mo:''}
+      ${R?`<td style="font-size:12px">${rr&&rr.band?`<b>${eur(rr.band[2])}</b> / ${eur(rr.band[3])}<br><small style="color:var(--muted)">${esc(rr.cat.name)} · ${esc(rr.band[1])}</small>`:`<small style="color:var(--muted)">${L4('keine passende Kategorie','eşleşen kategori yok','no match')}</small>`}</td>`:''}</tr>`}).join('');
+  /* Transportmatrix */
+  const mat=`<div class="tw"><table><thead><tr><th>${L4('Gewichtsklasse','Ağırlık sınıfı','Weight class')}</th>${c.km.map((k,j)=>`<th style="text-align:right">${ed?`bis ${inp(`data-trk="${j}"`,k,'46px',1)}`:'bis '+k} km</th>`).join('')}</tr></thead><tbody>
+    ${c.w.map(w=>`<tr style="cursor:default"><td>${ed?inp(`data-trw="${w.id}|name"`,w.name,'100%'):esc(w.name)}${!w.lkw?`<br><small style="color:var(--muted)">${ed?`max. ${inp(`data-trw="${w.id}|max"`,w.max,'52px',1)} t (leer = darüber)`:(w.max!=null&&w.max!==''?'≤ '+String(w.max).replace('.',',')+' t':L4('alle schwereren','daha ağır olanlar','heavier'))}</small>`:''}</td>
+      ${c.km.map((k,j)=>{const v=(c.tp[w.id]||[])[j];return `<td style="text-align:right">${ed?inp(`data-trp="${w.id}|${j}"`,v,'60px',1):(+v?eur(+v):`<small style="color:var(--muted)">${L4('auf Anfrage','talep üzerine','on request')}</small>`)}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>
+    <p style="margin:4px 0 0;font-size:12px;color:var(--muted)">${L4('Preis je Fahrt – Anlieferung und Abholung werden einzeln berechnet. 0 = Preis auf Anfrage. Die Gewichtsklasse ergibt sich aus dem Eigengewicht im Gerätestamm.','Fiyat sefer başına – teslim ve alım ayrı hesaplanır. 0 = talep üzerine. Ağırlık sınıfı makine kartındaki öz ağırlıktan gelir.','Per trip; delivery and pickup charged separately.')}</p>`;
+  return `<div class="card"><div class="hd"><h2>${L4('Preismodell & Transport','Fiyat modeli & nakliye','Pricing model & transport')}</h2><span class="sp"></span><span class="pill">${own?L4('eigene Werte','özel değerler','custom'):L4('Standard – Beispielwerte','standart – örnek değerler','default – sample values')}</span>${TR.canEdit===false?'':`<button class="btn sm" data-trtog>${ed?L4('Schließen','Kapat','Close'):L4('Bearbeiten','Düzenle','Edit')}</button>`}</div>
+   <p style="margin:0 0 6px;color:var(--muted);font-size:13px">${L4('Gilt für Angebote, Online-Buchung und Mietabrechnung. Rahmenverträge (feste Transportpreise, Rabatt) haben weiterhin Vorrang.','Teklif, online rezervasyon ve kira faturasında geçerli. Çerçeve sözleşmeler (sabit nakliye, indirim) önceliklidir.','Applies to quotes, booking and billing.')}</p>
+   ${TR.msg?`<p style="color:#2f855a;font-weight:600;margin:0 0 8px">${esc(TR.msg)}</p>`:''}
+   ${sec(L4('Mietpreis','Kira fiyatı','Rental price'))}
+   <div style="font-size:13px">${rad('model','woche',c.model,L4('Tages- und Wochentarif (6 Miettage = 1 Woche)','Günlük ve haftalık tarife (6 gün = 1 hafta)','Day & week rate'))}${rad('model','staffel',c.model,L4('Staffel nach Mietdauer','Kira süresine göre kademeli','Tiered by duration'))}</div>
+   ${c.model==='staffel'?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:8px;font-size:12px">
+     <label style="display:grid;gap:3px;font-weight:600">${L4('Miettage zählen','Kira günü sayımı','Count days')}<select data-trf="zaehl" ${ed?'':'disabled'}>${[['mosa','Mo–Sa (Sonntag frei)'],['mofr','Mo–Fr (Arbeitstage, Sa/So frei)'],['kal','Kalendertage']].map(o=>`<option value="${o[0]}" ${c.zaehl===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></label>
+     <div style="display:grid;gap:3px;font-weight:600">${L4('Staffel (Preis gilt für die ganze Mietzeit)','Kademe (fiyat tüm süreye uygulanır)','Tiers')}${st.map((x,i)=>`<div style="font-weight:400">${L4('ab','',' from')} ${ed?inp(`data-trs="${i}|ab"`,x.ab,'44px',1):x.ab} ${L4('Tagen','gün','days')}: ${ed?inp(`data-trs="${i}|pct"`,x.pct,'50px',1):x.pct} % ${L4('vom Tagespreis','günlük fiyatın','of day rate')}${ed&&st.length>1?` <button class="btn sm" data-trsdel="${i}">×</button>`:''}</div>`).join('')}${ed&&st.length<5?`<button class="btn sm" data-trsadd style="justify-self:start">+ ${L4('Stufe','Kademe','Tier')}</button>`:''}</div>
+     <div style="display:grid;gap:3px;font-weight:600"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-trf="mon" ${c.monat.on?'checked':''} ${ed?'':'disabled'}>${L4('Monatspauschale','Aylık sabit fiyat','Monthly flat rate')}</label>${c.monat.on?`<span style="font-weight:400">${L4('ab','',' from')} ${ed?inp('data-trf="mab"',c.monat.ab,'44px',1):c.monat.ab} ${L4('Miettagen','kira gününden itibaren','days')}; ${L4('Standard','varsayılan','default')} = ${ed?inp('data-trf="mfak"',c.monat.faktor,'44px',1):c.monat.faktor} × ${L4('Preis der 1. Staffel je 30 Tage, anteilig','1. kademe fiyatı / 30 gün, oransal','first-tier rate per 30 days')}</span>`:''}</div></div>`:''}
+   ${sec(L4('Transport','Nakliye','Transport'))}
+   <div style="font-size:13px">${rad('tmode','zone',c.tmode,L4('nach Zone (Entfernung)','bölgeye göre (mesafe)','by zone'))}${rad('tmode','matrix',c.tmode,L4('nach Gerätegewicht × Entfernung','makine ağırlığı × mesafeye göre','by weight × distance'))}</div>
+   ${c.tmode==='matrix'?mat:''}
+   ${sec(L4('Haftungsbeschränkung','Sorumluluk sınırlaması','Liability waiver'))}
+   <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" data-trf="hbKal" ${c.hbKal?'checked':''} ${ed?'':'disabled'}>${L4('je Kalendertag berechnen (auch Wochenende/Feiertage) statt auf die berechnete Miete','takvim günü başına hesapla (hafta sonu dahil), kira tutarı yerine','per calendar day')}</label>
+   ${sec(L4('Preise je Gerät','Makine bazında fiyatlar','Prices per machine'))}
+   <div class="tw"><table><thead><tr><th>${L4('Gerät','Makine','Machine')}</th><th style="text-align:right">${L4('Tagespreis','Günlük','Day')}</th>${c.model==='staffel'?heads.map(h=>`<th style="text-align:right">${esc(h)}</th>`).join('')+(c.monat.on?`<th style="text-align:right">${L4('Monat','Ay','Month')}</th>`:''):''}${R?`<th>${esc(R.short||'Verbund')} ${L4('Richtpreis ab 1 / ab 10 AT','tavsiye 1 / 10 AT','guide 1 / 10 days')}</th>`:''}</tr></thead><tbody>${rows}</tbody></table></div>
+   ${ed&&c.model==='staffel'?`<p style="margin:4px 0 0;font-size:12px;color:var(--muted)">${L4('Leere Felder = automatisch aus Tagespreis × Staffel-%. Eigener Wert überschreibt.','Boş alan = günlük fiyat × kademe %. Kendi değeriniz önceliklidir.','Empty = automatic.')}</p>`:''}
+   ${sec(L4('Verbund-Richtpreise','Birlik tavsiye fiyatları','Network guide prices'))}
+   ${R?`<p style="margin:0;font-size:13px"><b>${esc(R.name||'')}</b>${R.stand?' · Stand '+esc(R.stand):''}${R.at?' · '+L4('importiert','yüklendi','imported')+' '+new Date(R.at).toLocaleDateString(LOC()):''} · ${R.cats.length} ${L4('Kategorien','kategori','categories')}</p>
+     ${(R.hinweise||[]).length?`<details style="margin-top:4px;font-size:12px"><summary style="cursor:pointer">${L4('Hinweise und Zuschläge aus der Liste','Listedeki notlar ve ek ücretler','Notes')}</summary><ul style="margin:4px 0 0 16px;padding:0">${R.hinweise.map(h=>`<li>${esc(h)}</li>`).join('')}</ul></details>`:''}
+     ${TR.canEdit===false?'':`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${R.transport?`<button class="btn sm" data-trrt>${L4('Transportmatrix übernehmen','Nakliye matrisini al','Use transport matrix')}</button>`:''}<button class="btn sm" data-trrs>${L4('Richtpreise als Staffelpreise übernehmen','Tavsiye fiyatları kademe fiyatı yap','Use as tier prices')}</button><label class="btn sm" style="cursor:pointer">${L4('Neue Datei importieren','Yeni dosya yükle','Import new file')}<input type="file" accept=".json,application/json" data-trimp hidden></label><button class="btn sm" data-trrdel>${L4('Entfernen','Kaldır','Remove')}</button></div>`}`
+   :`<p style="margin:0;font-size:13px;color:var(--muted)">${L4('Richtpreisliste Ihres Verbunds (z. B. Systemlift) als Datei importieren – sie wird nur im privaten Speicher abgelegt und erscheint hier sowie in der Kapazitätsbörse neben Ihren Preisen.','Birliğinizin tavsiye fiyat listesini (ör. Systemlift) dosya olarak yükleyin – sadece özel depoda tutulur, burada ve kapasite borsasında fiyatlarınızın yanında görünür.','Import your network guide price file.')}</p>${TR.canEdit===false?'':`<label class="btn sm" style="cursor:pointer;margin-top:8px;display:inline-block">${L4('Richtpreis-Datei importieren','Tavsiye fiyat dosyası yükle','Import guide prices')}<input type="file" accept=".json,application/json" data-trimp hidden></label>`}`}
+   ${pvHtml}
+   ${ed?`<div style="display:flex;gap:8px;margin-top:12px"><button class="btn p" data-trsave>${L4('Speichern','Kaydet','Save')}</button><button class="btn" data-trreset>${L4('Standard wiederherstellen','Standarda dön','Restore default')}</button></div>`:''}</div>`}
+function trRerender(){zmKeep(()=>render())}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-trtog],[data-trsave],[data-trreset],[data-trsadd],[data-trsdel],[data-trrt],[data-trrs],[data-trrdel]');if(!b)return;e.preventDefault();
+  if(b.hasAttribute('data-trtog')){TR.open=!TR.open;TR.msg='';TR.draft=TR.open?trCur():null;return trRerender()}
+  if(b.hasAttribute('data-trsadd')){const c=TR.draft;const mx=c.st.reduce((a,x)=>Math.max(a,+x.ab||0),1);c.st.push({ab:mx+10,pct:70});return trRerender()}
+  if(b.hasAttribute('data-trsdel')){const c=TR.draft;const st=c.st.slice().sort((a,x)=>a.ab-x.ab);st.splice(+b.dataset.trsdel,1);c.st=st;return trRerender()}
+  if(b.hasAttribute('data-trsave')){const c=TR.draft;const n=(v,d)=>{const x=parseFloat(String(v).replace(',','.'));return Number.isFinite(x)?Math.max(0,x):d};
+    c.st=c.st.map(x=>({ab:Math.max(1,Math.round(n(x.ab,1))),pct:n(x.pct,100)})).sort((a,x)=>a.ab-x.ab).filter((x,i,A)=>!i||x.ab!==A[i-1].ab);if(!c.st.length||c.st[0].ab!==1)c.st.unshift({ab:1,pct:100});
+    c.monat={on:!!c.monat.on,ab:Math.max(1,Math.round(n(c.monat.ab,20))),faktor:n(c.monat.faktor,15)};c.km=c.km.map(k=>Math.round(n(k,0))).filter(k=>k>0);
+    Object.keys(c.tp).forEach(w=>{c.tp[w]=c.km.map((k,j)=>n((c.tp[w]||[])[j],0))});c.w.forEach(w=>{if(!w.lkw)w.max=String(w.max==null?'':w.max).trim()===''?null:n(w.max,null)});
+    Object.keys(c.map).forEach(id=>{const o=c.map[id];if(o.s)o.s=o.s.map(v=>String(v==null?'':v).trim()===''?'':n(v,''));if(o.m!=null&&String(o.m).trim()==='')delete o.m;else if(o.m!=null)o.m=n(o.m,'');if(o.s&&o.s.every(v=>v===''))delete o.s;if(!o.s&&o.m==null)delete c.map[id]});
+    c.at=Date.now();trStore(c);TR.open=false;TR.draft=null;TR.msg=L4('Gespeichert – gilt für neue Angebote und Buchungen.','Kaydedildi – yeni teklif ve rezervasyonlarda geçerli.','Saved.');return trRerender()}
+  if(b.hasAttribute('data-trreset')){trStore(null);TR.open=false;TR.draft=null;TR.msg=L4('Standard wiederhergestellt.','Standarda dönüldü.','Restored.');return trRerender()}
+  if(b.hasAttribute('data-trrt')){const R=trRichtLocal();if(!R||!R.transport)return;if(!TR.open){TR.open=true;TR.draft=trCur()}const c=TR.draft,T=R.transport;c.tmode='matrix';c.km=T.km.slice();c.w=JSON.parse(JSON.stringify(T.w));c.tp=JSON.parse(JSON.stringify(T.tp));TR.msg=L4('Transportmatrix übernommen – bitte prüfen und speichern.','Nakliye matrisi alındı – kontrol edip kaydedin.','Taken over – check and save.');return trRerender()}
+  if(b.hasAttribute('data-trrs')){const E=trE();if(!E)return;if(!TR.open){TR.open=true;TR.draft=trCur()}const c=TR.draft;c.model='staffel';const st=c.st.slice().sort((a,x)=>a.ab-x.ab);let n=0;
+    Object.values(E.TYPE).forEach(t=>{const rr=trRichtOf(t,E);if(!rr||!rr.band)return;n++;c.map[t.id]=Object.assign({},c.map[t.id]||{},{s:st.map(x=>+x.ab>=10?rr.band[3]:rr.band[2])})});
+    TR.msg=L4(n+' Geräte mit Richtpreisen vorbelegt (unter 10 Tagen: ab 1 AT, ab 10 Tagen: ab 10 AT) – bitte prüfen und speichern.',n+' makine tavsiye fiyatla dolduruldu (10 günden az: 1 AT, 10+ gün: 10 AT) – kontrol edip kaydedin.',n+' machines prefilled – check and save.');return trRerender()}
+  if(b.hasAttribute('data-trrdel')){trRichtStore(null);if(typeof gateApi==='function'&&typeof gateToken==='function'&&gateToken())gateApi({action:'richt_del',token:gateToken()}).catch(()=>{});TR.msg=L4('Richtpreise entfernt.','Tavsiye fiyatlar kaldırıldı.','Removed.');return trRerender()}});
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset)return;
+  if(t.dataset.trimp!=null&&t.files&&t.files[0]){const f=t.files[0];if(f.size>300000){TR.msg=L4('Datei zu groß.','Dosya çok büyük.','File too large.');return trRerender()}const rd=new FileReader();rd.onload=()=>{let R=null;try{R=JSON.parse(rd.result)}catch(e){}
+      if(!R||R.kind!=='verbund-richtpreise'||!Array.isArray(R.cats)){TR.msg=L4('Keine gültige Richtpreis-Datei.','Geçerli bir tavsiye fiyat dosyası değil.','Invalid file.');return trRerender()}
+      R.at=Date.now();trRichtStore(R);TR.msg=L4('Richtpreise importiert: ','Tavsiye fiyatlar yüklendi: ','Imported: ')+(R.name||'');
+      if(typeof gateApi==='function'&&typeof gateToken==='function'&&gateToken())gateApi({action:'richt_put',token:gateToken(),richt:R}).then(r=>{if(!r||!r.ok){TR.msg+=' · '+L4('nur lokal gespeichert','sadece yerel kaydedildi','local only');trRerender()}}).catch(()=>{});trRerender()};rd.readAsText(f);return}
+  if(t.dataset.trpv){TR.pv[t.dataset.trpv]=t.value;return trRerender()}
+  if(!TR.open||!TR.draft)return;const c=TR.draft;
+  if(t.dataset.trf){const f=t.dataset.trf;if(f==='model'||f==='tmode'){c[f]=t.value;return trRerender()}if(f==='zaehl')c.zaehl=t.value;else if(f==='mon'){c.monat.on=t.checked;return trRerender()}else if(f==='mab')c.monat.ab=t.value;else if(f==='mfak')c.monat.faktor=t.value;else if(f==='hbKal')c.hbKal=t.checked;return}
+  if(t.dataset.trs){const [i,f]=t.dataset.trs.split('|');const st=c.st.slice().sort((a,x)=>a.ab-x.ab);st[+i][f]=t.value;c.st=st;return}
+  if(t.dataset.trk!=null){c.km[+t.dataset.trk]=t.value;return}
+  if(t.dataset.trp){const [w,j]=t.dataset.trp.split('|');(c.tp[w]=c.tp[w]||[])[+j]=t.value;return}
+  if(t.dataset.trw){const [id,f]=t.dataset.trw.split('|');const w=c.w.find(x=>x.id===id);if(w)w[f]=t.value;return}
+  if(t.dataset.trm){const [id,k,i]=t.dataset.trm.split('|');const o=c.map[id]=c.map[id]||{};if(k==='s'){o.s=o.s||[];o.s[+i]=t.value}else o.m=t.value}});
+/* /MOD:tarif */
 /* MOD:hb *//* ===== Haftungsbeschränkung: Klassen je Gerätegröße, Zuordnung je Gerät, Ausschlüsse – eine Stelle für Angebot, Mietkalender, Abrechnung und Schadenfälle ===== */
 const HB={open:false,msg:''};
 function hbLoad(){if(!HB.st){try{HB.st=JSON.parse(localStorage.getItem('b2b-hb-'+TENANT)||'null')}catch(e){}}return HB.st||null}
