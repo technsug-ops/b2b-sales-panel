@@ -266,6 +266,25 @@ async function main(req, res) {
     if (action === 'richt_put' && (raw.kind !== 'verbund-richtpreise' || !Array.isArray(raw.cats))) return res.status(400).json({ ok: false, error: 'format' });
     const o = JSON.parse(js); o.at = Date.now(); await saveJson(action === 'tarif_put' ? PT : PR, o); return res.status(200).json({ ok: true, at: o.at });
   }
+  // Zentrale Nummernkreise (Rechnungen, Gutschriften …): fortlaufend, ohne Lücken, mit Journal jeder vergebenen Nummer
+  if (['seq_next', 'seq_get'].includes(action)) {
+    const d = scoped(verifyToken(body.token));
+    if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (d.sub !== 'master') { const pm = await permsOf(d.sub, T); if (!pm || !pm.some(x => ['acct', 'orders', 'rent'].includes(x))) return res.status(403).json({ ok: false, error: 'forbidden' }); }
+    const P = pth(T, 'seq');
+    if (action === 'seq_get') { const S = (await loadJson(P)) || { ser: {}, log: [] }; return res.status(200).json({ ok: true, ser: S.ser, log: (S.log || []).slice(0, 300) }); }
+    const ser = String(body.series || ''); if (!/^[A-Z0-9]{2,12}$/.test(ser)) return res.status(400).json({ ok: false, error: 'series' });
+    const prefix = String(body.prefix || '').slice(0, 20); const ref = String(body.ref || '').slice(0, 80); const by = String(body.by || '').slice(0, 60);
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const S = (await loadJson(P)) || { ser: {}, log: [] }; S.ser = S.ser || {}; S.log = S.log || [];
+      const cur = S.ser[ser] || { n: Math.max(0, (parseInt(body.start, 10) || 1) - 1) };
+      const n = cur.n + 1; const tok = randomInt(1e9).toString(36) + Date.now().toString(36);
+      S.ser[ser] = { n, tok }; S.log.unshift({ ser, n, no: prefix + String(n).padStart(4, '0'), ref, by, at: Date.now() }); S.log = S.log.slice(0, 5000);
+      await saveJson(P, S); await new Promise(r => setTimeout(r, 120 + randomInt(120)));
+      const chk = await loadJson(P); if (chk && chk.ser && chk.ser[ser] && chk.ser[ser].tok === tok) return res.status(200).json({ ok: true, n, no: prefix + String(n).padStart(4, '0') });
+    }
+    return res.status(409).json({ ok: false, error: 'busy' });
+  }
   // Gemeinsamer Datenstand der Vermietungsmodule (Disposition, Prüfungen, Übergaben, Schäden, Abrechnung …): je Modul ein JSON mit Version; Bilder separat
   if (['st_get', 'st_put', 'img_put', 'img_get'].includes(action)) {
     const d = scoped(verifyToken(body.token));
