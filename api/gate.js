@@ -216,7 +216,7 @@ async function main(req, res) {
     if (action === 'auf_save') {
       const items = Array.isArray(body.items) ? body.items.slice(0, 50) : [body.item];
       for (const it of items) {
-        if (!it || typeof it !== 'object' || !/^[A-Z]-[A-Z0-9]{3,12}$/.test(String(it.id || ''))) continue;
+        if (!it || typeof it !== 'object' || !/^[A-Z]{1,3}-[A-Z0-9]{3,12}$/.test(String(it.id || ''))) continue;
         const raw = JSON.stringify(it); if (raw.length > 60000) continue;
         const i = L.findIndex(x => x.id === it.id); const cur = i >= 0 ? L[i] : null;
         if (cur && (cur.upd || 0) > (it.upd || 0) + 1000) continue;          // neuere Fassung auf dem Server gewinnt
@@ -265,6 +265,37 @@ async function main(req, res) {
     if (!raw || typeof raw !== 'object' || js.length > 200000) return res.status(400).json({ ok: false, error: 'format' });
     if (action === 'richt_put' && (raw.kind !== 'verbund-richtpreise' || !Array.isArray(raw.cats))) return res.status(400).json({ ok: false, error: 'format' });
     const o = JSON.parse(js); o.at = Date.now(); await saveJson(action === 'tarif_put' ? PT : PR, o); return res.status(200).json({ ok: true, at: o.at });
+  }
+  // Gemeinsamer Datenstand der Vermietungsmodule (Disposition, Prüfungen, Übergaben, Schäden, Abrechnung …): je Modul ein JSON mit Version; Bilder separat
+  if (['st_get', 'st_put', 'img_put', 'img_get'].includes(action)) {
+    const d = scoped(verifyToken(body.token));
+    if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (d.sub !== 'master') { const pm = await permsOf(d.sub, T); if (!pm || !pm.length) return res.status(403).json({ ok: false, error: 'forbidden' }); }
+    const KEYS = ['mk-book', 'mk-wartung', 'uebergabe', 'schaden', 'mietabr', 'firmenkd', 'kond', 'hb', 'kdnr', 'zm', 'zm-rfq', 'zm-cfg', 'boerse', 'schulung', 'baucheck', 'bewert', 'telematik', 'inv'];
+    const imgPath = h => `gate/t/${T}/img/${h}`;
+    if (action === 'st_get') {
+      const want = Array.isArray(body.keys) ? body.keys.filter(k => KEYS.includes(k)) : KEYS; const have = body.have && typeof body.have === 'object' ? body.have : {};
+      const out = {}; await Promise.all(want.map(async k => { const o = await loadJson(pth(T, 'st-' + k)); if (!o) out[k] = null; else if (o.v !== have[k]) out[k] = o; }));
+      return res.status(200).json({ ok: true, items: out });
+    }
+    if (action === 'st_put') {
+      const k = String(body.key || ''); if (!KEYS.includes(k)) return res.status(400).json({ ok: false, error: 'key' });
+      const raw = JSON.stringify(body.data === undefined ? null : body.data); if (raw.length > 3_500_000) return res.status(413).json({ ok: false, error: 'size' });
+      const P = pth(T, 'st-' + k); const cur = await loadJson(P);
+      if (cur && body.base !== cur.v) return res.status(200).json({ ok: false, conflict: true, v: cur.v, data: cur.data, by: cur.by, at: cur.at });
+      const nx = { v: (cur ? cur.v : 0) + 1, at: Date.now(), by: String(body.by || '').slice(0, 60), data: JSON.parse(raw) }; await saveJson(P, nx);
+      return res.status(200).json({ ok: true, v: nx.v, at: nx.at });
+    }
+    if (action === 'img_put') {
+      const h = String(body.h || ''); const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(body.data || ''));
+      if (!/^[a-z0-9]{6,40}$/.test(h) || !m) return res.status(400).json({ ok: false, error: 'format' });
+      const buf = Buffer.from(m[2], 'base64'); if (buf.length > 1_500_000) return res.status(413).json({ ok: false, error: 'size' });
+      await put(imgPath(h), buf, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: m[1] });
+      return res.status(200).json({ ok: true });
+    }
+    const hs = (Array.isArray(body.hs) ? body.hs : []).map(String).filter(h => /^[a-z0-9]{6,40}$/.test(h)).slice(0, 30); const out = {};
+    await Promise.all(hs.map(async h => { try { const r = await get(imgPath(h), { access: 'private', useCache: false }); if (!r) return; const b = Buffer.from(await new Response(r.stream).arrayBuffer()); out[h] = 'data:' + ((r.blob && r.blob.contentType) || 'image/jpeg') + ';base64,' + b.toString('base64'); } catch (e) {} }));
+    return res.status(200).json({ ok: true, imgs: out });
   }
   // Dokumente (Datenblätter, Anleitungen, Prüfberichte): privat im Blob, als Anhang für E-Mails
   if (['doc_list', 'doc_put', 'doc_del', 'doc_get', 'doc_upd'].includes(action)) {

@@ -4169,6 +4169,7 @@ function render(){
   ['dp_kind','dp_brand','dp_min','dp_states','dp_partners'].forEach(id=>{const e=$('#'+id);if(e)e.onchange=dpRe});
   v.querySelectorAll('[data-dpt],[data-dpn],[data-dpu]').forEach(c=>c.onchange=dpRe);
   const dpn=$('#dp_name');if(dpn)dpn.onchange=()=>{dpub.name=dpn.value};
+  if(typeof syTick==='function')syTick();
   {const af=document.getElementById('auFab');if(af){const on=typeof featOn==='function'&&featOn('auftrag')&&!(viewer&&viewer.partner)&&typeof hasP==='function'&&(hasP('orders')||hasP('leads')||hasP('acct')||hasP('rent'))&&!(page==='auftrag'&&typeof AU!=='undefined'&&AU.form);af.hidden=!on;const l=document.getElementById('auFabL');if(l)l.textContent=L4('Angebot','Teklif ver','Quote')}}
   mountMaps();if(typeof zmMount==='function')zmMount();if(page==='mietkal'&&window.mkMount){const r=document.querySelector('.mk-root');if(r){const M=mkData();M.noSiteCheck=!feat('baucheck');M.noOpCheck=!feat('schulung');window.mkMount(r,M)}}if(typeof tmMount==='function')tmMount();
 }
@@ -4439,7 +4440,8 @@ function mkMount(ROOT, MK, OPT) {
   }
   function commit(p, kunde, seed) {
     var nx = 5200 + BOOK.length; BOOK.forEach(function (b) { var n = parseInt(String(b.id).split('-')[1], 10); if (n >= nx) nx = n + 1; });
-    var k = { id: (seed ? 'S' : 'W') + '-' + nx, type: p.req.type, unit: p.unit.id, kunde: kunde, plz: p.req.plz, mode: p.req.mode,
+    var rnd = seed ? '' : String.fromCharCode(65 + Math.floor(Math.random() * 26), 65 + Math.floor(Math.random() * 26));   // mehrere Benutzer gleichzeitig: Nummer bleibt eindeutig
+    var k = { id: (seed ? 'S' : 'W') + '-' + nx + rnd, type: p.req.type, unit: p.unit.id, kunde: kunde, plz: p.req.plz, mode: p.req.mode,
       start: p.req.start, end: p.req.end, mA: p.mA, mB: p.mB, net: p.price ? p.price.net : 0, seed: !!seed };
     if (p.del) { k.dDel = p.del.driver.id; k.delA = p.del.a; k.delB = p.del.b; k.arrive = p.del.arrive; }
     if (p.pick) { k.dPick = p.pick.driver.id; k.pickA = p.pick.a; k.pickB = p.pick.b; k.pickArrive = p.pick.arrive; }
@@ -4467,7 +4469,7 @@ function mkMount(ROOT, MK, OPT) {
   }
   function load() {
     seed();
-    try { var x = JSON.parse(localStorage.getItem(KEY) || '[]'); x.forEach(function (k) { if (k.end > Date.now() - 14 * DAY) BOOK.push(k); }); } catch (e) {}
+    try { var x = JSON.parse(localStorage.getItem(KEY) || '[]'); x.forEach(function (k) { if (k.end > Date.now() - 400 * DAY) BOOK.push(k); }); } catch (e) {}
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(BOOK.filter(function (k) { return !k.seed; }))); } catch (e) {} }
 
@@ -5499,11 +5501,11 @@ function ugPrint(){const p=ugCur();if(!p)return;const [kid,dir]=UG.open.split('|
   const A=typeof auLoad==='function'&&feat('auftrag')?auLoad().find(v=>v.booking===kid):null;const prev=out?null:ugState().prot[kid+'|out'];const D=ts=>ts?new Date(ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
   const body=`<div class="cols"><div>${b2bKv([['Gerät',esc(t.name||'')],['Inventar-Nr.',esc(x.k.unit)],['Einsatzort',esc(x.where)],['Mietzeit',D(x.k.start)+' – '+D(x.k.end)]])}</div><div>${b2bKv([['Betriebsstunden',esc(p.h||'—')+' h'+(prev&&prev.h&&p.h?' <small style="color:#6b7385">(+'+(+p.h-+prev.h)+' h)</small>':'')],['Tank / Akku',p.fuel+' %'+(prev?' <small style="color:#6b7385">(Übergabe '+(prev.fuel||100)+' %)</small>':'')],['Fahrer',esc(x.drv||'—')],out?['Eingewiesen',esc(p.person||'—')]:null])}</div></div>
    <h2>Prüfung</h2><div class="chk">${[...UG_CHK.filter(c=>out||!['einweisung','ausweis'].includes(c[0])),...ugChkT(t.name,out)].map(c=>`<div><span class="box ${p.chk[c[0]]?'on':''}">${p.chk[c[0]]?'✓':''}</span>${c[1]}</div>`).join('')}</div>
-   <h2>Schäden</h2>${p.dmg.length?p.dmg.map(d=>`<div class="dmg">${d.neu?'<b>NEU · </b>':''}<b>${esc(ugArea(d.a))}</b> – ${esc(d.t)}${d.neu&&d.sev?' · '+esc((UG_SEV.find(x=>x[0]===d.sev)||UG_SEV[1])[1]):''}${d.sf?' · Schadenfall '+esc(d.sf):''}</div>${(d.ph||[]).length?`<div class="photos">${d.ph.filter(s=>typeof s==='string'&&s.startsWith('data:')).map(s=>`<img src="${s}" alt="">`).join('')}</div>`:''}`).join(''):'<p class="none">Keine Schäden festgestellt.</p>'}
-   ${p.photos.length?`<h2>Fotos</h2><div class="photos">${p.photos.filter(s=>typeof s==='string'&&s.startsWith('data:')).map(s=>`<img src="${s}" alt="">`).join('')}</div>`:''}`;
+   <h2>Schäden</h2>${p.dmg.length?p.dmg.map(d=>`<div class="dmg">${d.neu?'<b>NEU · </b>':''}<b>${esc(ugArea(d.a))}</b> – ${esc(d.t)}${d.neu&&d.sev?' · '+esc((UG_SEV.find(x=>x[0]===d.sev)||UG_SEV[1])[1]):''}${d.sf?' · Schadenfall '+esc(d.sf):''}</div>${(d.ph||[]).length?`<div class="photos">${d.ph.filter(s=>typeof s==='string'&&/^(data:|img:)/.test(s)).map(s=>`<img src="${s}" alt="">`).join('')}</div>`:''}`).join(''):'<p class="none">Keine Schäden festgestellt.</p>'}
+   ${p.photos.length?`<h2>Fotos</h2><div class="photos">${p.photos.filter(s=>typeof s==='string'&&/^(data:|img:)/.test(s)).map(s=>`<img src="${s}" alt="">`).join('')}</div>`:''}`;
   b2bDoc({title:out?'Übergabeprotokoll':'Rückgabeprotokoll',nr:kid,to:[x.k.kunde,x.where],meta:[['Datum',D(p.done)],A&&A.ls?['Lieferschein',A.ls.nr]:null,A&&A.abNr?['Auftrag',A.abNr]:null],
     sub:out?'Das Gerät wurde in ordnungsgemäßem Zustand übergeben. Mit der Unterschrift wird der Lieferschein quittiert.':'Das Gerät wurde zurückgenommen und auf Schäden und Vollständigkeit geprüft.',body,
-    sign:[{img:typeof p.sig==='string'&&p.sig.startsWith('data:image')?p.sig:'',name:p.signer||'',label:out?'Unterschrift Kunde (Empfang)':'Unterschrift Kunde (Rückgabe)'},{name:x.drv||'',label:'Unterschrift Fahrer'}]})}
+    sign:[{img:typeof p.sig==='string'&&/^(data:image|img:)/.test(p.sig)?p.sig:'',name:p.signer||'',label:out?'Unterschrift Kunde (Empfang)':'Unterschrift Kunde (Rückgabe)'},{name:x.drv||'',label:'Unterschrift Fahrer'}]})}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ugopen],[data-ugback],[data-ugday],[data-ugdmgadd],[data-ugdmgdel],[data-ugphdel],[data-ugsigsave],[data-ugsigreset],[data-ugsigclr],[data-ugdone],[data-ugprint],[data-uggo],[data-ugbill],[data-ugauf],[data-ugdphdel]');if(!b)return;e.preventDefault();const p=ugCur();
   if(b.dataset.ugopen){UG.open=b.dataset.ugopen;render();window.scrollTo(0,0);setTimeout(ugSig,30);return}
   if(b.hasAttribute('data-ugback')){UG.open=null;render();return}
@@ -5587,6 +5589,84 @@ function mtCard(){mtLoad();const E=MT.edit;const kl=k=>{const x=MT_KINDS.find(y=
    <div class="tw"><table><thead><tr><th>${L4('Schritt','Adım','Step')}</th><th>${L4('Vorlage','Şablon','Template')}</th><th>${L4('Betreff','Konu','Subject')}</th><th></th></tr></thead><tbody>
    ${[...MT_BUILTIN,...(MT.own||[])].sort((a,b)=>MT_KINDS.findIndex(k=>k[0]===a.kind)-MT_KINDS.findIndex(k=>k[0]===b.kind)).map(t=>`<tr style="cursor:default"><td>${esc(kl(t.kind))}</td><td><b>${esc(t.n)}</b><br><small style="color:var(--muted)">${t.id.startsWith('b-')?L4('mitgeliefert','hazır','built-in'):L4('eigene','özel','own')+(t.by?' · '+esc(t.by):'')}</small></td><td style="font-size:13px">${esc(t.s)}</td><td style="white-space:nowrap"><button class="btn sm" data-mtedit="${esc(t.id)}">${t.id.startsWith('b-')?L4('Kopieren & anpassen','Kopyala & uyarla','Copy & edit'):L4('Bearbeiten','Düzenle','Edit')}</button>${t.id.startsWith('u')?` <button class="btn sm" data-mtdel="${esc(t.id)}">✕</button>`:''}</td></tr>`).join('')}</tbody></table></div></div>`}
 /* /MOD:mailtpl */
+/* MOD:sync *//* ===== Gemeinsamer Datenstand: Disposition, Prüfungen & Wartung, Übergaben, Schäden, Mietabrechnung, Firmenkunden, Konditionen, Fremdanmietung …
+   Die Module speichern weiter wie bisher (localStorage); diese Schicht überträgt jede Änderung auf den Server (je Modul ein JSON mit Version),
+   holt Änderungen anderer Benutzer alle 20 s ab und führt gleichzeitige Änderungen zusammen. Fotos/Unterschriften liegen separat im privaten Speicher. */
+const SY={on:false,started:false,v:{},base:{},mem:{},timers:{},pending:{},pushing:{},img:{},imgWant:new Set(),up:new Set(),applying:false,state:'',err:0,k2s:{},s2k:{},poll:null};
+function syMap(){const T=TENANT;const wk=(typeof TD!=='undefined'&&TD&&TD.mietkal&&TD.mietkal.wkey)||'laggner-wartung-v1';
+  return [['laggner-mietkalender-v1','mk-book'],[wk,'mk-wartung'],['b2b-uebergabe-'+T,'uebergabe'],['b2b-schaden-'+T,'schaden'],['b2b-mietabr-'+T,'mietabr'],['b2b-firmenkd-'+T,'firmenkd'],['b2b-kond-'+T,'kond'],['b2b-hb-'+T,'hb'],['b2b-kdnr-'+T,'kdnr'],
+    ['b2b-zm-'+T,'zm'],['b2b-zm-rfq-'+T,'zm-rfq'],['b2b-zm-cfg-'+T,'zm-cfg'],['b2b-boerse-'+T,'boerse'],['b2b-schulung-'+T,'schulung'],['b2b-baucheck-'+T,'baucheck'],['b2b-bewert-'+T,'bewert'],['b2b-telematik-'+T,'telematik'],[typeof LSK==='function'?LSK('b2b-inv'):'b2b-inv','inv']]}
+function syActive(){return typeof feat==='function'&&feat('mietkal')&&typeof gateApi==='function'&&typeof gateToken==='function'&&!!gateToken()&&(location.protocol!=='file:'||!!window.__syForce)}
+/* localStorage-Schreibzugriffe mitlesen */
+(function(){const P=Storage.prototype,oS=P.setItem,oR=P.removeItem;SY.rawSet=(k,v)=>{try{oS.call(localStorage,k,v)}catch(e){}};SY.rawDel=k=>{try{oR.call(localStorage,k)}catch(e){}};
+  P.setItem=function(k,v){let err=null;try{oS.call(this,k,v)}catch(e){err=e}if(this===localStorage&&SY.on&&!SY.applying&&SY.k2s[k])syDirty(SY.k2s[k],String(v));if(err)throw err};
+  P.removeItem=function(k){oR.call(this,k);if(this===localStorage&&SY.on&&!SY.applying&&SY.k2s[k])syDirty(SY.k2s[k],null)}})();
+/* ---------- Bilder: data-URL ↔ Verweis img:<hash> ---------- */
+function syHash(s){let a=2166136261,b=5381;for(let i=0;i<s.length;i+=1){const c=s.charCodeAt(i);a=Math.imul(a^c,16777619)>>>0;b=(Math.imul(b,33)+c)>>>0}return a.toString(36)+b.toString(36)+s.length.toString(36)}
+function syStrip(x,acc){if(typeof x==='string'){if(x.length>1500&&/^data:image\/(jpeg|png|webp);base64,/.test(x)){const h=syHash(x);SY.img[h]=x;acc.push(h);return 'img:'+h}return x}
+  if(Array.isArray(x))return x.map(y=>syStrip(y,acc));if(x&&typeof x==='object'){const o={};for(const k in x)o[k]=syStrip(x[k],acc);return o}return x}
+function syRefs(x,acc){if(typeof x==='string'){const m=/^img:([a-z0-9]{6,40})$/.exec(x);if(m)acc.add(m[1])}else if(Array.isArray(x))x.forEach(y=>syRefs(y,acc));else if(x&&typeof x==='object')for(const k in x)syRefs(x[k],acc);return acc}
+function syRes(s){return typeof s==='string'?s.replace(/img:([a-z0-9]{6,40})/g,(m,h)=>SY.img[h]||m):s}
+async function syFetchImgs(hs){hs=[...hs].filter(h=>!SY.img[h]);for(let i=0;i<hs.length;i+=25){try{const r=await gateApi({action:'img_get',token:gateToken(),hs:hs.slice(i,i+25)});if(r&&r.ok)Object.assign(SY.img,r.imgs||{})}catch(e){}}if(hs.length)syImgsInDom()}
+function syImgsInDom(){document.querySelectorAll('img[src^="img:"]').forEach(im=>{const h=im.getAttribute('src').slice(4);if(SY.img[h])im.src=SY.img[h];else SY.imgWant.add(h)});
+  if(SY.imgWant.size){const w=[...SY.imgWant];SY.imgWant.clear();syFetchImgs(w)}}
+/* ---------- Zusammenführen gleichzeitiger Änderungen (Basis, meine, ihre) ---------- */
+const syJ=x=>JSON.stringify(x===undefined?null:x);const syEq=(a,b)=>syJ(a)===syJ(b);const syO=x=>x&&typeof x==='object'&&!Array.isArray(x);
+function syMerge(b,m,t){if(syEq(m,b))return t;if(syEq(t,b)||syEq(m,t))return m;
+  if(Array.isArray(m)&&Array.isArray(t)){const B=Array.isArray(b)?b:[];const ided=a=>a.length&&a.every(x=>syO(x)&&x.id!=null);
+    if(ided(m)&&ided(t)){const Bm=new Map(B.filter(syO).map(x=>[x.id,x])),Mm=new Map(m.map(x=>[x.id,x]));const out=[],seen=new Set();
+      const dup=new Set();t.forEach(x=>{seen.add(x.id);if(!Mm.has(x.id)){if(Bm.has(x.id)&&syEq(Bm.get(x.id),x))return;out.push(x);return}
+        if(!Bm.has(x.id)&&!syEq(Mm.get(x.id),x)){out.push(x);dup.add(x.id);return}/* gleiche Nummer, zwei verschiedene neue Einträge: beide behalten */out.push(syMerge(Bm.get(x.id),Mm.get(x.id),x))});
+      dup.forEach(id=>{const x=Object.assign({},Mm.get(id),{id:id+'-'+Math.random().toString(36).slice(2,4).toUpperCase()});out.push(x)});
+      m.forEach((x,i)=>{if(seen.has(x.id))return;if(Bm.has(x.id)&&syEq(Bm.get(x.id),x))return;out.splice(Math.min(i,out.length),0,x)});return out}
+    const inA=(a,x)=>{const j=syJ(x);return a.some(y=>syJ(y)===j)};return t.filter(x=>!(inA(B,x)&&!inA(m,x))).concat(m.filter(x=>!inA(B,x)&&!inA(t,x)))}
+  if(syO(m)&&syO(t)){const bb=syO(b)?b:{};const o={};new Set([...Object.keys(t),...Object.keys(m)]).forEach(k=>{const iM=k in m,iT=k in t,iB=k in bb;
+    if(iM&&iT)o[k]=syMerge(bb[k],m[k],t[k]);else if(iM){if(!(iB&&syEq(bb[k],m[k])))o[k]=m[k]}else if(iT){if(!(iB&&syEq(bb[k],t[k])))o[k]=t[k]}});return o}
+  return m}
+/* ---------- Schreiben ---------- */
+function syDirty(sk,raw){SY.mem[sk]=raw;SY.pending[sk]=1;clearTimeout(SY.timers[sk]);SY.timers[sk]=setTimeout(()=>syPush(sk),700);syStatus('save')}
+function syLocal(sk,data){const ls=SY.s2k[sk];if(!ls)return;SY.applying=true;try{if(data==null)SY.rawDel(ls);else SY.rawSet(ls,JSON.stringify(data))}finally{SY.applying=false}}
+async function syPush(sk){if(SY.pushing[sk]){clearTimeout(SY.timers[sk]);SY.timers[sk]=setTimeout(()=>syPush(sk),500);return}SY.pushing[sk]=1;const raw=SY.mem[sk];
+  try{let data=null;try{data=raw==null?null:JSON.parse(raw)}catch(e){SY.pushing[sk]=0;delete SY.pending[sk];return}
+    const hs=[];const d2=syStrip(data,hs);
+    for(const h of hs){if(SY.up.has(h))continue;const r=await gateApi({action:'img_put',token:gateToken(),h,data:SY.img[h]});if(r&&r.ok)SY.up.add(h);else throw new Error('img')}
+    if(hs.length)syLocal(sk,d2);/* lokal nur Verweise behalten – spart Speicher im Browser */
+    const r=await gateApi({action:'st_put',token:gateToken(),key:sk,data:d2,base:SY.v[sk]||0,by:(typeof TEAMNAME!=='undefined'&&TEAMNAME)||''});
+    if(r&&r.ok){SY.v[sk]=r.v;SY.base[sk]=syJ(d2);if(SY.mem[sk]===raw)delete SY.pending[sk];SY.err=0}
+    else if(r&&r.conflict){const theirs=r.data,base=SY.base[sk]?JSON.parse(SY.base[sk]):null;const merged=syMerge(base,d2,theirs);SY.v[sk]=r.v;SY.base[sk]=syJ(theirs);
+      syLocal(sk,merged);SY.mem[sk]=syJ(merged);syReset();SY.pushing[sk]=0;if(!syEq(merged,theirs)){SY.pending[sk]=1;return syPush(sk)}delete SY.pending[sk];syRender();syStatus('ok');return}
+    else throw new Error((r&&r.error)||'put')}
+  catch(e){SY.err++;SY.pushing[sk]=0;syStatus('off');clearTimeout(SY.timers[sk]);SY.timers[sk]=setTimeout(()=>syPush(sk),Math.min(60000,5000*SY.err));return}
+  SY.pushing[sk]=0;if(SY.pending[sk]&&SY.mem[sk]!==raw)return syPush(sk);syStatus(Object.keys(SY.pending).length?'save':'ok')}
+/* ---------- Lesen ---------- */
+async function syPull(first){if(!SY.on||SY.pulling)return;SY.pulling=true;let changed=false;
+  try{const r=await gateApi({action:'st_get',token:gateToken(),have:first?{}:SY.v});if(!r||!r.ok)throw new Error('get');const refs=new Set();
+    for(const [sk,it] of Object.entries(r.items||{})){const ls=SY.s2k[sk];if(!ls)continue;
+      if(it===null){if(first){const loc=localStorage.getItem(ls);if(loc!=null){SY.mem[sk]=loc;SY.pending[sk]=1;syPush(sk)}}continue}
+      syRefs(it.data,refs);
+      if(SY.pending[sk]){const mine=syStrip(JSON.parse(SY.mem[sk]||'null'),[]);const base=SY.base[sk]?JSON.parse(SY.base[sk]):null;const merged=syMerge(base,mine,it.data);SY.v[sk]=it.v;SY.base[sk]=syJ(it.data);syLocal(sk,merged);SY.mem[sk]=syJ(merged);changed=true;syPush(sk);continue}
+      if(SY.v[sk]===it.v)continue;SY.v[sk]=it.v;SY.base[sk]=syJ(it.data);const cur=localStorage.getItem(ls);if(cur!==syJ(it.data)){syLocal(sk,it.data);changed=true}}
+    SY.err=0;syStatus(Object.keys(SY.pending).length?'save':'ok');if(changed){syReset();syRender()}if(refs.size)syFetchImgs(refs)}
+  catch(e){syStatus('off')}finally{SY.pulling=false}}
+/* Zwischenspeicher der Module verwerfen, damit sie den neuen Stand lesen */
+function syReset(){const z=(f)=>{try{f()}catch(e){}};z(()=>{MA.E=null;MA.st=null});z(()=>{UG.st=null});z(()=>{SF.st=null});z(()=>{FK.st=null});z(()=>{KD.st=undefined});z(()=>{HB.st=null;if(TD&&TD.mietkal){const h=hbLoad();if(h)TD.mietkal.hb=h}});
+  z(()=>{ZM.stored=null;ZM.rfqs=null;ZM.cfg=null});z(()=>{KB.st=null});z(()=>{SC.st=null});z(()=>{BC.st=null});z(()=>{BW.st=null});z(()=>{TM.st=null});z(()=>{IVS=null})}
+function syBusy(){const a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&!a.closest('.side'))||(typeof MC!=='undefined'&&MC)||(typeof DUP!=='undefined'&&DUP)}
+function syRender(){if(syBusy()){SY.later=true;return}SY.later=false;if(typeof render==='function')zmKeep(()=>render())}
+/* ---------- Anzeige ---------- */
+function syStatus(s){SY.state=s;let el=document.getElementById('syState');if(!el){el=document.createElement('div');el.id='syState';el.style.cssText='position:fixed;left:max(12px,env(safe-area-inset-left,0px));bottom:max(10px,env(safe-area-inset-bottom,0px));z-index:14;font-size:11.5px;padding:3px 9px;border-radius:99px;background:var(--panel);border:1px solid var(--line);color:var(--muted);pointer-events:none';document.body.appendChild(el)}
+  el.hidden=!SY.on;el.innerHTML=s==='off'?`<span style="color:#c0392b">●</span> ${L4('Offline – Änderungen werden nachgereicht','Çevrimdışı – değişiklikler sonra gönderilecek','Offline – will sync later')}`:s==='save'?`<span style="color:#b7791f">●</span> ${L4('Wird gespeichert …','Kaydediliyor …','Saving …')}`:`<span style="color:#2f855a">●</span> ${L4('Für alle gespeichert','Herkes için kaydedildi','Saved for everyone')}`}
+/* ---------- Start (nach Anmeldung) ---------- */
+function syStart(){SY.on=true;SY.k2s={};SY.s2k={};syMap().forEach(([ls,sk])=>{SY.k2s[ls]=sk;SY.s2k[sk]=ls});syStatus('save');
+  if(!SY.started){SY.started=true;
+    if(typeof b2bDoc==='function'){const _d=b2bDoc;window.b2bDoc=b2bDoc=function(o){if(o){if(typeof o.body==='string')o.body=syRes(o.body);(o.sign||[]).forEach(s=>{if(s&&s.img)s.img=syRes(s.img)})}return _d.apply(this,arguments)}}
+    SY.poll=setInterval(()=>{if(SY.on&&document.visibilityState==='visible')syPull(false);if(SY.later&&!syBusy())syRender()},20000);
+    window.addEventListener('focus',()=>{if(SY.on)syPull(false)});window.addEventListener('online',()=>{if(SY.on){syPull(false);Object.keys(SY.pending).forEach(syPush)}});
+    window.addEventListener('beforeunload',e=>{if(SY.on&&Object.keys(SY.pending).length){Object.keys(SY.pending).forEach(k=>{clearTimeout(SY.timers[k]);syPush(k)});e.preventDefault();e.returnValue=''}})}
+  syPull(true)}
+/* nach jedem Seitenaufbau: starten/stoppen, Bildverweise auflösen */
+function syTick(){const a=syActive();if(a&&!SY.on)syStart();else if(!a&&SY.on){SY.on=false;syStatus('')}if(SY.on)syImgsInDom()}
+/* /MOD:sync */
 /* MOD:akte *//* ===== Maschinenakte: je Maschine (Inventar-Nr.) alles an einer Stelle – Bild, Daten, Status, Prüfung, Unterlagen aller Ebenen, Einsätze, Schäden, Preise ===== */
 const AK={sel:null,q:'',kat:'',f:'',img:{},imgLoad:{}};
 function akE(){return typeof maEngine==='function'?maEngine():null}
@@ -6139,7 +6219,7 @@ function sfDetail(c){const E=sfE(),A=sfAu(c),f=sfLock(c),d=sfDone(c),[sl,sc]=sfS
    <style>@media(max-width:700px){.sf-g{grid-template-columns:1fr!important}}</style></div>`}
 /* Schadensprotokoll als Dokument (Druck, PDF, E-Mail-Anhang) */
 function sfDoc(c){const UGs=typeof ugState==='function'?ugState().prot:{};const pOut=UGs[c.booking+'|out']||{},pIn=UGs[c.booking+'|in']||{};const ch=sfCharge(c);const D=t=>t?new Date(t).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
-  const ph=L=>(L||[]).filter(s=>typeof s==='string'&&s.startsWith('data:')).map(s=>`<img src="${s}" alt="">`).join('');
+  const ph=L=>(L||[]).filter(s=>typeof s==='string'&&/^(data:|img:)/.test(s)).map(s=>`<img src="${s}" alt="">`).join('');
   const body=`<div class="cols"><div>${b2bKv([['Gerät',esc(c.tname||'')],['Inventar-Nr.',esc(c.unit)],['Miete',esc(c.booking)],['Bereich',esc(sfArea(c.area))]])}</div><div>${b2bKv([['Übergabe',pOut.done?D(pOut.done)+(pOut.signer?' · quittiert von '+esc(pOut.signer):''):'—'],['Rückgabe',pIn.done?D(pIn.done)+(pIn.signer?' · '+esc(pIn.signer):''):'—'],['Festgestellt',D(c.at)]])}</div></div>
    <h2>Schaden</h2><div class="dmg"><b>${esc(sfArea(c.area))}</b> – ${esc(c.txt)}</div>
    <p>${pOut.done?((pOut.dmg||[]).length?'Bei Übergabe dokumentierte Vorschäden: '+pOut.dmg.map(x=>esc(sfArea(x.a))+' – '+esc(x.t)).join('; ')+'. Der oben beschriebene Schaden war bei der Übergabe nicht vorhanden.':'Das Gerät wurde bei der Übergabe ohne Schaden übergeben und vom Kunden quittiert.'):''}</p>
@@ -6148,7 +6228,7 @@ function sfDoc(c){const UGs=typeof ugState==='function'?ugState().prot:{};const 
    ${c.dec?`<p>${c.dec==='hb'?'Für die Miete wurde eine Haftungsbeschränkung vereinbart. Berechnet wird die Selbstbeteiligung je Schadenfall, höchstens die tatsächlichen Kosten':c.dec==='kunde'?'Die Haftungsbeschränkung greift in diesem Fall nicht'+(c.decNote?' ('+esc(c.decNote)+')':'')+'. Berechnet werden die tatsächlichen Kosten':'Dieser Schaden wird Ihnen nicht berechnet'}${ch>0?`: <b>${eur(ch)} netto</b>.`:'.'}</p>`:''}
    <p>Bitte prüfen Sie die Angaben. Einwände oder Rückfragen können Sie innerhalb von 14 Tagen per Antwort auf diese E-Mail mitteilen.</p>`;
   b2bDoc({title:'Schadensprotokoll',nr:c.id,to:[c.kunde],meta:[['Datum',D(Date.now())],['Miete',c.booking]],sub:'Dokumentation eines Schadens an einem gemieteten Gerät.',body,
-    sign:pIn.sig?[{img:typeof pIn.sig==='string'&&pIn.sig.startsWith('data:image')?pIn.sig:'',name:pIn.signer||'',label:'Unterschrift Kunde (Rückgabe)'}]:undefined})}
+    sign:pIn.sig?[{img:typeof pIn.sig==='string'&&/^(data:image|img:)/.test(pIn.sig)?pIn.sig:'',name:pIn.signer||'',label:'Unterschrift Kunde (Rückgabe)'}]:undefined})}
 /* Hinweise in Auftrag und Mietabrechnung */
 function sfAuBox(v){if(!v||!v.booking)return '';const L=sfOf(v.booking);const can=['einsatz','zurueck'].includes(typeof auStage==='function'?auStage(v):'');
   if(!L.length&&!can)return '';return `<div style="margin-top:12px;padding:10px 12px;border:1px solid ${L.some(c=>!c.closed)?'#c0392b':'var(--line)'};border-radius:8px"><b style="font-size:13px">${L4('Schäden','Hasarlar','Damages')}</b>
