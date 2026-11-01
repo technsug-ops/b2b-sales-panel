@@ -13,7 +13,7 @@
 // Master code: permanent, SHA-256 compared against GATE_MASTER_HASH.
 // One-time codes: stored in Vercel Blob (codes.json); burned on first successful login.
 
-import { put, get } from '@vercel/blob';
+import { put, get, del } from '@vercel/blob';
 import { createHash, createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 
 const BLOB_PATH = 'gate/codes.json';
@@ -70,6 +70,8 @@ async function loadRoles(T = 'aydemir') {
   if (changed) await saveJson(RP, r);
   return r;
 }
+const docPath = (T, id) => `gate/t/${T}/docs/${id}`;
+async function docBuf(T, id) { try { const r = await get(docPath(T, id), { access: 'private', useCache: false }); if (!r) return null; return Buffer.from(await new Response(r.stream).arrayBuffer()); } catch (e) { return null; } }
 async function permsOf(sub, T = 'aydemir') {
   if (sub === 'hq') return PERMS.slice();
   const c = /^t:c_[a-z0-9]+:([a-z0-9-]+)$/.exec(String(sub || ''));
@@ -249,6 +251,25 @@ async function main(req, res) {
     if (Array.isArray(inc.cands)) c.cands = inc.cands.slice(0, 200).map(x => ({ n: String(x.n || '').slice(0, 80), k: String(x.k || '').slice(0, 80), st: ['offen', 'kontaktiert', 'gewonnen', 'verworfen'].includes(x.st) ? x.st : 'offen', note: String(x.note || '').slice(0, 300), at: Number(x.at) || Date.now() })).filter(x => x.n);
     c.at = Date.now(); await saveJson(PC, c); return res.status(200).json({ ok: true, cfg: c });
   }
+  // Dokumente (Datenblätter, Anleitungen, Prüfberichte): privat im Blob, als Anhang für E-Mails
+  if (['doc_list', 'doc_put', 'doc_del', 'doc_get'].includes(action)) {
+    const d = scoped(verifyToken(body.token));
+    if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
+    let pm = null; if (d.sub !== 'master') { pm = await permsOf(d.sub, T); if (!pm || !['leads', 'orders', 'rent', 'acct', 'dam', 'web'].some(x => pm.includes(x))) return res.status(403).json({ ok: false, error: 'forbidden' }); }
+    const canEdit = !pm || ['dam', 'web', 'rent'].some(x => pm.includes(x));
+    const P = pth(T, 'docs'); const L = (await loadJson(P)) || [];
+    if (action === 'doc_list') return res.status(200).json({ ok: true, list: L, edit: canEdit });
+    const D = L.find(x => x.id === String(body.id || ''));
+    if (action === 'doc_get') { if (!D) return res.status(404).json({ ok: false }); const b = await docBuf(T, D.id); if (!b) return res.status(404).json({ ok: false }); return res.status(200).json({ ok: true, mime: D.mime, name: D.name, data: b.toString('base64') }); }
+    if (!canEdit) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (action === 'doc_del') { if (!D) return res.status(404).json({ ok: false }); try { await del(docPath(T, D.id)); } catch (e) {} await saveJson(P, L.filter(x => x.id !== D.id)); return res.status(200).json({ ok: true }); }
+    const mime = String(body.mime || ''); if (!/^(application\/pdf|image\/(png|jpeg))$/.test(mime)) return res.status(400).json({ ok: false, error: 'type' });
+    const buf = Buffer.from(String(body.data || ''), 'base64'); if (!buf.length || buf.length > 3_100_000) return res.status(400).json({ ok: false, error: 'size' });
+    const id = 'd' + Date.now().toString(36) + randomInt(1e6).toString(36);
+    await put(docPath(T, id), buf, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: mime });
+    const doc = { id, name: String(body.name || 'Dokument').replace(/[^\w äöüÄÖÜß.,()+-]/g, '').slice(0, 100) || 'Dokument', cat: String(body.cat || 'datenblatt').slice(0, 20), types: (Array.isArray(body.types) ? body.types : []).map(String).slice(0, 20), mime, size: buf.length, at: Date.now(), by: String(body.by || '').slice(0, 60) };
+    L.unshift(doc); await saveJson(P, L.slice(0, 500)); return res.status(200).json({ ok: true, doc });
+  }
   // E-Mail (Resend): Versand aus dem Auftrag, Antworten kommen über /api/mail-in zurück
   if (['mail_cfg', 'mail_send', 'mail_list', 'mail_seen', 'mail_assign'].includes(action)) {
     const d = scoped(verifyToken(body.token));
@@ -276,7 +297,10 @@ async function main(req, res) {
     const subject = s(body.subject, 200).replace(/[\r\n]/g, ' '), text = s(body.text, 20000);
     if (!subject || !text) return res.status(400).json({ ok: false, error: 'input' });
     const ref = okRef(body.ref) ? String(body.ref) : '';
-    const atts = (Array.isArray(body.attach) ? body.attach : []).slice(0, 3).filter(a => a && /^[\w .()-]{1,80}\.pdf$/i.test(String(a.filename || '')) && typeof a.content === 'string' && a.content.length < 3_000_000);
+    const atts = (Array.isArray(body.attach) ? body.attach : []).slice(0, 6).filter(a => a && /^[\w .()-]{1,80}\.pdf$/i.test(String(a.filename || '')) && typeof a.content === 'string' && a.content.length < 3_000_000);
+    if (Array.isArray(body.docs) && body.docs.length) { const DL = (await loadJson(pth(T, 'docs'))) || []; let tot = atts.reduce((a, x) => a + x.content.length, 0);
+      for (const id of body.docs.slice(0, 8)) { const D = DL.find(x => x.id === String(id)); if (!D) continue; const b = await docBuf(T, D.id); if (!b) continue; const c = b.toString('base64'); if (tot + c.length > 28_000_000) break; tot += c.length;
+        const ext = D.mime === 'application/pdf' ? '.pdf' : D.mime === 'image/png' ? '.png' : '.jpg'; atts.push({ filename: (D.name.replace(/\.(pdf|png|jpe?g)$/i, '') + ext).slice(0, 100), content: c }); } }
     if (L.filter(m => m.dir === 'out' && m.at > Date.now() - 3600e3).length > 200) return res.status(429).json({ ok: false, error: 'rate' });
     const replyTo = IN && ref ? `${T}.${ref.toLowerCase()}@${IN}` : undefined;
     const html = '<div style="font:14px/1.5 Arial,sans-serif;color:#1a1a1a;white-space:pre-line">' + text.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])) + '</div>';
