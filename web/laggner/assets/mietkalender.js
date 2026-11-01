@@ -196,7 +196,8 @@ function mkMount(ROOT, MK, OPT) {
     res.err = why || 'Kein ' + t.name + ' in diesem Zeitraum frei.'; return res;
   }
   function commit(p, kunde, seed) {
-    var k = { id: (seed ? 'S' : 'W') + '-' + (5200 + BOOK.length), type: p.req.type, unit: p.unit.id, kunde: kunde, plz: p.req.plz, mode: p.req.mode,
+    var nx = 5200 + BOOK.length; BOOK.forEach(function (b) { var n = parseInt(String(b.id).split('-')[1], 10); if (n >= nx) nx = n + 1; });
+    var k = { id: (seed ? 'S' : 'W') + '-' + nx, type: p.req.type, unit: p.unit.id, kunde: kunde, plz: p.req.plz, mode: p.req.mode,
       start: p.req.start, end: p.req.end, mA: p.mA, mB: p.mB, net: p.price ? p.price.net : 0, seed: !!seed };
     if (p.del) { k.dDel = p.del.driver.id; k.delA = p.del.a; k.delB = p.del.b; k.arrive = p.del.arrive; }
     if (p.pick) { k.dPick = p.pick.driver.id; k.pickA = p.pick.a; k.pickB = p.pick.b; k.pickArrive = p.pick.arrive; }
