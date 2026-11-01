@@ -274,6 +274,7 @@ tr:last-child td{border:0}tbody tr{cursor:pointer}tbody tr:hover td{background:v
 .ai form{display:flex;gap:6px;padding:12px;border-top:1px solid var(--line);padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
 .ai input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .fab{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:max(18px,env(safe-area-inset-bottom,0px));background:var(--accent);color:var(--accent-fg);border:0;border-radius:99px;padding:11px 16px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);z-index:15;display:flex;gap:8px;align-items:center}
+.fab2{bottom:calc(max(18px,env(safe-area-inset-bottom,0px)) + 54px);background:var(--fg);color:var(--panel)}#ai:not([hidden])~.fab2{display:none}.fab[hidden]{display:none}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13px;z-index:30;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 .demo{font-size:11px;color:var(--muted);border:1px dashed var(--line);border-radius:6px;padding:4px 8px}
@@ -288,7 +289,7 @@ svg.i{width:1.05em;height:1.05em;vertical-align:-.16em;fill:none;stroke:currentC
 .btn svg.i{width:15px;height:15px}
 .brand .mark svg.i{width:18px;height:18px}
 /* public application page */
-body.public .side,body.public .top,body.public #aiFab,body.public .rolebox{display:none!important}
+body.public .side,body.public .top,body.public #aiFab,body.public #auFab,body.public .rolebox{display:none!important}
 body.public .main{margin-left:0!important;max-width:980px;margin:0 auto!important;padding-top:24px}
 body.public .shell,body.public .app{grid-template-columns:1fr!important}
 /* product home */
@@ -638,6 +639,7 @@ td,th{white-space:nowrap}td b,td small,td .st{white-space:normal}
   <div class="log" id="aiLog"></div>
   <form id="aiForm"><input id="aiIn" autocomplete="off"><button class="btn p" type="submit">→</button></form>
 </aside>
+<button class="fab fab2" id="auFab" hidden>+ <span id="auFabL">Angebot</span></button>
 <aside class="notes" id="notes" hidden>
   <div class="hd"><b>📝 <span data-i="notes.title">Meine Notizen</span></b><span style="flex:1"></span><button class="btn sm" id="notesClose">✕</button></div>
   <textarea id="notesTa" spellcheck="false"></textarea>
@@ -3988,7 +3990,7 @@ function render(){
   {const cc=page!=='register'&&catOf(page);$('#pageTitle').textContent=page==='register'?t('reg.nav'):cc&&SUB_GRP[cc.id]?catLbl(cc):MOD_LABEL(page)}
   document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':NET?(PDOOR?DOOR_META[DOOR].n:'Partner-Portal')+' · '+TENANTS[0].name:TENANTS[0].name+' · Verwaltung';
   const v=$('#view');
-  v.innerHTML=deco((page==='notfound'?'':subTabs())+(page==='notfound'?viewNotFound():selDetail&&DTYPE[page]===selDetail.t?viewDetail():({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:()=>(typeof auQuickCard==='function'&&featOn('auftrag')&&!viewer.partner?auQuickCard():'')+(typeof dashTodayCard==='function'?dashTodayCard():'')+(typeof dashReqCard==='function'?dashReqCard():'')+viewDash()+pfMyCard()+f2MyProgram(),partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:()=>viewOrders()+f2MyAccount()+ivPartnerCard()+f2MyReturns(),invoices:viewInvoices,pricing:viewPricing,perf:viewPerf,program:viewProgram,terr:viewTerr,customers:viewCustomers,quotes:viewQuotes,credit:viewCredit,returns:viewReturns,pricelist:()=>feat('pricing')?viewPricelistPro():viewPricelist(),dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot,...(window.RENT_VIEWS||{})})[page]()));
+  v.innerHTML=deco((page==='notfound'?'':subTabs())+(page==='notfound'?viewNotFound():selDetail&&DTYPE[page]===selDetail.t?viewDetail():({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:()=>(typeof dashTodayCard==='function'?dashTodayCard():'')+(typeof dashReqCard==='function'?dashReqCard():'')+viewDash()+pfMyCard()+f2MyProgram(),partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:()=>viewOrders()+f2MyAccount()+ivPartnerCard()+f2MyReturns(),invoices:viewInvoices,pricing:viewPricing,perf:viewPerf,program:viewProgram,terr:viewTerr,customers:viewCustomers,quotes:viewQuotes,credit:viewCredit,returns:viewReturns,pricelist:()=>feat('pricing')?viewPricelistPro():viewPricelist(),dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot,...(window.RENT_VIEWS||{})})[page]()));
   {const sg=v.querySelector('.subtabs.grp'),on=sg&&sg.querySelector('button.on');if(on&&sg.scrollWidth>sg.clientWidth)sg.scrollLeft=on.offsetLeft-sg.offsetLeft-sg.clientWidth/2+on.offsetWidth/2}
   v.querySelectorAll('[data-subk]').forEach(b=>b.onclick=()=>{page=b.dataset.subk;selPartner=null;selDetail=null;render()});
   syncUrl();
@@ -4167,6 +4169,7 @@ function render(){
   ['dp_kind','dp_brand','dp_min','dp_states','dp_partners'].forEach(id=>{const e=$('#'+id);if(e)e.onchange=dpRe});
   v.querySelectorAll('[data-dpt],[data-dpn],[data-dpu]').forEach(c=>c.onchange=dpRe);
   const dpn=$('#dp_name');if(dpn)dpn.onchange=()=>{dpub.name=dpn.value};
+  {const af=document.getElementById('auFab');if(af){const on=typeof featOn==='function'&&featOn('auftrag')&&!(viewer&&viewer.partner)&&typeof hasP==='function'&&(hasP('orders')||hasP('leads')||hasP('acct')||hasP('rent'))&&!(page==='auftrag'&&typeof AU!=='undefined'&&AU.form);af.hidden=!on;const l=document.getElementById('auFabL');if(l)l.textContent=L4('Angebot','Teklif ver','Quote')}}
   mountMaps();if(typeof zmMount==='function')zmMount();if(page==='mietkal'&&window.mkMount){const r=document.querySelector('.mk-root');if(r){const M=mkData();M.noSiteCheck=!feat('baucheck');M.noOpCheck=!feat('schulung');window.mkMount(r,M)}}if(typeof tmMount==='function')tmMount();
 }
 $('#roleSel').onchange=e=>{viewer=VIEWERS.find(v=>v.id===e.target.value);page='dash';selPartner=null;render()};
@@ -7348,7 +7351,7 @@ function dashReqCard(){if(viewer.partner||typeof auLoad!=='function'||!(hasP('or
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ausel2]');if(!b||typeof AU==='undefined')return;AU.form=null;AU.sel=b.dataset.ausel2},true);
 document.addEventListener('submit',e=>{const f=e.target;if(!f||f.id!=='rvFindForm')return;e.preventDefault();const q=new FormData(f).get('masch')||'';if(typeof SO!=='undefined'&&feat('sortiment')){SO.q=String(q);SO.g=-1;page='sortiment'}else page='mietkal';render()});
 /* /MOD:verbund */
-$('#aiFab').onclick=aiOpen;$('#aiClose').onclick=()=>{$('#ai').hidden=true;$('#aiFab').hidden=false};
+$('#aiFab').onclick=aiOpen;$('#auFab').onclick=()=>{if(typeof AU==='undefined')return;AU.sel='';AU.form={src:'tel',mode:'liefer'};page='auftrag';selDetail=null;render();window.scrollTo(0,0);setTimeout(()=>{const i=document.querySelector('[data-auff="firma"]');if(i)i.focus()},50)};$('#aiClose').onclick=()=>{$('#ai').hidden=true;$('#aiFab').hidden=false};
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const tok=gateToken();const e=tokenExp(tok);if(e&&!isMaster()&&e<=Date.now())lockAt(e)}});
 $('#aiForm').onsubmit=e=>{e.preventDefault();const v=$('#aiIn').value.trim();if(!v)return;$('#aiIn').value='';aiAsk(v)};
 
