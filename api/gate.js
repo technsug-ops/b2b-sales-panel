@@ -267,7 +267,7 @@ async function main(req, res) {
     const o = JSON.parse(js); o.at = Date.now(); await saveJson(action === 'tarif_put' ? PT : PR, o); return res.status(200).json({ ok: true, at: o.at });
   }
   // Dokumente (Datenblätter, Anleitungen, Prüfberichte): privat im Blob, als Anhang für E-Mails
-  if (['doc_list', 'doc_put', 'doc_del', 'doc_get'].includes(action)) {
+  if (['doc_list', 'doc_put', 'doc_del', 'doc_get', 'doc_upd'].includes(action)) {
     const d = scoped(verifyToken(body.token));
     if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
     let pm = null; if (d.sub !== 'master') { pm = await permsOf(d.sub, T); if (!pm || !['leads', 'orders', 'rent', 'acct', 'dam', 'web'].some(x => pm.includes(x))) return res.status(403).json({ ok: false, error: 'forbidden' }); }
@@ -278,11 +278,13 @@ async function main(req, res) {
     if (action === 'doc_get') { if (!D) return res.status(404).json({ ok: false }); const b = await docBuf(T, D.id); if (!b) return res.status(404).json({ ok: false }); return res.status(200).json({ ok: true, mime: D.mime, name: D.name, data: b.toString('base64') }); }
     if (!canEdit) return res.status(403).json({ ok: false, error: 'forbidden' });
     if (action === 'doc_del') { if (!D) return res.status(404).json({ ok: false }); try { await del(docPath(T, D.id)); } catch (e) {} await saveJson(P, L.filter(x => x.id !== D.id)); return res.status(200).json({ ok: true }); }
+    const lnk = o => ({ cat: String(o.cat || 'sonst').slice(0, 20), types: (Array.isArray(o.types) ? o.types : []).map(String).slice(0, 40), units: (Array.isArray(o.units) ? o.units : []).map(x => String(x).slice(0, 30)).slice(0, 60), kats: (Array.isArray(o.kats) ? o.kats : []).map(x => String(x).slice(0, 40)).slice(0, 20), allg: !!o.allg, tags: (Array.isArray(o.tags) ? o.tags : []).map(x => String(x).slice(0, 30)).filter(Boolean).slice(0, 10), valid: /^\d{4}-\d{2}-\d{2}$/.test(String(o.valid || '')) ? String(o.valid) : '' });
+    if (action === 'doc_upd') { if (!D) return res.status(404).json({ ok: false }); Object.assign(D, lnk(body)); if (body.name) D.name = String(body.name).replace(/[^\w äöüÄÖÜß.,()+-]/g, '').slice(0, 100) || D.name; D.upd = Date.now(); await saveJson(P, L); return res.status(200).json({ ok: true, doc: D }); }
     const mime = String(body.mime || ''); if (!/^(application\/pdf|image\/(png|jpeg|webp))$/.test(mime)) return res.status(400).json({ ok: false, error: 'type' });
     const buf = Buffer.from(String(body.data || ''), 'base64'); if (!buf.length || buf.length > 3_100_000) return res.status(400).json({ ok: false, error: 'size' });
     const id = 'd' + Date.now().toString(36) + randomInt(1e6).toString(36);
     await put(docPath(T, id), buf, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: mime });
-    const doc = { id, name: String(body.name || 'Dokument').replace(/[^\w äöüÄÖÜß.,()+-]/g, '').slice(0, 100) || 'Dokument', cat: String(body.cat || 'datenblatt').slice(0, 20), types: (Array.isArray(body.types) ? body.types : []).map(String).slice(0, 20), units: (Array.isArray(body.units) ? body.units : []).map(x => String(x).slice(0, 30)).slice(0, 20), valid: /^\d{4}-\d{2}-\d{2}$/.test(String(body.valid || '')) ? String(body.valid) : '', mime, size: buf.length, at: Date.now(), by: String(body.by || '').slice(0, 60) };
+    const doc = { id, name: String(body.name || 'Dokument').replace(/[^\w äöüÄÖÜß.,()+-]/g, '').slice(0, 100) || 'Dokument', ...lnk(body), mime, size: buf.length, at: Date.now(), by: String(body.by || '').slice(0, 60) };
     L.unshift(doc); await saveJson(P, L.slice(0, 500)); return res.status(200).json({ ok: true, doc });
   }
   // E-Mail (Resend): Versand aus dem Auftrag, Antworten kommen über /api/mail-in zurück
