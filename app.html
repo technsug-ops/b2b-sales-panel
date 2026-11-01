@@ -847,7 +847,8 @@ const RENT_MODS=[
  {k:'baucheck',req:['mietkal'],ic:'🦺',slug:'site-check',l:['Baustellen-Check','Şantiye kontrolü','Site check','Locatiecheck'],p:['rent','drive']},
  {k:'schulung',ic:'🎓',slug:'training',l:['Schulungen','Eğitimler','Training','Trainingen'],p:['rent','garage']},
  {k:'uebergabe',req:['mietkal'],ic:'📋',slug:'handover',l:['Übergabeprotokoll','Teslim protokolü','Handover protocol','Overdrachtsprotocol'],p:['drive','garage','rent']},
- {k:'bewert',ic:'⭐',slug:'reviews',l:['Bewertungen & Standorte','Yorumlar & şubeler','Reviews & locations','Reviews & locaties'],p:['web','dam']}];
+ {k:'bewert',ic:'⭐',slug:'reviews',l:['Bewertungen & Standorte','Yorumlar & şubeler','Reviews & locations','Reviews & locaties'],p:['web','dam']},
+ {k:'markt',ic:'📊',slug:'market',l:['Marktchancen','Pazar fırsatları','Market opportunities','Marktkansen'],p:['web']}];
 const RENT_MOD=k=>RENT_MODS.find(m=>m.k===k);
 /* Modul nur nutzbar, wenn es selbst UND alle Module, auf denen es aufbaut, gebucht sind */
 const featOn=k=>feat(k)&&((RENT_MOD(k)||{}).req||[]).every(r=>feat(r));
@@ -865,7 +866,7 @@ if(TCFG&&!TCFG.migPP){TCFG.features=[...new Set([...(TCFG.features||[]),'pricing
 if(TENANT==='ug-alu'&&TCFG&&!TCFG.migInv){TCFG.features=[...new Set([...(TCFG.features||[]),'invoices'])];TCFG.migInv=true;try{localStorage.setItem(LSK('b2b-tcfg'),JSON.stringify(TCFG))}catch(e){}}
 /* Kern-Funktionen (MVP) sind für jeden Mandanten aktiv – unabhängig von gebuchten Zusatzmodulen */
 const CORE_FEATS=['auftrag','postfach'];
-const feat=x=>CORE_FEATS.includes(x)||(TCFG.features||[]).includes(x);
+const feat=x=>CORE_FEATS.includes(x)||(x==='markt'&&TENANT==='laggner')||(TCFG.features||[]).includes(x);
 const typeOn=x=>!TCFG.types||!TCFG.types[x]||TCFG.types[x].on!==false;
 const typesOn=()=>['leadgen','freelancer','partner','distributor'].filter(typeOn);
 const LOC=()=>({tr:'tr-TR',en:'en-GB',nl:'nl-NL'})[lang]||'de-DE';
@@ -1622,7 +1623,7 @@ function showEmbed(){
 function showJoin(){PENDING=null;page='register';document.body.classList.add('public');$('#gate').hidden=true;document.body.classList.remove('locked');document.body.style.overflow='';render()}
 
 /* ---------- page <-> path ---------- */
-const SLUGS={program:'program',terr:'territories',customers:'customers',quotes:'quotes',credit:'accounts',returns:'returns',invoices:'accounting',pricing:'pricing',perf:'performance',dash:'dashboard',partners:'network',network:'network',leads:'leads',myleads:'my-leads',pool:'lead-pool',referral:'referral',projects:'projects',contracts:'contracts',mycontract:'contract',pricelist:'pricelist',orders:'orders',stock:'stock',auftrag:'enquiries-orders',postfach:'mailbox',mietkal:'rental-calendar',sortiment:'rental-range',zumiet:'sub-rentals',flotte:'fleet-report',mietabr:'rental-billing',boerse:'capacity-exchange',uebergabe:'handover',wartung:'inspections',telematik:'telematics',firmenkd:'corporate-customers',baucheck:'site-check',schulung:'training',bewert:'reviews',install:'appointments',sites:'sites',site:'my-site',earn:'earnings',dam:'materials',notif:'notifications',audit:'audit-log',settings:'settings',hr:'hr',me:'me',team:'settings/team',hqhome:'company',hqcreds:'settings/partner-access',hqdoors:'settings/portals',register:'join',
+const SLUGS={markt:'market',program:'program',terr:'territories',customers:'customers',quotes:'quotes',credit:'accounts',returns:'returns',invoices:'accounting',pricing:'pricing',perf:'performance',dash:'dashboard',partners:'network',network:'network',leads:'leads',myleads:'my-leads',pool:'lead-pool',referral:'referral',projects:'projects',contracts:'contracts',mycontract:'contract',pricelist:'pricelist',orders:'orders',stock:'stock',auftrag:'enquiries-orders',postfach:'mailbox',mietkal:'rental-calendar',sortiment:'rental-range',zumiet:'sub-rentals',flotte:'fleet-report',mietabr:'rental-billing',boerse:'capacity-exchange',uebergabe:'handover',wartung:'inspections',telematik:'telematics',firmenkd:'corporate-customers',baucheck:'site-check',schulung:'training',bewert:'reviews',install:'appointments',sites:'sites',site:'my-site',earn:'earnings',dam:'materials',notif:'notifications',audit:'audit-log',settings:'settings',hr:'hr',me:'me',team:'settings/team',hqhome:'company',hqcreds:'settings/partner-access',hqdoors:'settings/portals',register:'join',
   chome:'',tenants:'tenants',rollout:'rollout',codes:'access-codes',integrations:'integrations',security:'security',billing:'billing',pilot:'pilot',bp:'docs/best-practices',urls:'docs/url-handbook'};
 const slugOf=k=>k in SLUGS?SLUGS[k]:k;
 /* opaque public ids (no sequential numbers in URLs) */
@@ -1674,7 +1675,7 @@ function navItems(){
   const meItem=TEAMROLE&&feat('hr')?[{k:'me',ic:'🙋'}]:[];
   if(viewer.type==='admin'&&TEAMROLE&&!(TEAMPERMS||[]).length) return [{s:'mine'},...meItem,{k:'notif',ic:'🔔',badge:unread}];
   if(viewer.type==='admin') return [
-    ...(meItem.length?[{s:'mine'},...meItem]:[]),{s:'admin'},...(hasP('partners')||hasP('leads')||hasP('orders')||hasP('rent')||hasP('garage')?[{k:'dash',ic:'▦'}]:[]),...(featOn('postfach')&&['leads','orders','acct','rent'].some(x=>hasP(x))&&(window.RENT_VIEWS||{}).postfach&&!CONSOLE?(typeof mailAllLoad==='function'&&mailAllLoad(),[{k:'postfach',ic:'✉',badge:typeof mailUnseenAll==='function'?mailUnseenAll():0}]):[]),...(hasP('partners')?[{k:'partners',ic:'👥'}]:[]),...(hasP('partners')&&feat('perf')?[{k:'perf',ic:'📈'}]:[]),...(hasP('partners')&&feat('terr')?[{k:'terr',ic:'📍'}]:[]),...(hasP('leads')&&feat('cust')?[{k:'customers',ic:'🛡'}]:[]),...(hasP('leads')?[{k:'leads',ic:'📥'}]:[]),...(hasP('projects')&&feat('projects')?[{k:'projects',ic:'🗂'}]:[]),...(hasP('partners')?[{k:'contracts',ic:'📄'}]:[]),...(hasP('orders')?[...(feat('orders')?[{k:'orders',ic:'📦'}]:[]),...(feat('stock')?[{k:'stock',ic:'🏭'}]:[])]:[]),...RENT_MODS.filter(m=>m.k!=='bewert'&&m.k!=='postfach'&&featOn(m.k)&&m.p.some(x=>hasP(x))&&(window.RENT_VIEWS||{})[m.k]).map(m=>({k:m.k,ic:m.ic})),...(hasP('prices')&&feat('pricing')?[{k:'pricing',ic:'🏷'}]:[]),...((hasP('orders')||hasP('leads'))&&feat('quotes')?[{k:'quotes',ic:'📝'}]:[]),...(hasP('orders')&&feat('returns')?[{k:'returns',ic:'↺'}]:[]),...(hasP('install')&&feat('install')?[{k:'install',ic:'🔧'}]:[]),...(hasP('acct')&&feat('invoices')?[{k:'invoices',ic:'🧾'}]:[]),...((hasP('acct')||hasP('orders'))&&feat('credit')?[{k:'credit',ic:'💳'}]:[]),...(hasP('dam')||hasP('web')?[...(feat('sites')?[{k:'sites',ic:'🌐'}]:[]),{k:'dam',ic:'🗂️'}]:[]),...(feat('bewert')&&(hasP('dam')||hasP('web'))&&(window.RENT_VIEWS||{}).bewert?[{k:'bewert',ic:'⭐'}]:[]),{k:'notif',ic:'🔔',badge:unread},...(hasP('settings')&&ph(1)?[{k:'audit',ic:'🧾'}]:[]),...(hasP('hr')&&feat('hr')?[{k:'hr',ic:'🧑‍💼'}]:[]),...(hasP('settings')&&feat('program')?[{k:'program',ic:'⬆'}]:[]),...(hasP('settings')?[{k:'settings',ic:'⚙️'}]:[]),...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}]:[]),...(isGF()?[...(canZentrale()?[]:[{s:'hq'}]),{k:'team',ic:'👔'}]:[]),...(hasP('partners')?[{s:'public'},{k:'register',ic:'📝'}]:[])];
+    ...(meItem.length?[{s:'mine'},...meItem]:[]),{s:'admin'},...(hasP('partners')||hasP('leads')||hasP('orders')||hasP('rent')||hasP('garage')?[{k:'dash',ic:'▦'}]:[]),...(featOn('postfach')&&['leads','orders','acct','rent'].some(x=>hasP(x))&&(window.RENT_VIEWS||{}).postfach&&!CONSOLE?(typeof mailAllLoad==='function'&&mailAllLoad(),[{k:'postfach',ic:'✉',badge:typeof mailUnseenAll==='function'?mailUnseenAll():0}]):[]),...(hasP('partners')?[{k:'partners',ic:'👥'}]:[]),...(hasP('partners')&&feat('perf')?[{k:'perf',ic:'📈'}]:[]),...(hasP('partners')&&feat('terr')?[{k:'terr',ic:'📍'}]:[]),...(hasP('leads')&&feat('cust')?[{k:'customers',ic:'🛡'}]:[]),...(hasP('leads')?[{k:'leads',ic:'📥'}]:[]),...(hasP('projects')&&feat('projects')?[{k:'projects',ic:'🗂'}]:[]),...(hasP('partners')?[{k:'contracts',ic:'📄'}]:[]),...(hasP('orders')?[...(feat('orders')?[{k:'orders',ic:'📦'}]:[]),...(feat('stock')?[{k:'stock',ic:'🏭'}]:[])]:[]),...RENT_MODS.filter(m=>m.k!=='bewert'&&m.k!=='postfach'&&m.k!=='markt'&&featOn(m.k)&&m.p.some(x=>hasP(x))&&(window.RENT_VIEWS||{})[m.k]).map(m=>({k:m.k,ic:m.ic})),...(hasP('prices')&&feat('pricing')?[{k:'pricing',ic:'🏷'}]:[]),...((hasP('orders')||hasP('leads'))&&feat('quotes')?[{k:'quotes',ic:'📝'}]:[]),...(hasP('orders')&&feat('returns')?[{k:'returns',ic:'↺'}]:[]),...(hasP('install')&&feat('install')?[{k:'install',ic:'🔧'}]:[]),...(hasP('acct')&&feat('invoices')?[{k:'invoices',ic:'🧾'}]:[]),...((hasP('acct')||hasP('orders'))&&feat('credit')?[{k:'credit',ic:'💳'}]:[]),...(hasP('dam')||hasP('web')?[...(feat('sites')?[{k:'sites',ic:'🌐'}]:[]),{k:'dam',ic:'🗂️'}]:[]),...(feat('bewert')&&(hasP('dam')||hasP('web'))&&(window.RENT_VIEWS||{}).bewert?[{k:'bewert',ic:'⭐'}]:[]),...(feat('markt')&&hasP('web')&&(window.RENT_VIEWS||{}).markt&&!CONSOLE?[{k:'markt',ic:'📊'}]:[]),{k:'notif',ic:'🔔',badge:unread},...(hasP('settings')&&ph(1)?[{k:'audit',ic:'🧾'}]:[]),...(hasP('hr')&&feat('hr')?[{k:'hr',ic:'🧑‍💼'}]:[]),...(hasP('settings')&&feat('program')?[{k:'program',ic:'⬆'}]:[]),...(hasP('settings')?[{k:'settings',ic:'⚙️'}]:[]),...(canZentrale()?[{s:'hq'},{k:'hqhome',ic:'◆'},{k:'hqcreds',ic:'🔐'},{k:'hqdoors',ic:'🚪'}]:[]),...(isGF()?[...(canZentrale()?[]:[{s:'hq'}]),{k:'team',ic:'👔'}]:[]),...(hasP('partners')?[{s:'public'},{k:'register',ic:'📝'}]:[])];
   const p=PARTNERS.find(x=>x.id===viewer.partner);
   const ic={projects:'🗂',dash:'▦',network:'👥',pool:'🎯',leads:'📥',myleads:'📥',referral:'🔗',pricelist:'📦',orders:'🧾',stock:'🏭',install:'🔧',site:'🌐',earn:'💶',mycontract:'📄',dam:'🗂️',notif:'🔔'};
   const FM={pricelist:'orders',orders:'orders',stock:'stock',install:'install',site:'sites',projects:'projects'};
@@ -1687,7 +1688,7 @@ const NAV_CATS=[
  {id:'ops',ic:'📦',get l(){return feat('mietkal')?['Partner-Bestellungen','Partner siparişleri','Partner orders','Partnerbestellingen']:['Aufträge & Logistik','Sipariş & lojistik','Orders & logistics','Orders & logistiek']},m:['orders','stock','install','returns','projects']},
  {id:'rent',ic:'🏗',l:['Vermietung','Kiralama','Rental','Verhuur'],m:['auftrag','mietkal','uebergabe','baucheck','sortiment','zumiet','boerse','wartung','telematik','flotte','mietabr','firmenkd','schulung']},
  {id:'fin',ic:'🧾',l:['Finanzen','Finans','Finance','Financiën'],m:['invoices','credit']},
- {id:'mkt',ic:'🌐',l:['Marketing & Material','Pazarlama & materyal','Marketing & materials','Marketing & materiaal'],m:['sites','dam','bewert']},
+ {id:'mkt',ic:'🌐',l:['Marketing & Material','Pazarlama & materyal','Marketing & materials','Marketing & materiaal'],m:['sites','dam','bewert','markt']},
  {id:'adm',ic:'⚙️',l:['Einstellungen','Ayarlar','Settings','Instellingen'],m:['settings','hr','audit']},
  {id:'hq',ic:'◆',l:['Firmenzentrale','Genel merkez','Head office','Hoofdkantoor'],m:['hqhome','hqcreds','hqdoors','team']},
  {id:'porder',p:1,ic:'📦',l:['Bestellen','Sipariş','Ordering','Bestellen'],m:['pricelist','orders','stock','install']},
@@ -5827,6 +5828,154 @@ function mailUnseenAll(){return (MAIL.all||[]).filter(m=>m.dir==='in'&&!m.seen).
 window.RENT_VIEWS=Object.assign(window.RENT_VIEWS||{},{postfach:()=>viewPostfach()});
 window.__mailReady=true;
 /* /MOD:mail */
+/* MOD:markt *//* ===== Modul Marktchancen: Analyse je Stadt (Datei der Geschäftsführung) verknüpft mit Anfragen, Aufträgen, Stadtseiten und Partnernetz ===== */
+const MKT={file:null,cfg:null,loading:false,err:'',showW:false,ch:null,msg:''};
+// Stadtseiten der Laggner-Website (web/laggner/standorte/<land>/<slug>.html)
+const MC_PAGES={'baden-wuerttemberg':['aalen','freiburg','heidenheim','karlsruhe','ravensburg','schwaebisch-gmuend','sindelfingen','steinheim-am-albuch','stuttgart','ulm'],'bayern':['augsburg','kempten','lindau','muenchen','nuernberg','regensburg','weissenhorn']};
+const MC_W0={'Kette':1,'Regionaler Spezialist':1,'Kran+Bühnen':.7,'Mietpark/Baumaschinen':.5,'Handwerk+Vermietung':.4,'Kleinanbieter':.3};
+const MC_R0={m1:45,m2:75,m3:90,f2:.6,f3:.3};
+const MC_ST={offen:['offen','açık','open'],kontaktiert:['kontaktiert','görüşüldü','contacted'],gewonnen:['gewonnen','kazanıldı','won'],verworfen:['verworfen','vazgeçildi','dropped']};
+function mcApi(){return typeof gateApi==='function'&&typeof gateToken==='function'&&gateToken()&&location.protocol!=='file:'}
+function mcKm(a,b,c,d){const R=6371,r=Math.PI/180,p1=a*r,p2=c*r,dp=(c-a)*r,dl=(d-b)*r;return 2*R*Math.asin(Math.sqrt(Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2))}
+function mcSlug(s){return String(s||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+/* Gewichte/Reichweite aus dem Portal auf die Städte anwenden (läuft im Portal und in der Karte, daher ohne äußere Variablen) */
+function mcRecalc(CH,cfg){cfg=cfg||{};const W0={'Kette':1,'Regionaler Spezialist':1,'Kran+Bühnen':.7,'Mietpark/Baumaschinen':.5,'Handwerk+Vermietung':.4,'Kleinanbieter':.3};
+  if(!cfg.w&&!cfg.reach)return CH;const W1=Object.assign({},W0,cfg.w||{}),R=Object.assign({m1:45,m2:75,m3:90,f2:.6,f3:.3},cfg.reach||{});
+  const km=(a,b,c,d)=>{const r=Math.PI/180,p1=a*r,p2=c*r,dp=(c-a)*r,dl=(d-b)*r;return 12742*Math.asin(Math.sqrt(Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2))};
+  const ci=(c,W)=>{let s=0;for(const k of CH.comp){const d=km(c.lat,c.lng,k.lat,k.lng);if(d<40)s+=(W[k.ty]==null?0:W[k.ty])*(/bergabe/i.test(k.f)?.5:1)*(1-d/40)}return s};
+  CH.cities.forEach(c=>{if(cfg.w)c.ci=Math.max(0,+(c.ci+ci(c,W1)-ci(c,W0)).toFixed(2));c.opp=+(c.dem/(1+c.ci)).toFixed(2);
+    const f=c.min<=R.m1?1:c.min<=R.m2?R.f2:c.min<=R.m3?R.f3:0;c.pr=+(c.opp*f).toFixed(2);
+    c.z=c.min<=R.m1?'Kerngebiet':c.min<=R.m2?'Erweitertes Gebiet':c.min<=R.m3?'Randgebiet':'Außerhalb'});return CH}
+function mcParse(html){try{const i=html.indexOf('\nconst CH=');const j=html.indexOf('\n',i+1);return JSON.parse(html.slice(i+10,j).replace(/;\s*$/,''))}catch(e){return null}}
+function mcLoad(force){if(!mcApi()||MKT.loading||(MKT.file&&!force))return;MKT.loading=true;MKT.err='';
+  gateApi({action:'markt_get',token:gateToken()}).then(r=>{MKT.loading=false;if(r&&r.ok){MKT.file=r.file||false;MKT.cfg=r.cfg||{};MKT.ch=null}else MKT.err=(r&&r.error)||'Fehler';if(page==='markt')render()}).catch(()=>{MKT.loading=false;MKT.err='Netzwerk';if(page==='markt')render()})}
+function mcCH(){if(!MKT.file)return null;if(!MKT.ch){const c=mcParse(MKT.file.html);MKT.ch=c?mcRecalc(c,MKT.cfg):null}return MKT.ch}
+/* Verknüpfung: eigene Anfragen/Aufträge, Stadtseiten, Partner im Netz je Stadt der Analyse */
+function mcLinks(CH){const near=(lat,lon,max)=>{let b=null,bd=max;for(const c of CH.cities){const d=mcKm(lat,lon,c.lat,c.lng);if(d<bd){bd=d;b=c}}return b};
+  const byName=s=>{s=String(s||'').toLowerCase().trim();if(!s)return null;return CH.cities.find(c=>c.n.toLowerCase()===s)||CH.cities.find(c=>c.n.toLowerCase().startsWith(s+' '))};
+  const geo=(plz,city)=>{if(typeof zmCity!=='function')return null;try{const g=zmCity(((plz||'')+' '+(city||'')).trim());return g&&!g.approx&&g.lat?g:null}catch(e){return null}};
+  const place=(plz,city)=>{const c=byName(city);if(c)return c;const g=geo(plz,city);return g?near(g.lat,g.lon,15):null};
+  const own={};const add=(c,x)=>{if(!c)return;(own[c.n]=own[c.n]||{a:0,w:0,l:0,it:[]});own[c.n][x.lost?'l':x.won?'w':'a']++;own[c.n].it.push(x)};
+  try{(typeof LEADS!=='undefined'?LEADS:[]).forEach(l=>add(place(l.plz,l.city),{id:l.id,t:'Lead',f:l.name,won:l.stage==='won',lost:l.stage==='lost',st:l.stage}))}catch(e){}
+  try{(typeof auLoad==='function'?auLoad():[]).forEach(v=>{const s=typeof auStage==='function'?auStage(v):v.st;add(place(v.plz,v.ort),{id:v.id,t:'Auftrag',f:(v.kunde||{}).firma||(v.kunde||{}).name||'',won:!['neu','angebot','verloren'].includes(s),lost:s==='verloren',st:s})})}catch(e){}
+  const pages={};CH.cities.forEach(c=>{const s=mcSlug(c.n);for(const [land,L] of Object.entries(MC_PAGES)){const p=L.find(p=>s===p||s.startsWith(p+'-'));if(p){pages[c.n]='/web/laggner/standorte/'+land+'/'+p+'.html';break}}});
+  const P=(typeof PARTNERS!=='undefined'?PARTNERS:[]).filter(p=>p.lat&&p.lon).map(p=>({n:p.name,city:p.city,lat:p.lat,lng:p.lon,t:(typeof mainRoleOf==='function'&&mainRoleOf(p)||{}).t||''}));
+  const pn={};CH.cities.forEach(c=>{let b=null,bd=30;for(const p of P){const d=mcKm(c.lat,c.lng,p.lat,p.lng);if(d<bd){bd=d;b=p}}if(b)pn[c.n]={n:b.n,city:b.city,km:Math.round(bd)}});
+  const cands={};(MKT.cfg.cands||[]).forEach(x=>cands[x.n]=x.st);
+  return {own,pages,pn,cands,partners:P}}
+/* Karte: Originaldatei + Portal-Daten + Erweiterung (eigene Nachfrage, Partner, Stadtseite, Kandidat) */
+function mcExt(){const X=window.MCX;if(!X)return;
+  const sty=document.createElement('style');sty.textContent='.ownm{fill:none;stroke:#c2255c;stroke-width:2.2;pointer-events:all;cursor:pointer}.pnm{fill:#1c7ed6;stroke:#fff;stroke-width:1}.mcx{margin-top:14px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:6px}.mcx h4{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.mcx .ln{font-size:13px}.mcx a,.mcx .lk{color:#1c7ed6;cursor:pointer;text-decoration:underline;background:none;border:0;padding:0;font:inherit}.mcx .act{font:inherit;font-weight:600;border:1px solid var(--fg);background:var(--fg);color:var(--bg);border-radius:6px;padding:7px 12px;cursor:pointer;justify-self:start}.mcx .ok{color:#2f7a45;font-weight:600}.mcx .no{color:#c2662d;font-weight:600}.xb{display:inline-block;font-size:10.5px;padding:0 5px;border-radius:4px;margin-left:5px;vertical-align:1px}.xb.o{background:#fbe3ec;color:#a61e4d}.xb.s{background:#e3f1e5;color:#2f7a45}.xb.m{background:#f3e3d6;color:#a3521f}';document.head.appendChild(sty);
+  const up=(t,p)=>{try{parent.mcAct(t,p)}catch(e){}};
+  st.own=true;st.pnet=true;const gO=root.append('g'),gN=root.append('g');
+  chip(lay,'Eigene Anfragen & Aufträge',true,b=>{st.own=!st.own;b.setAttribute('aria-pressed',st.own);drawChance()});
+  chip(lay,'Partner im Netz',true,b=>{st.pnet=!st.pnet;b.setAttribute('aria-pressed',st.pnet);drawChance()});
+  const _dc=drawChance,_sc=sideChance,_dd=drawDichte;
+  drawDichte=function(){gO.selectAll('*').remove();gN.selectAll('*').remove();_dd()};
+  drawChance=function(){_dc();
+    const O=st.own?CH.cities.filter(c=>X.own[c.n]):[];
+    gO.selectAll('circle').data(O,c=>c.n).join('circle').attr('class','ownm').attr('r',c=>{const o=X.own[c.n];return Math.max(2.6,Math.sqrt(c.dem)*1.15)+3+Math.min(6,(o.a+o.w+o.l)*1.5)})
+     .attr('cx',c=>proj([c.lng,c.lat])[0]).attr('cy',c=>proj([c.lng,c.lat])[1]).on('click',(e,c)=>pickCity(c.n))
+     .on('mousemove',(e,c)=>{const o=X.own[c.n];showTip(e,`<b>${esc(c.n)}</b><br>${o.a} offen · ${o.w} gewonnen · ${o.l} verloren (im Portal)`)}).on('mouseleave',hideTip);
+    gN.selectAll('rect').data(st.pnet?X.partners:[]).join('rect').attr('class','pnm').attr('width',8).attr('height',8)
+     .attr('transform',p=>{const [x,y]=proj([p.lng,p.lat]);return `translate(${x},${y}) rotate(45) translate(-4,-4)`})
+     .on('mousemove',(e,p)=>showTip(e,`<b>${esc(p.n)}</b><br>Partner im Netz · ${esc(p.city||'')}`)).on('mouseleave',hideTip);
+    const lg=document.getElementById('legend');if(lg){if(st.own)lg.insertAdjacentHTML('beforeend','<span><i style="width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid #c2255c"></i>eigene Anfragen/Aufträge</span>');if(st.pnet)lg.insertAdjacentHTML('beforeend','<span><i style="width:8px;height:8px;display:inline-block;background:#1c7ed6;transform:rotate(45deg)"></i>Partner im Netz</span>')}
+    const tot=Object.values(X.own).reduce((s,o)=>s+o.a+o.w+o.l,0),k=document.getElementById('kpis');
+    if(k)k.insertAdjacentHTML('beforeend',`<div class="kpi"><b>${tot}</b><span>eigene Anfragen/Aufträge zugeordnet</span></div><div class="kpi"><b>${Object.keys(X.pages).length}</b><span>Städte mit Stadtseite</span></div>`)};
+  sideChance=function(){const a=document.getElementById('side');const isOwn=st.list==='own';if(isOwn)st.list='p1';_sc();if(isOwn)st.list='own';
+    const g=a.querySelector('.grp');if(g&&!a.querySelector('#l3')){g.insertAdjacentHTML('beforeend',`<button class="chip" id="l3" aria-pressed="${isOwn}">Eigene Nachfrage</button>`);a.querySelector('#l3').onclick=()=>{st.list='own';sideChance()}}
+    if(isOwn){a.querySelector('#l1').setAttribute('aria-pressed','false');a.querySelector('#l1').onclick=()=>{st.list='p1';sideChance()};
+      const L=CH.cities.filter(c=>X.own[c.n]).sort((x,y)=>(X.own[y.n].a+X.own[y.n].w+X.own[y.n].l)-(X.own[x.n].a+X.own[x.n].w+X.own[x.n].l)||y.pr-x.pr),mx=Math.max(1,...L.map(c=>X.own[c.n].a+X.own[c.n].w+X.own[c.n].l));
+      a.querySelector('.sub').textContent='Städte, aus denen im Portal schon Anfragen oder Aufträge kommen – im Vergleich zur berechneten Priorität.';
+      a.querySelector('.rank').innerHTML=L.length?L.map((c,i)=>{const o=X.own[c.n],v=o.a+o.w+o.l;return `<button class="row${st.city===c.n?' sel':''}" data-n="${esc(c.n)}"><span class="i">${i+1}</span><span>${esc(c.n)}<span class="pill ${zoneCls(c.z)}">${esc(c.z)}</span></span><span class="n">${v}</span><span class="m">${o.a} offen · ${o.w} gewonnen · ${o.l} verloren · Priorität ${num(c.pr,2)}</span><span class="b"><i style="width:${(v/mx*100).toFixed(1)}%"></i></span></button>`}).join(''):'<p class="note">Noch keine Anfrage aus Baden-Württemberg im Portal.</p>';
+      a.querySelectorAll('.row').forEach(b=>b.onclick=()=>pickCity(b.dataset.n))}
+    a.querySelectorAll('.rank .row').forEach(b=>{const n=b.dataset.n,m=b.querySelector('.m');if(!m)return;let h='';const o=X.own[n];
+      if(o&&!isOwn)h+=`<span class="xb o">${o.a+o.w+o.l} im Portal</span>`;h+=X.pages[n]?'<span class="xb s">Stadtseite ✓</span>':(st.list==='p1'?'<span class="xb m">keine Stadtseite</span>':'');
+      if(X.cands[n])h+=`<span class="xb o">Kandidat: ${esc(X.cands[n])}</span>`;m.insertAdjacentHTML('beforeend',h)});
+    const c=CH.cities.find(x=>x.n===st.city),d=a.querySelector('#cd');if(!c||!d)return;const o=X.own[c.n],pg=X.pages[c.n],pn=X.pn[c.n],cd=X.cands[c.n];
+    d.insertAdjacentHTML('beforeend',`<div class="mcx"><h4>Im Portal</h4>
+      ${o?o.it.slice(0,6).map(x=>`<div class="ln"><button class="lk" data-go="${esc(x.id)}">${esc(x.id)}</button> · ${esc(x.f)} · ${esc(x.t)}${x.lost?' · verloren':x.won?' · gewonnen':' · offen'}</div>`).join('')+(o.it.length>6?`<div class="ln">… und ${o.it.length-6} weitere</div>`:''):'<div class="ln">Noch keine Anfrage und kein Auftrag aus dieser Stadt.</div>'}
+      <h4>Stadtseite</h4><div class="ln">${pg?`<span class="ok">vorhanden</span> · <a href="${esc(pg)}" target="_blank" rel="noopener">öffnen</a>`:`<span class="no">fehlt</span>${c.z!=='Außerhalb'?' – steht im Stadtseiten-Plan unter der Karte':''}`}</div>
+      <h4>Partnernetz</h4><div class="ln">${pn?`Nächster Partner: <b>${esc(pn.n)}</b> (${esc(pn.city||'')}, ${pn.km} km)`:'Kein Partner im Umkreis von 30 km.'}</div>
+      ${cd?`<div class="ln">Als Partner-Kandidat vorgemerkt · Status: <b>${esc(cd)}</b></div>`:`<button class="act" data-cand="1">Als Partner-Kandidat vormerken</button>`}</div>`);
+    d.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>up('go',b.dataset.go));
+    const cb=d.querySelector('[data-cand]');if(cb)cb.onclick=()=>up('cand',{n:c.n,k:c.k})};
+  window.__mcRedraw=()=>{if(st.view==='chance')drawChance()};
+  if(st.view==='chance')drawChance();
+  const rs=()=>{try{parent.mcAct('h',document.body.scrollHeight+40)}catch(e){}};new ResizeObserver(rs).observe(document.body);rs()}
+function mcSrc(CH){const L=mcLinks(CH);window.__mcL=L;const X=Object.assign({cfg:MKT.cfg},L);
+  const R=Object.assign({},MC_R0,MKT.cfg.reach||{});const th=document.documentElement.dataset.theme;
+  let h=MKT.file.html;
+  h=h.replace('\nconst CH=','\n'+'const MCX='+JSON.stringify(X).replace(/</g,'\\u003c')+';window.MCX=MCX;\nconst CH=');
+  h=h.replace('\nconst TYPES=','\n;('+mcRecalc.toString()+')(CH,MCX.cfg);\nconst TYPES=');
+  h=h.replace('const RING=[[45,"45 min"],[75,"75 min"]]',`const RING=[[${R.m1},"${R.m1} min"],[${R.m2},"${R.m2} min"]]`);
+  if(MKT.cfg.w||MKT.cfg.reach)h=h.replace('<p class="note">Alle Gewichte','<p class="note"><b>Im Portal angepasste Gewichte aktiv.</b> Alle Gewichte');
+  const tail='<script>('+mcExt.toString()+')();<\/script>'+(th?`<script>document.documentElement.dataset.theme=${JSON.stringify(th)}<\/script>`:'');
+  const k=h.lastIndexOf('</body>');return k>0?h.slice(0,k)+tail+h.slice(k):h+tail}
+window.mcAct=function(t,p){const f=document.getElementById('mcFrame');
+  if(t==='h'){if(f)f.style.height=Math.max(600,p+4)+'px';return}
+  if(t==='go'){const id=String(p);if(typeof auLoad==='function'&&auLoad().some(v=>v.id===id)){page='auftrag';AU.sel=id;AU.msg=''}else page='leads';render();window.scrollTo(0,0);return}
+  if(t==='cand'){const L=(MKT.cfg.cands||[]).slice();if(!L.some(x=>x.n===p.n))L.unshift({n:p.n,k:p.k,st:'offen',note:'',at:Date.now()});mcSaveCfg({cands:L},L4('Als Partner-Kandidat vorgemerkt: ','Partner adayı olarak eklendi: ','Added as partner candidate: ')+p.n)}};
+function mcSaveCfg(part,msg){const inc=Object.assign({},part);if(!('cands' in inc))inc.cands=MKT.cfg.cands||[];
+  if(!('w' in inc)&&MKT.cfg.w)inc.w=MKT.cfg.w;if(!('reach' in inc)&&MKT.cfg.reach)inc.reach=MKT.cfg.reach;
+  gateApi({action:'markt_cfg',token:gateToken(),cfg:inc}).then(r=>{if(r&&r.ok){MKT.cfg=r.cfg;MKT.ch=null;MKT.msg=msg||'';typeof zmKeep==='function'?zmKeep(()=>render()):render()}else{MKT.msg='Speichern fehlgeschlagen';render()}}).catch(()=>{MKT.msg='Speichern fehlgeschlagen';render()})}
+function mcMount(){const f=document.getElementById('mcFrame');if(!f||f.dataset.on)return;const CH=mcCH();if(!CH)return;f.dataset.on='1';f.srcdoc=mcSrc(CH)}
+function viewMarkt(){
+  if(!mcApi())return `<div class="card"><div class="hd"><h2>${L4('Marktchancen','Pazar fırsatları','Market opportunities')}</h2></div><p>${L4('Die Marktanalyse liegt geschützt auf dem Server und ist nur mit Anmeldung verfügbar.','Pazar analizi sunucuda korunuyor; yalnızca giriş yapınca görünür.','The market analysis is stored on the server and only available when signed in.')}</p></div>`;
+  if(MKT.file===null){mcLoad();return `<div class="card"><p>${MKT.err?esc(MKT.err):L4('Analyse wird geladen …','Analiz yükleniyor …','Loading analysis …')}</p></div>`}
+  const upBtn=`<label class="btn${MKT.file?'':' p'}" style="cursor:pointer">${MKT.file?L4('Neue Fassung hochladen','Yeni sürüm yükle','Upload new version'):L4('Analyse-Datei hochladen','Analiz dosyasını yükle','Upload analysis file')}<input type="file" accept=".html,text/html" id="mcUp" hidden></label>`;
+  const msg=MKT.msg?`<p class="pill" style="display:inline-block;margin:0 0 10px">${esc(MKT.msg)}</p>`:'';
+  if(!MKT.file)return `<div class="card"><div class="hd"><h2>${L4('Marktchancen je Stadt','Şehir bazında pazar fırsatları','Market opportunities by city')}</h2></div>${msg}
+    <p>${L4('Noch keine Analyse hinterlegt. Laden Sie die HTML-Datei der Marktanalyse („Arbeitsbühnen-Vermieter BW“) hoch. Sie wird nur auf dem Server gespeichert und ist nur für Geschäftsführung, Marketing und Web-Admin sichtbar.','Henüz analiz yok. Pazar analizinin HTML dosyasını („Arbeitsbühnen-Vermieter BW“) yükleyin. Dosya yalnızca sunucuda saklanır; sadece yönetim, pazarlama ve web admin görür.','No analysis yet. Upload the market analysis HTML file. It is stored only on the server and visible to management, marketing and web admin only.')}</p>${upBtn}</div>`;
+  const CH=mcCH();if(!CH)return `<div class="card"><p>${L4('Die hinterlegte Datei konnte nicht gelesen werden.','Dosya okunamadı.','File could not be read.')}</p>${upBtn}</div>`;
+  const Lk=mcLinks(CH),W=Object.assign({},MC_W0,MKT.cfg.w||{}),R=Object.assign({},MC_R0,MKT.cfg.reach||{}),cust=!!(MKT.cfg.w||MKT.cfg.reach);
+  const top=[...CH.cities].filter(c=>c.z!=='Außerhalb').sort((a,b)=>b.pr-a.pr).slice(0,25),has=top.filter(c=>Lk.pages[c.n]).length;
+  const nf=v=>Number(v).toFixed(2).replace('.',',');
+  const head=`<div class="card"><div class="hd" style="flex-wrap:wrap;gap:8px"><h2>${L4('Marktchancen je Stadt','Şehir bazında pazar fırsatları','Market opportunities by city')}</h2>
+    <span class="pill">${esc(MKT.file.name||'Analyse')} · ${new Date(MKT.file.at).toLocaleDateString('de-DE')}</span>${cust?`<span class="pill" style="background:#fff3e6">${L4('eigene Gewichte aktiv','özel ağırlıklar aktif','custom weights active')}</span>`:''}
+    <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-mcw="1">${L4('Gewichte anpassen','Ağırlıkları ayarla','Adjust weights')}</button>${upBtn}</span></div>${msg}
+    <p style="margin:0;color:var(--muted)">${L4('Analyse der Geschäftsführung, verknüpft mit dem Portal: pinke Ringe = eigene Anfragen und Aufträge, blaue Rauten = Partner im Netz. In der Stadt-Auswahl rechts stehen Stadtseite, nächster Partner und „Als Partner-Kandidat vormerken“.','Yönetimin analizi, portala bağlı: pembe halka = kendi talepler ve siparişler, mavi baklava = ağdaki partnerler. Sağda şehir seçince şehir sayfası, en yakın partner ve „partner adayı olarak ekle“ görünür.','Management analysis linked to the portal: pink rings = own enquiries and orders, blue diamonds = network partners.')}</p>
+    ${MKT.showW?`<div style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;display:grid;gap:10px">
+      <b>${L4('Gewicht je Anbietertyp im Wettbewerbsindex','Wettbewerb endeksinde rakip türü ağırlığı','Weight per competitor type')}</b>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px">${Object.keys(MC_W0).map(k=>`<label style="display:grid;gap:2px;font-size:12px">${esc(k)}<input type="number" step="0.1" min="0" max="3" data-mcwt="${esc(k)}" value="${W[k]}"></label>`).join('')}</div>
+      <b>${L4('Erreichbarkeit ab Depot (Minuten / Faktor)','Depodan erişim (dakika / faktör)','Reach from depot (minutes / factor)')}</b>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px">
+        <label style="display:grid;gap:2px;font-size:12px">${L4('Kerngebiet bis (min, Faktor 1)','Çekirdek bölge (dk, faktör 1)','Core up to (min)')}<input type="number" data-mcr="m1" value="${R.m1}"></label>
+        <label style="display:grid;gap:2px;font-size:12px">${L4('Erweitert bis (min)','Genişletilmiş (dk)','Extended up to (min)')}<input type="number" data-mcr="m2" value="${R.m2}"></label>
+        <label style="display:grid;gap:2px;font-size:12px">${L4('Faktor erweitert','Faktör genişletilmiş','Factor extended')}<input type="number" step="0.1" data-mcr="f2" value="${R.f2}"></label>
+        <label style="display:grid;gap:2px;font-size:12px">${L4('Randgebiet bis (min)','Kenar bölge (dk)','Fringe up to (min)')}<input type="number" data-mcr="m3" value="${R.m3}"></label>
+        <label style="display:grid;gap:2px;font-size:12px">${L4('Faktor Randgebiet','Faktör kenar','Factor fringe')}<input type="number" step="0.1" data-mcr="f3" value="${R.f3}"></label></div>
+      <span style="display:flex;gap:6px"><button class="btn p" data-mcwsave="1">${L4('Übernehmen & neu berechnen','Uygula ve yeniden hesapla','Apply & recalculate')}</button><button class="btn" data-mcwreset="1">${L4('Standardwerte','Varsayılan değerler','Defaults')}</button></span></div>`:''}</div>`;
+  const map=`<div class="card" style="padding:0;overflow:hidden"><iframe id="mcFrame" title="Marktchancen-Karte" style="width:100%;height:1250px;border:0;display:block"></iframe></div>`;
+  const plan=`<div class="card"><div class="hd"><h2>${L4('Stadtseiten-Plan (Top 25 nach Priorität)','Şehir sayfası planı (önceliğe göre ilk 25)','City page plan (top 25 by priority)')}</h2><span class="pill">${has} / 25 ${L4('mit Stadtseite','şehir sayfalı','with city page')}</span></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>${L4('Stadt','Şehir','City')}</th><th>${L4('Gebiet','Bölge','Zone')}</th><th>${L4('Priorität','Öncelik','Priority')}</th><th>${L4('Eigene: offen / gewonnen / verloren','Kendi: açık / kazanılan / kaybedilen','Own: open / won / lost')}</th><th>${L4('Stadtseite','Şehir sayfası','City page')}</th></tr></thead><tbody>
+    ${top.map((c,i)=>{const o=Lk.own[c.n],pg=Lk.pages[c.n];return `<tr style="cursor:default"><td>${i+1}</td><td><b>${esc(c.n)}</b><br><small style="color:var(--muted)">${esc(c.k)} · ${c.min} min ab ${esc(c.dep)}</small></td><td>${esc(c.z)}</td><td>${nf(c.pr)}</td><td>${o?`${o.a} / ${o.w} / ${o.l}`:'–'}</td><td>${pg?`<a href="${esc(pg)}" target="_blank" rel="noopener">✓ ${L4('vorhanden','var','live')}</a>`:`<span style="color:#c2662d;font-weight:600">${L4('fehlt','yok','missing')}</span>`}</td></tr>`}).join('')}</tbody></table></div></div>`;
+  const C=MKT.cfg.cands||[],byN=n=>CH.cities.find(x=>x.n===n)||{};
+  const sug=[...CH.cities].filter(c=>c.z==='Außerhalb'&&!C.some(x=>x.n===c.n)).sort((a,b)=>b.opp-a.opp).slice(0,5);
+  const cand=`<div class="card"><div class="hd"><h2>${L4('Partner-Kandidaten','Partner adayları','Partner candidates')}</h2><span class="pill">${C.length}</span></div>
+    <p style="margin:0 0 10px;color:var(--muted)">${L4('Städte mit guter Marktchance, die Laggner selbst nicht oder nur langsam beliefert: hier lohnt ein Partner, Freelancer oder ein neues Depot.','Laggner\'in kendisinin hiç ya da yavaş teslim edebildiği, fırsatı yüksek şehirler: burada partner, freelancer veya yeni depo mantıklı.','High-opportunity cities Laggner cannot serve quickly: candidates for a partner, freelancer or new depot.')}</p>
+    ${C.length?`<div class="tw"><table><thead><tr><th>${L4('Stadt','Şehir','City')}</th><th>${L4('Marktchance','Fırsat','Opportunity')}</th><th>${L4('Fahrzeit','Süre','Drive')}</th><th>${L4('Nächster Partner','En yakın partner','Nearest partner')}</th><th>Status</th><th>${L4('Notiz','Not','Note')}</th><th></th></tr></thead><tbody>
+      ${C.map((x,i)=>{const c=byN(x.n),pn=Lk.pn[x.n];return `<tr style="cursor:default"><td><b>${esc(x.n)}</b><br><small style="color:var(--muted)">${esc(x.k||c.k||'')}</small></td><td>${c.opp!=null?nf(c.opp):'–'}</td><td>${c.min!=null?c.min+' min':'–'}</td><td>${pn?`${esc(pn.n)}<br><small style="color:var(--muted)">${pn.km} km</small>`:'–'}</td>
+      <td><select data-mccst="${i}">${Object.entries(MC_ST).map(([k,l])=>`<option value="${k}" ${x.st===k?'selected':''}>${L4(...l)}</option>`).join('')}</select></td><td><input data-mccnote="${i}" value="${esc(x.note||'')}" placeholder="${L4('z. B. Gespräch mit …','örn. … ile görüşme','e.g. call with …')}" style="min-width:160px"></td><td><button class="btn sm" data-mccdel="${i}" title="${L4('Entfernen','Kaldır','Remove')}">×</button></td></tr>`}).join('')}</tbody></table></div>`:''}
+    ${sug.length?`<p style="margin:12px 0 6px"><b>${L4('Vorschläge aus der Analyse','Analizden öneriler','Suggestions')}</b></p><div style="display:flex;gap:6px;flex-wrap:wrap">${sug.map(c=>`<button class="btn sm" data-mccadd="${esc(c.n)}" data-k="${esc(c.k)}">+ ${esc(c.n)} <small style="color:var(--muted)">(${nf(c.opp)} · ${c.min} min)</small></button>`).join('')}</div>`:''}</div>`;
+  setTimeout(mcMount,0);
+  return head+map+plan+cand}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-mcw],[data-mcwsave],[data-mcwreset],[data-mccdel],[data-mccadd]');if(!b)return;
+  if(b.dataset.mcw){MKT.showW=!MKT.showW;MKT.msg='';render();return}
+  if(b.dataset.mcwsave){const w={},r={};document.querySelectorAll('[data-mcwt]').forEach(i=>w[i.dataset.mcwt]=Number(i.value));document.querySelectorAll('[data-mcr]').forEach(i=>r[i.dataset.mcr]=Number(i.value));
+    const same=(a,b)=>Object.keys(b).every(k=>Number(a[k])===b[k]);mcSaveCfg({w:same(w,MC_W0)?null:w,reach:same(r,MC_R0)?null:r},L4('Neu berechnet mit den angepassten Gewichten.','Yeni ağırlıklarla yeniden hesaplandı.','Recalculated with the adjusted weights.'));MKT.showW=false;return}
+  if(b.dataset.mcwreset){mcSaveCfg({w:null,reach:null},L4('Standardwerte der Analyse wiederhergestellt.','Analizin varsayılan değerleri geri yüklendi.','Analysis defaults restored.'));MKT.showW=false;return}
+  if(b.dataset.mccdel!=null){const L=(MKT.cfg.cands||[]).slice();L.splice(+b.dataset.mccdel,1);mcSaveCfg({cands:L});return}
+  if(b.dataset.mccadd){window.mcAct('cand',{n:b.dataset.mccadd,k:b.dataset.k});return}});
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='mcUp'&&t.files&&t.files[0]){const f=t.files[0];const rd=new FileReader();rd.onload=()=>{const html=String(rd.result||'');
+      if(!/const DATA=\{/.test(html)||!/\nconst CH=\{/.test(html)||!mcParse(html)){MKT.msg=L4('Diese Datei ist keine Marktanalyse im erwarteten Format.','Bu dosya beklenen formatta bir pazar analizi değil.','This file is not a market analysis in the expected format.');render();return}
+      MKT.msg=L4('Wird hochgeladen …','Yükleniyor …','Uploading …');render();
+      gateApi({action:'markt_put',token:gateToken(),html,name:f.name.replace(/^\d{6,}_/,'').replace(/\.html?$/i,'').replace(/_/g,' ')}).then(r=>{if(r&&r.ok){MKT.file=null;MKT.msg=L4('Analyse gespeichert.','Analiz kaydedildi.','Analysis saved.');mcLoad(true)}else{MKT.msg=L4('Hochladen fehlgeschlagen.','Yükleme başarısız.','Upload failed.')+(r&&r.error?' ('+r.error+')':'');render()}}).catch(()=>{MKT.msg=L4('Hochladen fehlgeschlagen.','Yükleme başarısız.','Upload failed.');render()})};rd.readAsText(f);return}
+  if(t.dataset.mccst!=null||t.dataset.mccnote!=null){const L=(MKT.cfg.cands||[]).map(x=>Object.assign({},x));const i=+(t.dataset.mccst??t.dataset.mccnote);if(!L[i])return;if(t.dataset.mccst!=null)L[i].st=t.value;else L[i].note=t.value;mcSaveCfg({cands:L})}});
+window.RENT_VIEWS=Object.assign(window.RENT_VIEWS||{},{markt:()=>viewMarkt()});
+/* /MOD:markt */
 /* MOD:auftrag *//* ===== Modul Anfragen & Aufträge: Website, Online-Buchung, Telefon → Angebot → Auftrag → Einsatz → Rechnung → bezahlt ===== */
 const AU={list:null,loading:false,sel:'',f:'offen',src:'',q:'',form:null,msg:'',lk:'b2b-auftrag-'+TENANT};
 const AU_ST=[['neu',['1 · Mietanfrage','1 · Kiralama talebi','1 · Enquiry'],'#2b6cb0','K'],['angebot',['2 · Angebot','2 · Teklif','2 · Quote'],'#6b46c1','L'],['bestellt',['3 · Bestellung','3 · Sipariş (müşteri)','3 · Customer order'],'#805ad5','K'],['bestaetigt',['4 · Auftragsbestätigung','4 · Sipariş onayı','4 · Confirmation'],'#b7791f','L'],['lieferschein',['5 · Lieferschein','5 · İrsaliye','5 · Delivery note'],'#d69e2e','L'],['einsatz',['6 · Übergeben · im Einsatz','6 · Teslim · sahada','6 · Handed over'],'#2f855a','LK'],['zurueck',['7 · Abgeholt & geprüft','7 · Alındı & kontrol','7 · Collected & checked'],'#c05621','L'],['abgerechnet',['8 · Rechnung offen','8 · Fatura açık','8 · Invoice open'],'#c0392b','L'],['bezahlt',['Bezahlt','Ödendi','Paid'],'#718096',''],['verloren',['Verloren / abgesagt','Kaybedildi / iptal','Lost / cancelled'],'#a0aec0','']];

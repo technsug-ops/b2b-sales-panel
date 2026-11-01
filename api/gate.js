@@ -225,6 +225,30 @@ async function main(req, res) {
     }
     return res.status(200).json({ ok: true, list: L });
   }
+  // Marktanalyse (Marktchancen je Stadt): Analyse-Datei + Einstellungen liegen privat im Blob, nur Rechte „web“ (Geschäftsführung, Marketing, Web-Admin)
+  if (['markt_get', 'markt_put', 'markt_cfg'].includes(action)) {
+    const d = scoped(verifyToken(body.token));
+    if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (d.sub !== 'master') { const pm = await permsOf(d.sub, T); if (!pm || !pm.includes('web')) return res.status(403).json({ ok: false, error: 'forbidden' }); }
+    const PH = pth(T, 'markt-file'), PC = pth(T, 'markt-cfg');
+    if (action === 'markt_get') {
+      const [f, c] = await Promise.all([body.noFile ? null : loadJson(PH), loadJson(PC)]);
+      return res.status(200).json({ ok: true, file: f, cfg: c || {} });
+    }
+    if (action === 'markt_put') {
+      const html = String(body.html || '');
+      if (html.length > 3e6 || !/const DATA=\{/.test(html) || !/\nconst CH=\{/.test(html)) return res.status(400).json({ ok: false, error: 'format' });
+      const f = { html, name: String(body.name || '').slice(0, 120), at: Date.now(), by: String(body.by || '').slice(0, 80) };
+      await saveJson(PH, f); return res.status(200).json({ ok: true, at: f.at });
+    }
+    // markt_cfg: Gewichte, Partner-Kandidaten
+    const c = (await loadJson(PC)) || {}; const inc = body.cfg || {};
+    const num = (v, a, b) => { const n = Number(v); return Number.isFinite(n) ? Math.min(b, Math.max(a, n)) : undefined; };
+    if ('w' in inc) { if (inc.w && typeof inc.w === 'object') { c.w = {}; for (const [k, v] of Object.entries(inc.w).slice(0, 12)) { const n = num(v, 0, 3); if (n !== undefined) c.w[String(k).slice(0, 40)] = n; } } else delete c.w; }
+    if ('reach' in inc) { if (inc.reach && typeof inc.reach === 'object') { c.reach = {}; for (const k of ['m1', 'm2', 'm3', 'f2', 'f3']) { const n = num(inc.reach[k], 0, 300); if (n !== undefined) c.reach[k] = n; } } else delete c.reach; }
+    if (Array.isArray(inc.cands)) c.cands = inc.cands.slice(0, 200).map(x => ({ n: String(x.n || '').slice(0, 80), k: String(x.k || '').slice(0, 80), st: ['offen', 'kontaktiert', 'gewonnen', 'verworfen'].includes(x.st) ? x.st : 'offen', note: String(x.note || '').slice(0, 300), at: Number(x.at) || Date.now() })).filter(x => x.n);
+    c.at = Date.now(); await saveJson(PC, c); return res.status(200).json({ ok: true, cfg: c });
+  }
   // E-Mail (Resend): Versand aus dem Auftrag, Antworten kommen über /api/mail-in zurück
   if (['mail_cfg', 'mail_send', 'mail_list', 'mail_seen', 'mail_assign'].includes(action)) {
     const d = scoped(verifyToken(body.token));
