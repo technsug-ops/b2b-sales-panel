@@ -1806,8 +1806,8 @@ function viewDash(){
       <div style="display:grid;gap:14px;align-content:start">
         <div class="card"><div class="hd"><h2>${t('activity')}</h2></div><div class="feed">${FEED.map(f=>`<div class="it"><span class="st ${f.c}" style="width:8px;height:8px;margin-top:6px;background:currentColor;border-radius:50%"></span><span>${pick(f)}</span><small>${f.w}</small></div>`).join('')}</div></div>
         ${kpiCard()}
-        <div class="card"><div class="hd"><h2>${Object.values(BRANDS).map(b=>b.name).join(' · ')}</h2></div>
-          ${Object.entries(BRANDS).map(([k,b])=>{const n=PARTNERS.filter(p=>p.roles.some(r=>r.b===k)).length;return `<div style="display:grid;grid-template-columns:110px 1fr 30px;gap:10px;align-items:center;margin:6px 0;font-size:13px"><span class="tag ${k}">${b.name}</span><div class="bar"><i style="width:${n/PARTNERS.length*100}%;background:${b.c}"></i></div><b style="text-align:right;font-variant-numeric:tabular-nums">${n}</b></div>`}).join('')}
+        <div class="card"><div class="hd"><h2>${Object.keys(BRANDS).length>1?L4('Partner je Gesellschaft','Şirkete göre partnerler','Partners per company'):esc(Object.values(BRANDS)[0].name)}</h2></div>
+          ${Object.entries(BRANDS).map(([k,b])=>{const n=PARTNERS.filter(p=>p.roles.some(r=>r.b===k)).length;return `<div style="display:grid;grid-template-columns:minmax(0,190px) minmax(40px,1fr) 30px;gap:10px;align-items:center;margin:6px 0;font-size:13px"><span class="tag ${k}" title="${esc(b.name)}" style="display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;justify-self:start">${esc(b.name)}</span><div class="bar"><i style="width:${n/PARTNERS.length*100}%;background:${b.c}"></i></div><b style="text-align:right;font-variant-numeric:tabular-nums">${n}</b></div>`}).join('')}
         </div>
       </div>
     </div>`;
