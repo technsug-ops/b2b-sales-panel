@@ -263,7 +263,7 @@ async function main(req, res) {
     if (action === 'doc_get') { if (!D) return res.status(404).json({ ok: false }); const b = await docBuf(T, D.id); if (!b) return res.status(404).json({ ok: false }); return res.status(200).json({ ok: true, mime: D.mime, name: D.name, data: b.toString('base64') }); }
     if (!canEdit) return res.status(403).json({ ok: false, error: 'forbidden' });
     if (action === 'doc_del') { if (!D) return res.status(404).json({ ok: false }); try { await del(docPath(T, D.id)); } catch (e) {} await saveJson(P, L.filter(x => x.id !== D.id)); return res.status(200).json({ ok: true }); }
-    const mime = String(body.mime || ''); if (!/^(application\/pdf|image\/(png|jpeg))$/.test(mime)) return res.status(400).json({ ok: false, error: 'type' });
+    const mime = String(body.mime || ''); if (!/^(application\/pdf|image\/(png|jpeg|webp))$/.test(mime)) return res.status(400).json({ ok: false, error: 'type' });
     const buf = Buffer.from(String(body.data || ''), 'base64'); if (!buf.length || buf.length > 3_100_000) return res.status(400).json({ ok: false, error: 'size' });
     const id = 'd' + Date.now().toString(36) + randomInt(1e6).toString(36);
     await put(docPath(T, id), buf, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: mime });
@@ -306,7 +306,7 @@ async function main(req, res) {
     const atts = (Array.isArray(body.attach) ? body.attach : []).slice(0, 6).filter(a => a && /^[\w .()-]{1,80}\.pdf$/i.test(String(a.filename || '')) && typeof a.content === 'string' && a.content.length < 3_000_000);
     if (Array.isArray(body.docs) && body.docs.length) { const DL = (await loadJson(pth(T, 'docs'))) || []; let tot = atts.reduce((a, x) => a + x.content.length, 0);
       for (const id of body.docs.slice(0, 8)) { const D = DL.find(x => x.id === String(id)); if (!D) continue; const b = await docBuf(T, D.id); if (!b) continue; const c = b.toString('base64'); if (tot + c.length > 28_000_000) break; tot += c.length;
-        const ext = D.mime === 'application/pdf' ? '.pdf' : D.mime === 'image/png' ? '.png' : '.jpg'; atts.push({ filename: (D.name.replace(/\.(pdf|png|jpe?g)$/i, '') + ext).slice(0, 100), content: c }); } }
+        const ext = D.mime === 'application/pdf' ? '.pdf' : D.mime === 'image/png' ? '.png' : D.mime === 'image/webp' ? '.webp' : '.jpg'; atts.push({ filename: (D.name.replace(/\.(pdf|png|jpe?g|webp)$/i, '') + ext).slice(0, 100), content: c }); } }
     if (L.filter(m => m.dir === 'out' && m.at > Date.now() - 3600e3).length > 200) return res.status(429).json({ ok: false, error: 'rate' });
     const replyTo = IN && ref ? `${T}.${ref.toLowerCase()}@${IN}` : undefined;
     const html = '<div style="font:14px/1.5 Arial,sans-serif;color:#1a1a1a;white-space:pre-line">' + text.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])) + '</div>';
