@@ -5101,7 +5101,7 @@ function maLines(E,k,a,b,bill){const p=E.price(k.type,a,b,k.mode,maZone(E,k));if
 const maSum=L=>Math.round(L.reduce((s,l)=>s+l.q*l.p,0)*100)/100;
 function maRows(){const E=maEngine();if(!E)return null;const S=maState(),now=Date.now();
   return E.book().map(k=>{const b=S.bills[k.id]||{};const rp=feat('uebergabe')&&typeof ugState==='function'?ugState().prot[k.id+'|in']:null;const end=b.actualEnd||(rp&&rp.done&&rp.done<k.end&&rp.done>k.start?rp.done:k.end);const from=b.billedUntil||k.start;
-    const status=b.done?'done':end<=now?'due':k.start<=now?'run':'plan';
+    const status=b.done?'done':(end<=now||(rp&&rp.done))?'due':k.start<=now?'run':'plan';
     const cut=status==='run'?Math.min(end,maDay(now)):end;const L=from<cut?maLines(E,{...k},from,cut,status==='due'?b:null):[];
     return {k,b,end,from,status,lines:L,net:maSum(L),total:k.net}}).sort((x,y)=>x.k.start-y.k.start)}
 function maRe(S){return 'MA-2026-'+String(S.next++).padStart(4,'0')}
