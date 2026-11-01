@@ -271,11 +271,17 @@ async function main(req, res) {
     L.unshift(doc); await saveJson(P, L.slice(0, 500)); return res.status(200).json({ ok: true, doc });
   }
   // E-Mail (Resend): Versand aus dem Auftrag, Antworten kommen über /api/mail-in zurück
-  if (['mail_cfg', 'mail_send', 'mail_list', 'mail_seen', 'mail_assign'].includes(action)) {
+  if (['mail_cfg', 'mail_send', 'mail_list', 'mail_seen', 'mail_assign', 'mail_tpl', 'mail_tpl_save'].includes(action)) {
     const d = scoped(verifyToken(body.token));
     if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
     if (d.sub !== 'master') { const pm = await permsOf(d.sub, T); if (!pm || !['leads', 'orders', 'rent', 'acct'].some(x => pm.includes(x))) return res.status(403).json({ ok: false, error: 'forbidden' }); }
     const KEY = process.env.RESEND_API_KEY || '', FROM = process.env.MAIL_FROM || '', IN = process.env.MAIL_IN_DOMAIN || '';
+    if (action === 'mail_tpl' || action === 'mail_tpl_save') { const TP = pth(T, 'mailtpl'); let TL = (await loadJson(TP)) || [];
+      if (action === 'mail_tpl_save') { const x = body.tpl || {}; const id = /^u[\w]{3,20}$/.test(String(x.id || '')) ? String(x.id) : 'u' + Date.now().toString(36);
+        if (body.del) TL = TL.filter(t => t.id !== id);
+        else { const t = { id, kind: String(x.kind || 'an').slice(0, 20), n: String(x.n || 'Vorlage').slice(0, 80), s: String(x.s || '').slice(0, 200), t: String(x.t || '').slice(0, 8000), by: String(body.by || '').slice(0, 60), at: Date.now() }; TL = [t, ...TL.filter(y => y.id !== id)].slice(0, 200); }
+        await saveJson(TP, TL); }
+      return res.status(200).json({ ok: true, list: TL }); }
     const P = pth(T, 'mails');
     if (action === 'mail_cfg') return res.status(200).json({ ok: true, send: !!(KEY && FROM), inbound: !!IN, from: FROM.replace(/^.*<|>.*$/g, '') });
     const L = (await loadJson(P)) || [];
