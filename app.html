@@ -30,7 +30,8 @@
 .marker-cluster{background-clip:padding-box;border-radius:20px;background:rgba(15,111,140,.22)}.marker-cluster div{width:30px;height:30px;margin-left:5px;margin-top:5px;text-align:center;border-radius:15px;font:12px/30px var(--body);font-weight:700;background:var(--accent);color:var(--accent-fg)}
 .leaflet-cluster-anim .leaflet-marker-icon{transition:transform .3s ease-out,opacity .3s ease-in}
 .pmk{width:100%;height:100%;border-radius:50%;border:2px solid var(--panel);box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.lmap{width:100%;height:min(62vh,520px);border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+.lmap{width:100%;height:min(62vh,520px);border-radius:10px;border:1px solid var(--line);background:var(--bg);position:relative;z-index:0;isolation:isolate}
+@media (pointer:coarse){.lmap.leaflet-container{touch-action:pan-x pan-y}}
 .lmap.small{height:360px}
 .mapctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 .mapctl input,.mapctl select{padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);font-size:13px}
@@ -1740,10 +1741,10 @@ function mountMaps(){
   document.querySelectorAll('[data-map]').forEach(el=>{
     const ids=el.dataset.ids?el.dataset.ids.split(',').map(Number):[];const list=PARTNERS.filter(p=>ids.includes(p.id));
     el.innerHTML='';
-    const map=L.map(el,{zoomControl:true,attributionControl:false,scrollWheelZoom:false,minZoom:5,maxZoom:12});
+    const touch=matchMedia('(pointer:coarse)').matches;const map=L.map(el,{zoomControl:true,attributionControl:false,scrollWheelZoom:false,dragging:!touch,tap:!touch,minZoom:4,maxZoom:12,maxBounds:[[30,-25],[72,45]],maxBoundsViscosity:1});
     const dark=matchMedia('(prefers-color-scheme: dark)').matches&&document.documentElement.dataset.theme!=='light'||document.documentElement.dataset.theme==='dark';
     const base=L.geoJSON(DE_STATES,{style:()=>({color:dark?'#3a4a55':'#c9d3da',weight:1,fillColor:dark?'#1b262e':'#ffffff',fillOpacity:1}),onEachFeature:(ft,l)=>{l.bindTooltip(ft.properties.name,{sticky:true,direction:'top'});l.on({mouseover:()=>l.setStyle({fillColor:dark?'#223039':'#eef4f7'}),mouseout:()=>base.resetStyle(l),click:()=>{mapState=ft.properties.name;render()}})}}).addTo(map);
-    const bb=base.getBounds();list.forEach(p=>bb.extend([p.lat,p.lon]));map.fitBounds(bb,{padding:[6,6]});
+    const bb=base.getBounds();list.forEach(p=>bb.extend([p.lat,p.lon]));map.fitBounds(bb,{padding:[6,6]});setTimeout(()=>{if(!el.isConnected)return;map.invalidateSize();map.fitBounds(bb,{padding:[6,6]})},250);
     try{const tl=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});tl.once('load',()=>base.setStyle({fillOpacity:.12,color:dark?'#6a7f8e':'#7f98a8'}));tl.addTo(map);base.bringToFront()}catch(e){}
     const cluster=L.markerClusterGroup({maxClusterRadius:34,showCoverageOnHover:false,iconCreateFunction:c=>L.divIcon({html:`<div>${c.getChildCount()}</div>`,className:'marker-cluster',iconSize:[40,40]})});
     list.forEach(p=>{const r=mainRoleOf(p);if(!r)return;const sz=r.t==='distributor'?22:r.t==='partner'?18:14;
