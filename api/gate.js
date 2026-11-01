@@ -225,6 +225,43 @@ async function main(req, res) {
     }
     return res.status(200).json({ ok: true, list: L });
   }
+  // E-Mail (Resend): Versand aus dem Auftrag, Antworten kommen über /api/mail-in zurück
+  if (['mail_cfg', 'mail_send', 'mail_list', 'mail_seen'].includes(action)) {
+    const d = scoped(verifyToken(body.token));
+    if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
+    const KEY = process.env.RESEND_API_KEY || '', FROM = process.env.MAIL_FROM || '', IN = process.env.MAIL_IN_DOMAIN || '';
+    const P = pth(T, 'mails');
+    if (action === 'mail_cfg') return res.status(200).json({ ok: true, send: !!(KEY && FROM), inbound: !!IN, from: FROM.replace(/^.*<|>.*$/g, '') });
+    const L = (await loadJson(P)) || [];
+    const okRef = r => /^[A-Za-z0-9-]{3,24}$/.test(String(r || ''));
+    if (action === 'mail_list') {
+      const ref = String(body.ref || '');
+      const out = L.filter(m => !ref || m.ref === ref || (m.refs || []).includes(ref)).slice(0, 200);
+      return res.status(200).json({ ok: true, list: out, unseen: L.filter(m => m.dir === 'in' && !m.seen).length });
+    }
+    if (action === 'mail_seen') { const ids = new Set((body.ids || []).map(String)); let n = 0; for (const m of L) if (ids.has(m.id) && !m.seen) { m.seen = Date.now(); n++; } if (n) await saveJson(P, L); return res.status(200).json({ ok: true }); }
+    // mail_send
+    if (!KEY || !FROM) return res.status(200).json({ ok: false, error: 'not_configured' });
+    const s = (v, n) => String(v == null ? '' : v).slice(0, n);
+    const em = /^[^@\s<>,;]+@[^@\s<>,;]+\.[^@\s<>,;]+$/;
+    const to = (Array.isArray(body.to) ? body.to : String(body.to || '').split(/[,;]/)).map(x => String(x).trim()).filter(Boolean).slice(0, 10);
+    const cc = (Array.isArray(body.cc) ? body.cc : String(body.cc || '').split(/[,;]/)).map(x => String(x).trim()).filter(Boolean).slice(0, 5);
+    if (!to.length || ![...to, ...cc].every(x => em.test(x))) return res.status(400).json({ ok: false, error: 'address' });
+    const subject = s(body.subject, 200).replace(/[\r\n]/g, ' '), text = s(body.text, 20000);
+    if (!subject || !text) return res.status(400).json({ ok: false, error: 'input' });
+    const ref = okRef(body.ref) ? String(body.ref) : '';
+    const atts = (Array.isArray(body.attach) ? body.attach : []).slice(0, 3).filter(a => a && /^[\w .()-]{1,80}\.pdf$/i.test(String(a.filename || '')) && typeof a.content === 'string' && a.content.length < 3_000_000);
+    if (L.filter(m => m.dir === 'out' && m.at > Date.now() - 3600e3).length > 200) return res.status(429).json({ ok: false, error: 'rate' });
+    const replyTo = IN && ref ? `${T}.${ref.toLowerCase()}@${IN}` : undefined;
+    const html = '<div style="font:14px/1.5 Arial,sans-serif;color:#1a1a1a;white-space:pre-line">' + text.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])) + '</div>';
+    const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: FROM, to, cc: cc.length ? cc : undefined, subject, text, html, reply_to: replyTo, attachments: atts.map(a => ({ filename: a.filename, content: a.content })), headers: ref ? { 'X-B2B-Ref': ref } : undefined }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.id) return res.status(200).json({ ok: false, error: 'provider', detail: s(j.message || j.name || r.status, 200) });
+    const m = { id: j.id, dir: 'out', ref, kind: s(body.kind, 20), to, cc, subject, text: text.slice(0, 6000), atts: atts.map(a => a.filename), at: Date.now(), by: s(body.by, 80), replyTo: replyTo || '' };
+    L.unshift(m); await saveJson(P, L.slice(0, 3000));
+    return res.status(200).json({ ok: true, mail: m });
+  }
   // Website-Anfragen (Startseite): öffentlich schreiben, nur TechNS-Konsole liest
   if (action === 'contact') {
     const s = v => String(v || '').replace(/[\u0000-\u001f]/g, ' ').trim();
