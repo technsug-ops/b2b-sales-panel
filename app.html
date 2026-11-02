@@ -4393,7 +4393,7 @@ function mkMount(ROOT, MK, OPT) {
   function svcOf(unitId) { var w = wState().units[unitId]; if (!w) return null; var next = w.last + w.iv; return { next: next, left: next - w.bh, over: w.bh >= next }; }
 
   /* ---------- Buchungen + Planung */
-  var KEY = 'laggner-mietkalender-v1';
+  var KEY = MK.key || 'laggner-mietkalender-v1';
   var BOOK = [];
   function freeUnit(typeId, a, b, ignore, only) {
     var us = UNITS.filter(function (u) { return u.type === typeId && (!only || u.id === only); });
@@ -5318,7 +5318,7 @@ function bwSave(){try{localStorage.setItem('b2b-bewert-'+TENANT,JSON.stringify(B
 function bwJobs(){const E=typeof maEngine==='function'?maEngine():null;if(!E)return [];const now=Date.now();
   return E.book().filter(k=>k.end<now).map(k=>{const u=E.UNITS.find(x=>x.id===k.unit)||{};return {k,br:BW_DEP[u.depot]||'heidenheim',type:(E.TYPE[k.type]||{}).name||k.type,ort:'PLZ '+k.plz}}).sort((a,b)=>b.k.end-a.k.end)}
 const BW_PROF=[['name','Firmenname und Kategorie „Arbeitsbühnenverleih“','Firma adı ve „Arbeitsbühnenverleih“ kategorisi'],['adr','Adresse und Einzugsgebiet','Adres ve hizmet bölgesi'],['hours','Öffnungszeiten inkl. Samstag','Çalışma saatleri (cumartesi dahil)'],['tel','Telefon der Niederlassung','Şube telefonu'],['web','Link auf die Stadtseite der Website','Web sitesindeki şehir sayfasına link'],['photos','Mind. 10 Fotos (Geräte, Hof, Team)','En az 10 fotoğraf (makine, saha, ekip)'],['services','Leistungen (Lkw-, Scheren-, Raupenbühnen …)','Hizmetler (kamyon, makaslı, paletli …)'],['posts','Monatlicher Beitrag (Angebot, Referenz)','Aylık gönderi (kampanya, referans)']];
-function viewBewert(){const S=bwState();const br=BW.br;const R=S.reviews.filter(r=>!br||r.br===br);const avg=R.length?R.reduce((a,r)=>a+r.stars,0)/R.length:0;const ans=R.filter(r=>r.reply).length;
+function viewBewert(){if(TENANT!=='laggner')return `<div class="card"><div class="hd"><h2>${L4('Bewertungen & Standorte','Yorumlar & şubeler','Reviews & locations','Reviews & locaties')}</h2></div><p>${L4('Für diesen Mandanten sind noch keine Standorte und Bewertungsprofile hinterlegt. Nach dem Import der Niederlassungen erscheinen hier Bewertungen, Anfragen und Standort-Profile.','Bu firma için henüz şube ve yorum profili tanımlı değil. Şubeler içe aktarıldıktan sonra yorumlar, istekler ve şube profilleri burada görünür.','No locations or review profiles have been set up for this tenant yet. Once the branches are imported, reviews, requests and location profiles appear here.','Voor deze klant zijn nog geen locaties en reviewprofielen ingesteld. Na het importeren van de vestigingen verschijnen hier reviews, verzoeken en locatieprofielen.')}</p></div>`;const S=bwState();const br=BW.br;const R=S.reviews.filter(r=>!br||r.br===br);const avg=R.length?R.reduce((a,r)=>a+r.stars,0)/R.length:0;const ans=R.filter(r=>r.reply).length;
   const jobs=bwJobs().filter(j=>!br||j.br===br);const sent=Object.values(S.reqs).filter(x=>x.sent).length;const got=Object.values(S.reqs).filter(x=>x.rated).length;
   const tile=(l,v,s)=>`<div class="card" style="padding:12px 14px"><small style="color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:11px">${l}</small><div style="font-size:24px;font-weight:700;margin:4px 0 2px">${v}</div><small style="color:var(--muted)">${s||''}</small></div>`;
   const tab=(k,l,n)=>`<button class="${BW.tab===k?'on':''}" data-bwtab="${k}">${l}${n?` <span class="badge">${n}</span>`:''}</button>`;
@@ -5622,8 +5622,9 @@ function mtCard(){mtLoad();const E=MT.edit;const kl=k=>{const x=MT_KINDS.find(y=
    Die Module speichern weiter wie bisher (localStorage); diese Schicht überträgt jede Änderung auf den Server (je Modul ein JSON mit Version),
    holt Änderungen anderer Benutzer alle 20 s ab und führt gleichzeitige Änderungen zusammen. Fotos/Unterschriften liegen separat im privaten Speicher. */
 const SY={on:false,started:false,v:{},base:{},mem:{},timers:{},pending:{},pushing:{},img:{},imgWant:new Set(),up:new Set(),applying:false,state:'',err:0,k2s:{},s2k:{},poll:null};
-function syMap(){const T=TENANT;const wk=(typeof TD!=='undefined'&&TD&&TD.mietkal&&TD.mietkal.wkey)||'laggner-wartung-v1';
-  return [['laggner-mietkalender-v1','mk-book'],[wk,'mk-wartung'],['b2b-uebergabe-'+T,'uebergabe'],['b2b-schaden-'+T,'schaden'],['b2b-mietabr-'+T,'mietabr'],['b2b-firmenkd-'+T,'firmenkd'],['b2b-kond-'+T,'kond'],['b2b-hb-'+T,'hb'],['b2b-kdnr-'+T,'kdnr'],
+function syMap(){const T=TENANT;const wk=(typeof TD!=='undefined'&&TD&&TD.mietkal&&TD.mietkal.wkey)||(T==='laggner'?'laggner-wartung-v1':'b2b-mk-wartung-'+T);
+  const bk=(typeof TD!=='undefined'&&TD&&TD.mietkal&&TD.mietkal.key)||(T==='laggner'?'laggner-mietkalender-v1':'b2b-mk-'+T);
+  return [[bk,'mk-book'],[wk,'mk-wartung'],['b2b-uebergabe-'+T,'uebergabe'],['b2b-schaden-'+T,'schaden'],['b2b-mietabr-'+T,'mietabr'],['b2b-firmenkd-'+T,'firmenkd'],['b2b-kond-'+T,'kond'],['b2b-hb-'+T,'hb'],['b2b-kdnr-'+T,'kdnr'],
     ['b2b-zm-'+T,'zm'],['b2b-zm-rfq-'+T,'zm-rfq'],['b2b-zm-cfg-'+T,'zm-cfg'],['b2b-boerse-'+T,'boerse'],['b2b-schulung-'+T,'schulung'],['b2b-baucheck-'+T,'baucheck'],['b2b-bewert-'+T,'bewert'],['b2b-telematik-'+T,'telematik'],[typeof LSK==='function'?LSK('b2b-inv'):'b2b-inv','inv']]}
 function syActive(){return typeof feat==='function'&&feat('mietkal')&&typeof gateApi==='function'&&typeof gateToken==='function'&&!!gateToken()&&(location.protocol!=='file:'||!!window.__syForce)}
 /* localStorage-Schreibzugriffe mitlesen */
@@ -6564,6 +6565,7 @@ window.RENT_VIEWS=Object.assign(window.RENT_VIEWS||{},{baucheck:()=>viewBaucheck
 const SC={tab:'kurse',open:'',msg:''};
 const SC_KURS={dguv:{n:'Bediener Hubarbeitsbühnen DGUV 308-008',d:'1 Tag',p:249,cap:8,valid:12,c:'DGUV 308-008'},ipaf:{n:'IPAF PAL Card 3a/3b',d:'1 Tag',p:395,cap:6,valid:60,c:'IPAF 3a/3b'},stapler:{n:'Teleskopstapler DGUV 308-009',d:'1 Tag',p:299,cap:8,valid:12,c:'DGUV 308-009 (Stapler)'},unterw:{n:'Jährliche Unterweisung Hubarbeitsbühnen',d:'½ Tag',p:129,cap:10,valid:12,c:'Unterweisung'}};
 function scState(){if(SC.st)return SC.st;try{SC.st=JSON.parse(localStorage.getItem('b2b-schulung-'+TENANT)||'null')}catch(e){}
+  if((!SC.st||!SC.st.kurse)&&TENANT!=='laggner')SC.st={kurse:[],cert:[],leads:{}};
   if(!SC.st||!SC.st.kurse){const D=864e5,d0=new Date();d0.setHours(8,0,0,0);const mon=+d0+((8-d0.getDay())%7||7)*D;const plan=[['dguv',2,'Heidenheim'],['ipaf',4,'Sindelfingen'],['dguv',9,'Ravensburg'],['stapler',11,'Heidenheim'],['unterw',15,'Schwäbisch Gmünd'],['ipaf',23,'Heidenheim'],['dguv',30,'Sindelfingen']];
     const people=[['Jonas Weber','Elektro Hägele GmbH'],['Ali Demir','Elektro Hägele GmbH'],['Lena Vogt','Bau Schneider GmbH'],['Marco Rossi','Bau Schneider GmbH'],['Paul Huber','Fassadenbau Kraus'],['Sven Maier','Gerüstbau Maier'],['Eva Kurz','Stadtwerke Heidenheim'],['Ömer Kaya','Dach & Wand Rieger']];
     const kurse=plan.map(([k,o,ort],i)=>({id:'K-'+(301+i),k,t:mon+o*D,ort,tn:people.filter((_,j)=>(j+i)%(i%2?3:2)===0).slice(0,SC_KURS[k].cap-1-(i%3)).map(([n,f])=>({n,f})),done:false}));
@@ -6975,7 +6977,7 @@ window.RENT_VIEWS=Object.assign(window.RENT_VIEWS||{},{markt:()=>viewMarkt()});
 /* MOD:auftrag *//* ===== Modul Anfragen & Aufträge: Website, Online-Buchung, Telefon → Angebot → Auftrag → Einsatz → Rechnung → bezahlt ===== */
 const AU={list:null,loading:false,sel:'',f:'offen',src:'',q:'',form:null,msg:'',lk:'b2b-auftrag-'+TENANT};
 const AU_ST=[['neu',['1 · Mietanfrage','1 · Kiralama talebi','1 · Enquiry'],'#2b6cb0','K'],['angebot',['2 · Angebot','2 · Teklif','2 · Quote'],'#6b46c1','L'],['bestellt',['3 · Bestellung','3 · Sipariş (müşteri)','3 · Customer order'],'#805ad5','K'],['bestaetigt',['4 · Auftragsbestätigung','4 · Sipariş onayı','4 · Confirmation'],'#b7791f','L'],['lieferschein',['5 · Lieferschein','5 · İrsaliye','5 · Delivery note'],'#d69e2e','L'],['einsatz',['6 · Übergeben · im Einsatz','6 · Teslim · sahada','6 · Handed over'],'#2f855a','LK'],['zurueck',['7 · Abgeholt & geprüft','7 · Alındı & kontrol','7 · Collected & checked'],'#c05621','L'],['abgerechnet',['8 · Rechnung offen','8 · Fatura açık','8 · Invoice open'],'#c0392b','L'],['bezahlt',['Bezahlt','Ödendi','Paid'],'#718096',''],['verloren',['Verloren / abgesagt','Kaybedildi / iptal','Lost / cancelled'],'#a0aec0','']];
-const auResp=k=>{const r=(AU_ST.find(x=>x[0]===k)||[])[3]||'';return r==='K'?L4('Kunde','Müşteri','Customer'):r==='L'?(TD&&TD.name||'Laggner').split(' ')[0]:r==='LK'?L4('Laggner + Kunde','Laggner + müşteri','Laggner + customer'):''};
+const auResp=k=>{const r=(AU_ST.find(x=>x[0]===k)||[])[3]||'';return r==='K'?L4('Kunde','Müşteri','Customer'):r==='L'?(TD&&TD.name||'Laggner').split(' ')[0]:r==='LK'?((TD&&TD.name||'Laggner').split(' ')[0]+L4(' + Kunde',' + müşteri',' + customer')):''};
 const AU_SRC={web:['Website-Formular','Web formu','Website form'],online:['Online-Buchung','Online rezervasyon','Online booking'],tel:['Telefon','Telefon','Phone'],mail:['E-Mail','E-posta','Email'],vorort:['Vor Ort','Yerinde','In person'],partner:['Partner','Partner','Partner']};
 const auRent=()=>feat('mietkal');
 /* Schriftform: jede Anfrage – auch telefonisch – wird schriftlich (Textform) abgewickelt: Angebot, Bestellung, AB, Lieferschein */
