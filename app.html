@@ -293,6 +293,9 @@ svg.i{width:1.05em;height:1.05em;vertical-align:-.16em;fill:none;stroke:currentC
 /* public application page */
 body.public .side,body.public .top,body.public #aiFab,body.public #auFab,body.public .rolebox{display:none!important}
 @media(max-width:900px){.dash-top{grid-template-columns:1fr!important}}
+.dash-kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.kpi .l{font-size:12px;font-weight:600;letter-spacing:.03em}
+.dash-top{align-items:stretch!important}.dash-top>.card{display:flex;flex-direction:column}
+.dash-mid{align-items:start}.dash-map .lmap{height:min(56vh,440px)}.dash-map .maplist{max-height:150px}
 body.console #aiFab,body.console #auFab,body.console #ai,body.console #syState{display:none!important}
 body.public .main{margin-left:0!important;max-width:980px;margin:0 auto!important;padding-top:24px}
 body.public .shell,body.public .app{grid-template-columns:1fr!important}
@@ -1756,7 +1759,7 @@ function mountMaps(){
     const touch=matchMedia('(pointer:coarse)').matches;const map=L.map(el,{zoomControl:true,attributionControl:false,scrollWheelZoom:false,dragging:!touch,tap:!touch,minZoom:4,maxZoom:12,maxBounds:[[30,-25],[72,45]],maxBoundsViscosity:1});
     const dark=matchMedia('(prefers-color-scheme: dark)').matches&&document.documentElement.dataset.theme!=='light'||document.documentElement.dataset.theme==='dark';
     const base=L.geoJSON(DE_STATES,{style:()=>({color:dark?'#3a4a55':'#c9d3da',weight:1,fillColor:dark?'#1b262e':'#ffffff',fillOpacity:1}),onEachFeature:(ft,l)=>{l.bindTooltip(ft.properties.name,{sticky:true,direction:'top'});l.on({mouseover:()=>l.setStyle({fillColor:dark?'#223039':'#eef4f7'}),mouseout:()=>base.resetStyle(l),click:()=>{mapState=ft.properties.name;render()}})}}).addTo(map);
-    const bb=base.getBounds();list.forEach(p=>bb.extend([p.lat,p.lon]));map.fitBounds(bb,{padding:[6,6]});setTimeout(()=>{if(!el.isConnected)return;map.invalidateSize();map.fitBounds(bb,{padding:[6,6]})},250);
+    let bb=base.getBounds();if(list.length){bb=L.latLngBounds(list.map(p=>[p.lat,p.lon])).pad(list.length>1?.25:0)}const fit=()=>{if(list.length===1)map.setView([list[0].lat,list[0].lon],8);else map.fitBounds(bb,{padding:[24,24],maxZoom:9})};fit();setTimeout(()=>{if(!el.isConnected)return;map.invalidateSize();fit()},250);try{let w0=el.clientWidth;const ro=new ResizeObserver(()=>{if(!el.isConnected){ro.disconnect();return}if(Math.abs(el.clientWidth-w0)>20){w0=el.clientWidth;map.invalidateSize();fit()}});ro.observe(el)}catch(e){}
     try{const tl=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});tl.once('load',()=>base.setStyle({fillOpacity:.12,color:dark?'#6a7f8e':'#7f98a8'}));tl.addTo(map);base.bringToFront()}catch(e){}
     const cluster=L.markerClusterGroup({maxClusterRadius:34,showCoverageOnHover:false,iconCreateFunction:c=>L.divIcon({html:`<div>${c.getChildCount()}</div>`,className:'marker-cluster',iconSize:[40,40]})});
     list.forEach(p=>{const r=mainRoleOf(p);if(!r)return;const sz=r.t==='distributor'?22:r.t==='partner'?18:14;
@@ -1800,22 +1803,24 @@ function visiblePartners(){
 }
 function viewDash(){
   if(viewer.type==='admin'){
-    const exp=CONTRACTS.filter(c=>c.status==='expiring').length;
-    return `${slaBanner()}<div class="grid kpis" style="margin-bottom:14px">
-      ${kpi(t('kpi.partners'),PARTNERS.filter(p=>p.status==='active').length,'+3')}
-      ${kpi(t('kpi.leads'),LEADS.filter(l=>!['won','lost'].includes(l.stage)).length,'+6')}
-      ${kpi(t('kpi.orders'),ORDERS.length,'+2')}
-      ${kpi(t('kpi.revenue'),eur(ORDERS.reduce((a,o)=>a+o.amount,0)),'+18 %')}
-      ${kpi('🚚 '+t('stk.transit'),ORDERS.filter(o=>o.ship&&!o.ship.done).length,'')}
-      ${kpi(t('kpi.expiring'),exp,'60 d',true)}
+    const transit=ORDERS.filter(o=>o.ship&&!o.ship.done).length;
+    const AQ=typeof auLoad==='function'?auLoad().filter(v=>auStage(v)==='angebot').length:0;
+    const top=typeof dashReqCard==='function'?dashReqCard():(typeof dashTodayCard==='function'?dashTodayCard():'');
+    return `${slaBanner()}<div class="grid kpis dash-kpis" style="margin-bottom:14px">
+      ${kpiT(t('kpi.partners'),PARTNERS.filter(p=>p.status==='active').length,'+3',[5,5,6,6,7,7,8],'ok')}
+      ${kpiT(t('kpi.leads'),LEADS.filter(l=>!['won','lost'].includes(l.stage)).length,'+6',[2,3,2,4,3,4,5],'ok')}
+      ${kpiT(t('kpi.revenue'),eur(ORDERS.reduce((a,o)=>a+o.amount,0)),'+18 %',[38,41,40,47,52,55,64],'ok')}
+      ${kpiT(L4('Offene Angebote','Açık teklifler','Open quotes','Open offertes'),AQ,AQ?L4('warten auf Antwort','yanıt bekliyor','awaiting reply','wachten op antwoord'):'',null,AQ?'warn':'')}
+      ${kpiT('🚚 '+t('stk.transit'),transit,transit?L4('Sendung(en) unterwegs','yolda gönderi','shipment(s) on the way','zending(en) onderweg'):'',null,'')}
     </div>
-    <div class="grid two">
-      <div class="card"><div class="hd"><h2>${t('map.title')}</h2><span class="sp"></span>${brandChips()}</div>${mapBlock(visiblePartners())}</div>
+    ${top}
+    <div class="grid two dash-mid">
+      <div class="card dash-map"><div class="hd"><h2>${t('map.title')}</h2><span class="sp"></span>${brandChips()}</div>${mapBlock(visiblePartners())}</div>
       <div style="display:grid;gap:14px;align-content:start">
         <div class="card"><div class="hd"><h2>${t('activity')}</h2></div><div class="feed">${FEED.map(f=>`<div class="it"><span class="st ${f.c}" style="width:8px;height:8px;margin-top:6px;background:currentColor;border-radius:50%"></span><span>${pick(f)}</span><small>${f.w}</small></div>`).join('')}</div></div>
-        ${kpiCard()}
-        <div class="card"><div class="hd"><h2>${Object.keys(BRANDS).length>1?L4('Partner je Gesellschaft','Şirkete göre partnerler','Partners per company'):esc(Object.values(BRANDS)[0].name)}</h2></div>
-          ${Object.entries(BRANDS).map(([k,b])=>{const n=PARTNERS.filter(p=>p.roles.some(r=>r.b===k)).length;return `<div style="display:grid;grid-template-columns:minmax(0,190px) minmax(40px,1fr) 30px;gap:10px;align-items:center;margin:6px 0;font-size:13px"><span class="tag ${k}" title="${esc(b.name)}" style="display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;justify-self:start">${esc(b.name)}</span><div class="bar"><i style="width:${n/PARTNERS.length*100}%;background:${b.c}"></i></div><b style="text-align:right;font-variant-numeric:tabular-nums">${n}</b></div>`}).join('')}
+        ${perfCard()}
+        ${Object.keys(BRANDS).length>1?`        <div class="card"><div class="hd"><h2>${Object.keys(BRANDS).length>1?L4('Partner je Gesellschaft','Şirkete göre partnerler','Partners per company'):esc(Object.values(BRANDS)[0].name)}</h2></div>
+          ${Object.entries(BRANDS).map(([k,b])=>{const n=PARTNERS.filter(p=>p.roles.some(r=>r.b===k)).length;return `<div style="display:grid;grid-template-columns:minmax(0,190px) minmax(40px,1fr) 30px;gap:10px;align-items:center;margin:6px 0;font-size:13px"><span class="tag ${k}" title="${esc(b.name)}" style="display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;justify-self:start">${esc(b.name)}</span><div class="bar"><i style="width:${n/PARTNERS.length*100}%;background:${b.c}"></i></div><b style="text-align:right;font-variant-numeric:tabular-nums">${n}</b></div>`}).join('')}`:''}
         </div>
       </div>
     </div>`;
@@ -1841,6 +1846,10 @@ function viewDash(){
   </div>`;
 }
 const kpi=(l,v,d,neg)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div>${d?`<div class="d ${neg?'n':''}">${d}</div>`:''}</div>`;
+/* Kennzahl mit Mini-Trend (Sparkline) und Ampelfarbe */
+const kpiT=(l,v,d,tr,tone)=>{const col=tone==='warn'?'var(--warn)':tone==='crit'?'var(--crit)':'var(--ok)';
+  let sp='';if(tr&&tr.length>1){const mx=Math.max(...tr),mn=Math.min(...tr),r=mx-mn||1;const pts=tr.map((y,i)=>`${(i/(tr.length-1)*100).toFixed(1)},${(28-(y-mn)/r*24).toFixed(1)}`).join(' ');sp=`<svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:72px;height:26px;flex:none" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>`}
+  return `<div class="card kpi"><div class="l">${l}</div><div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px"><div class="v">${v}</div>${sp}</div>${d?`<div class="d" style="color:${tone?col:'var(--muted)'}">${d}</div>`:''}</div>`};
 
 function partnersTable(list){
   return `<div class="tw"><table><thead><tr><th>${t('cols.name')}</th><th>${t('cols.city')}</th><th>${t('cols.roles')}</th><th>${t('cols.brands')}</th><th>${t('cols.status')}</th></tr></thead><tbody>
@@ -2423,6 +2432,13 @@ function viewAudit(){
   return `<div class="card"><div class="hd"><h2>${t('bp.audit')}</h2><span class="sp"></span><button class="btn sm" data-act="export">⤓ CSV</button></div>
     <div class="tw"><table><thead><tr><th>${t('bp.when')}</th><th>${t('bp.who')}</th><th>${t('bp.what')}</th></tr></thead><tbody>${AUDIT.map(a=>`<tr><td style="font-variant-numeric:tabular-nums;white-space:nowrap">${a.when}</td><td>${esc(a.who)}</td><td style="white-space:normal">${esc(a.what)}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
+function perfCard(){
+  if(!ph(2))return '';
+  const inactive=PARTNERS.filter(p=>p.lastActive<'2026-07-30').length;const onreq=STOCK.filter(x=>x.stock-x.res<=0).length;
+  const row=(l,v,sub,pct,tone)=>{const col=tone==='warn'?'var(--warn)':tone==='crit'?'var(--crit)':'var(--accent)';return `<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:8px 0;border-bottom:1px solid var(--line)"><span style="font-size:13px">${l}${sub?` <small style="color:var(--muted)">· ${sub}</small>`:''}</span><b style="font-size:14px;font-variant-numeric:tabular-nums;color:${tone?col:'inherit'}">${v}</b><div class="bar" style="grid-column:1/-1;height:5px"><i style="width:${Math.max(3,Math.min(100,pct))}%;background:${col}"></i></div></div>`};
+  return `<div class="card"><div class="hd"><h2>${L4('Performance','Performans','Performance','Prestaties')}</h2><span class="sp"></span><button class="btn sm" data-goto="perf">${L4('Details','Detay','Details','Details')} →</button></div>
+    ${row(t('bp.k.ttc'),'17 h',t('bp.k.ttcS'),100-17/24*100+30,'')}${row(t('bp.k.win'),'38 %','90 d',38,'')}${row(t('bp.k.cycle'),'21',t('bp.k.cycleS'),70,'')}
+    ${row(t('bp.k.capa'),'78 %',t('bp.k.capaS'),78,'')}${row(t('bp.k.inactive'),inactive,'',inactive/Math.max(1,PARTNERS.length)*100,inactive?'warn':'')}${row(t('bp.k.onreq'),onreq+' / '+STOCK.length,'',onreq/Math.max(1,STOCK.length)*100,onreq>2?'warn':'')}</div>`}
 function kpiCard(){
   if(!ph(2))return '';
   const inactive=PARTNERS.filter(p=>p.lastActive<'2026-07-30').length;
@@ -4036,7 +4052,7 @@ function render(){
   {const cc=page!=='register'&&catOf(page);$('#pageTitle').textContent=page==='register'?t('reg.nav'):cc&&SUB_GRP[cc.id]?catLbl(cc):MOD_LABEL(page)}
   document.title=CONSOLE?'TechNS Console':HQ?'Firmenzentrale':NET?(PDOOR?DOOR_META[DOOR].n:'Partner-Portal')+' · '+TENANTS[0].name:TENANTS[0].name+' · Verwaltung';
   const v=$('#view');
-  v.innerHTML=deco((page==='notfound'?'':subTabs())+(page==='notfound'?viewNotFound():selDetail&&DTYPE[page]===selDetail.t?viewDetail():({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:()=>(typeof dashReqCard==='function'?dashReqCard():(typeof dashTodayCard==='function'?dashTodayCard():''))+viewDash()+pfMyCard()+f2MyProgram(),partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:()=>viewOrders()+f2MyAccount()+ivPartnerCard()+f2MyReturns(),invoices:viewInvoices,pricing:viewPricing,perf:viewPerf,program:viewProgram,terr:viewTerr,customers:viewCustomers,quotes:viewQuotes,credit:viewCredit,returns:viewReturns,pricelist:()=>feat('pricing')?viewPricelistPro():viewPricelist(),dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot,...(window.RENT_VIEWS||{})})[page]()));
+  v.innerHTML=deco((page==='notfound'?'':subTabs())+(page==='notfound'?viewNotFound():selDetail&&DTYPE[page]===selDetail.t?viewDetail():({urls:viewUrls,me:viewMe,hr:viewHR,projects:viewProjects,team:viewTeam,hqhome:viewHqHome,hqcreds:viewHqCreds,hqdoors:viewHqDoors,chome:viewConsoleHome,rollout:viewRollout,codes:()=>codesCard(),dash:()=>viewDash()+pfMyCard()+f2MyProgram(),partners:viewPartners,network:viewNetwork,pool:viewPool,referral:viewReferral,stock:viewStock,install:viewInstall,site:viewMySite,sites:viewSites,contracts:viewContracts,leads:()=>viewLeads(false),myleads:()=>viewLeads(true),orders:()=>viewOrders()+f2MyAccount()+ivPartnerCard()+f2MyReturns(),invoices:viewInvoices,pricing:viewPricing,perf:viewPerf,program:viewProgram,terr:viewTerr,customers:viewCustomers,quotes:viewQuotes,credit:viewCredit,returns:viewReturns,pricelist:()=>feat('pricing')?viewPricelistPro():viewPricelist(),dam:viewDAM,notif:viewNotif,mycontract:viewContract,earn:viewEarn,settings:viewSettings,register:viewRegister,audit:viewAudit,bp:viewBP,tenants:viewTenants,integrations:viewIntegrations,security:viewSecurity,billing:viewBilling,pilot:viewPilot,...(window.RENT_VIEWS||{})})[page]()));
   {const sg=v.querySelector('.subtabs.grp'),on=sg&&sg.querySelector('button.on');if(on&&sg.scrollWidth>sg.clientWidth)sg.scrollLeft=on.offsetLeft-sg.offsetLeft-sg.clientWidth/2+on.offsetWidth/2}
   v.querySelectorAll('[data-subk]').forEach(b=>b.onclick=()=>{page=b.dataset.subk;selPartner=null;selDetail=null;render()});
   syncUrl();
@@ -7558,6 +7574,7 @@ function dashTodayCard(){if(viewer.partner||!(hasP('orders')||hasP('leads')||has
   add(9,n('abgerechnet'),'#c0392b',L4('Rechnung(en) offen – Zahlung prüfen','açık fatura – ödemeyi kontrol et','open invoice(s) – check payment'),'auftrag','abgerechnet');
   if(E&&rvOn('wartung')){const lk=E.UNITS.filter(u=>E.lockOf(u.id,now,now+1)).length;add(10,lk,'#718096',L4('Gerät(e) gesperrt (Prüfung/Störung)','makine kilitli (muayene/arıza)','machine(s) locked'),'wartung');const W=E.wState();add(11,E.UNITS.filter(u=>{const d=(E.dayStart(W.units[u.id].uvv)-E.dayStart(now))/D;return d>=0&&d<=30}).length,'#718096',L4('UVV-Prüfung(en) in 30 Tagen fällig','30 gün içinde UVV muayenesi','inspection(s) due in 30 days'),'wartung')}
   if(rvOn('schulung')&&typeof scState==='function')add(12,scState().cert.filter(c=>c.v<now+30*D).length,'#718096',L4('Bediener-Nachweis(e) laufen ab','operatör belgesi doluyor','operator certificate(s) expiring'),'schulung');
+  {const ex=(typeof CONTRACTS!=='undefined'?CONTRACTS:[]).filter(c=>c.status==='expiring').length;if(hasP('partners'))add(13,ex,'#b7791f',L4('Partnervertrag/-verträge laufen aus – verlängern','biten partner sözleşmesi – uzat','partner contract(s) expiring – renew','partnercontract(en) lopen af – verlengen'),'contracts')}
   todo.sort((a,b)=>a.prio-b.prio);
   /* Einfach halten: nur die 4 dringendsten Aufgaben, Rest über Benachrichtigungen */
   const top=todo.slice(0,4),more=todo.length-top.length;
@@ -7565,6 +7582,7 @@ function dashTodayCard(){if(viewer.partner||!(hasP('orders')||hasP('leads')||has
     return `<button data-goto="${t.go}" data-dt="${t.st||''}" style="display:flex;gap:10px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 0;text-align:left;cursor:pointer;font:inherit;color:inherit;min-width:0"><b style="flex:none;min-width:34px;height:26px;padding:0 8px;border-radius:13px;background:${t.col};color:#fff;display:grid;place-items:center;font-size:13px">${t.c}</b><span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</span><small style="display:block;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${act}</small></span><span style="color:var(--accent);flex:none">→</span></button>`};
   return `<div class="card" style="min-width:0"><div class="hd"><h2>${L4('Heute zu tun','Bugün yapılacaklar','To do today','Vandaag te doen')}</h2>${todo.length?`<span class="badge">${todo.length}</span>`:''}</div>
    ${top.length?top.map(row).join(''):`<p style="color:var(--muted);margin:0">${L4('Alles erledigt.','Her şey tamam.','All done.','Alles gedaan.')}</p>`}
+   ${top.length<3?(()=>{const tr=(typeof ORDERS!=='undefined'?ORDERS:[]).filter(o=>o.ship&&!o.ship.done).length;const facts=[tr?tr+' '+L4('Sendung(en) unterwegs','gönderi yolda','shipment(s) on the way','zending(en) onderweg'):'',n('einsatz')?n('einsatz')+' '+L4('Auftrag/Aufträge im Einsatz','iş sahada','job(s) in progress','opdracht(en) lopend'):''].filter(Boolean);return `<div style="margin-top:auto;padding-top:10px;display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px"><span style="color:var(--ok);font-weight:700">✓</span><span>${L4('Sonst alles aktuell','Diğer her şey güncel','Everything else up to date','Verder alles bijgewerkt')}${facts.length?' · '+facts.join(' · '):''}</span></div>`})():''}
    ${more>0?`<button data-goto="notif" style="margin-top:8px;border:0;background:none;padding:0;color:var(--muted);cursor:pointer;font:inherit;font-size:13px">+ ${more} ${L4('weitere Hinweise','diğer bildirim','more','meer')} →</button>`:''}</div>`}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-dt]');if(!b)return;const st=b.dataset.dt,go=b.dataset.goto;
   if(go==='auftrag'&&typeof AU!=='undefined'){AU.sel='';AU.form=null;AU.f=st||'offen'}
@@ -7574,7 +7592,7 @@ function dashReqCard(){if(viewer.partner||typeof auLoad!=='function'||!(hasP('or
   const A=auLoad().map(v=>({v,s:auStage(v)})).filter(x=>['neu','angebot','bestellt'].includes(x.s)).sort((a,b)=>(a.s==='neu'?0:1)-(b.s==='neu'?0:1)||b.v.at-a.v.at).slice(0,4);
   const ago=t=>{const m=Math.round((Date.now()-t)/6e4);return m<60?m+' min':m<1440?Math.round(m/60)+' h':Math.round(m/1440)+' '+L4('T.','g.','d')};
   const req=`<div class="card" style="min-width:0"><div class="hd"><h2>${L4('Neueste Anfragen','Son talepler','Latest enquiries','Nieuwste aanvragen')}</h2><span class="sp"></span><button class="btn sm" data-goto="auftrag" data-dt="offen">${L4('Alle','Tümü','All','Alle')} →</button><button class="btn p sm" data-goto="auftrag" data-aunew2="tel">+ ${L4('Telefonanfrage','Telefon talebi','Phone enquiry','Telefonische aanvraag')}</button></div>
-   ${A.length?A.map(({v,s})=>`<button data-goto="auftrag" data-ausel2="${esc(v.id)}" style="display:flex;gap:10px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 0;text-align:left;cursor:pointer;font:inherit;color:inherit"><span class="tag" style="background:${auStC(s)};color:#fff;font-size:11px;width:96px;flex:none;text-align:center">${auStL(s).replace(/^\d+ · /,'')}</span><span style="flex:1;min-width:0"><b style="font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((v.kunde||{}).firma||(v.kunde||{}).name||'—')}</b><small style="color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(v.geraet||'—')}${v.plz?' · PLZ '+esc(v.plz):''}</small></span><small style="color:var(--muted);white-space:nowrap">${ago(v.at)}</small></button>`).join(''):`<p style="color:var(--muted);margin:0">${L4('Keine offenen Anfragen.','Açık talep yok.','No open enquiries.')}</p>`}</div>`;
+   ${A.length?A.map(({v,s})=>`<button data-goto="auftrag" data-ausel2="${esc(v.id)}" style="display:flex;gap:10px;align-items:center;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 0;text-align:left;cursor:pointer;font:inherit;color:inherit"><span style="flex:none;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,${auStC(s)} 13%,transparent);color:${auStC(s)};min-width:84px"><span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>${auStL(s).replace(/^\d+ · /,'')}</span><span style="flex:1;min-width:0"><b style="font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((v.kunde||{}).firma||(v.kunde||{}).name||'—')}</b><small style="color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(v.geraet||'—')}${v.plz?' · PLZ '+esc(v.plz):''}</small></span><small style="color:var(--muted);white-space:nowrap">${ago(v.at)}</small></button>`).join(''):`<p style="color:var(--muted);margin:0">${L4('Keine offenen Anfragen.','Açık talep yok.','No open enquiries.')}</p>`}</div>`;
   const zmOn=rvOn('zumiet')&&typeof zmData==='function';const E=rvEngine();
   const find=zmOn||E?`<div class="card" style="min-width:0"><div class="hd"><h2>${L4('Gerät finden','Makine bul','Find machine')}</h2></div>
    <form id="${zmOn?'zmDashForm':'rvFindForm'}" style="display:grid;gap:8px"><input name="masch" list="zmMachD" placeholder="${L4('Gerät, z. B. Raupenbühne 46 m','Makine, ör. Raupenbühne 46 m','Machine, e.g. tracked platform 46 m')}" required style="height:38px"><datalist id="zmMachD">${(typeof ZM_MACH!=='undefined'?ZM_MACH:[]).map(m=>`<option value="${esc(m)}">`).join('')}</datalist>
