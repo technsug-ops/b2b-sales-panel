@@ -228,13 +228,28 @@ async function main(req, res) {
     return res.status(200).json({ ok: true, list: L });
   }
   // Marktanalyse (Marktchancen je Stadt): Analyse-Datei + Einstellungen liegen privat im Blob, nur Rechte „web“ (Geschäftsführung, Marketing, Web-Admin)
-  if (['markt_get', 'markt_put', 'markt_cfg'].includes(action)) {
+  if (['markt_get', 'markt_put', 'markt_cfg', 'markt_docs', 'markt_doc_get', 'markt_doc_put', 'markt_doc_del'].includes(action)) {
     const d = scoped(verifyToken(body.token));
     if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
     if (d.sub !== 'master') { const pm = await permsOf(d.sub, T); if (!pm || !pm.includes('web')) return res.status(403).json({ ok: false, error: 'forbidden' });
       // Marktanalyse ist ein buchbarer Service: nur wenn das Modul für den Mandanten aktiv ist
       const tc = (await loadJson(pth(T, 'tcfg'))) || tcfgDefault(T); if (!(tc.features || []).includes('markt')) return res.status(403).json({ ok: false, error: 'not_booked' }); }
     const PH = pth(T, 'markt-file'), PC = pth(T, 'markt-cfg');
+    // weitere Analyse-Berichte (eigenständige HTML-Seiten, z. B. Partner-Atlas je Region): Index + je Bericht eine Datei
+    if (action.startsWith('markt_doc')) {
+      const PI = pth(T, 'markt-docs'); const idx = (await loadJson(PI)) || [];
+      if (action === 'markt_docs') return res.status(200).json({ ok: true, docs: idx });
+      const id = String(body.id || '');
+      if (action === 'markt_doc_get') { if (!idx.some(x => x.id === id)) return res.status(404).json({ ok: false, error: 'not_found' }); const f = await loadJson(pth(T, 'markt-doc-' + id)); return res.status(200).json({ ok: true, doc: f }); }
+      if (action === 'markt_doc_del') { const L = idx.filter(x => x.id !== id); await saveJson(PI, L); return res.status(200).json({ ok: true, docs: L }); }
+      const html = String(body.html || '');
+      if (html.length < 200 || html.length > 3e6 || !/<html|<body|<script/i.test(html)) return res.status(400).json({ ok: false, error: 'format' });
+      const nid = Date.now().toString(36) + randomInt(1000).toString(36);
+      const name = String(body.name || 'Analyse').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 100) || 'Analyse';
+      await saveJson(pth(T, 'markt-doc-' + nid), { html, name, at: Date.now() });
+      const L = [{ id: nid, name, at: Date.now(), size: html.length }, ...idx].slice(0, 30); await saveJson(PI, L);
+      return res.status(200).json({ ok: true, docs: L, id: nid });
+    }
     if (action === 'markt_get') {
       const [f, c] = await Promise.all([body.noFile ? null : loadJson(PH), loadJson(PC)]);
       return res.status(200).json({ ok: true, file: f, cfg: c || {} });
