@@ -24,9 +24,9 @@ const DOORS = ['partner', 'freelancer', 'leadgen', 'distributor'];
 const TEAM_PATH = 'gate/team.json';
 const TCFG_PATH = 'gate/tenant-t1.json';
 const F2 = ['program', 'terr', 'cust', 'quotes', 'credit', 'returns'];
-const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'];
+const ADDONS = ['orders', 'stock', 'install', 'projects', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert', 'markt'];
 const PTYPES = ['leadgen', 'freelancer', 'partner', 'distributor'];
-const RENT_ONLY = ['auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'];
+const RENT_ONLY = ['auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert', 'markt'];
 const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices' && !RENT_ONLY.includes(x)), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
 // ---- tenants: aydemir keeps its original blob paths; others live under gate/t/<slug>/
@@ -34,9 +34,9 @@ const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
 const pth = (T, kind) => T === 'aydemir' && LEGACY[kind] ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
-const RENT_MIG = [[2, ['mietkal', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'bewert']], [3, ['wartung']], [4, ['telematik', 'firmenkd', 'baucheck', 'schulung']], [5, ['sortiment']], [6, ['auftrag']]];
-const RENT_V = 6;
-const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert'], types: DEFAULT_TCFG.types } };
+const RENT_MIG = [[2, ['mietkal', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'bewert']], [3, ['wartung']], [4, ['telematik', 'firmenkd', 'baucheck', 'schulung']], [5, ['sortiment']], [6, ['auftrag']], [7, ['markt']]];
+const RENT_V = 7;
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert', 'markt'], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // packages: partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override in cfg.limits
 const PLAN_LIMITS = { Starter: { partners: 25, users: 5 }, Business: { partners: 100, users: 15 }, Group: { partners: 0, users: 0 } };
@@ -231,7 +231,9 @@ async function main(req, res) {
   if (['markt_get', 'markt_put', 'markt_cfg'].includes(action)) {
     const d = scoped(verifyToken(body.token));
     if (!d || !(d.sub === 'master' || /^t:/.test(String(d.sub)))) return res.status(403).json({ ok: false, error: 'forbidden' });
-    if (d.sub !== 'master') { const pm = await permsOf(d.sub, T); if (!pm || !pm.includes('web')) return res.status(403).json({ ok: false, error: 'forbidden' }); }
+    if (d.sub !== 'master') { const pm = await permsOf(d.sub, T); if (!pm || !pm.includes('web')) return res.status(403).json({ ok: false, error: 'forbidden' });
+      // Marktanalyse ist ein buchbarer Service: nur wenn das Modul für den Mandanten aktiv ist
+      const tc = (await loadJson(pth(T, 'tcfg'))) || tcfgDefault(T); if (!(tc.features || []).includes('markt')) return res.status(403).json({ ok: false, error: 'not_booked' }); }
     const PH = pth(T, 'markt-file'), PC = pth(T, 'markt-cfg');
     if (action === 'markt_get') {
       const [f, c] = await Promise.all([body.noFile ? null : loadJson(PH), loadJson(PC)]);
@@ -384,6 +386,18 @@ async function main(req, res) {
     const m = { id: j.id, dir: 'out', ref, kind: s(body.kind, 20), to, cc, subject, text: text.slice(0, 6000), atts: atts.map(a => a.filename), at: Date.now(), by: s(body.by, 80), replyTo: replyTo || '' };
     L.unshift(m); await saveJson(P, L.slice(0, 3000));
     return res.status(200).json({ ok: true, mail: m });
+  }
+  // Service-Anfrage aus dem Kundenportal (z. B. Marktanalyse) → landet in der TechNS-Konsole
+  if (action === 'service_req') {
+    const d = scoped(verifyToken(body.token));
+    if (!d || !/^t:/.test(String(d.sub))) return res.status(403).json({ ok: false, error: 'forbidden' });
+    const s = v => String(v || '').replace(/[\u0000-\u001f]/g, ' ').trim();
+    const svc = ['markt'].includes(body.svc) ? body.svc : null; if (!svc) return res.status(400).json({ ok: false, error: 'input' });
+    const P = 'gate/techns/contacts.json'; const L = (await loadJson(P)) || [];
+    if (L.filter(x => x.ten === T && x.svc === svc && x.at > Date.now() - 864e5).length) return res.status(200).json({ ok: true, dup: true });
+    L.unshift({ id: 'S-' + Date.now().toString(36).toUpperCase(), at: Date.now(), name: s(body.name).slice(0, 80), firma: s(body.firma).slice(0, 120), email: s(body.email).slice(0, 120), branche: 'service', groesse: '', msg: s(body.msg).slice(0, 1500), lang: s(body.lang).slice(0, 2), st: 'neu', ten: T, svc });
+    await saveJson(P, L.slice(0, 500));
+    return res.status(200).json({ ok: true });
   }
   // Website-Anfragen (Startseite): öffentlich schreiben, nur TechNS-Konsole liest
   if (action === 'contact') {
