@@ -7049,7 +7049,11 @@ function viewMarkt(){
   const body=h===null?`<p style="color:var(--muted)">${L4('Bericht wird geladen …','Rapor yükleniyor …','Loading report …','Rapport laden …')}</p>`:h===false?`<p>${L4('Bericht konnte nicht geladen werden.','Rapor yüklenemedi.','Report could not be loaded.','Rapport kon niet worden geladen.')}</p>`:`<iframe data-mcframe title="${esc(d.name)}" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-downloads" style="width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--line);border-radius:10px;background:#fff"></iframe>`;
   return bar+`<div class="card"><div class="hd"><h2>${esc(d.name)}</h2><span class="pill">${new Date(d.at).toLocaleDateString(LOC())}</span><span class="sp"></span><button class="btn sm" data-mcdocfs="1">${L4('Vollbild','Tam ekran','Full screen','Volledig scherm')}</button><button class="btn sm" data-mcdocdel="${esc(d.id)}" style="color:var(--crit)">${L4('Entfernen','Kaldır','Remove','Verwijderen')}</button></div>${body}</div>`}
 /* iframe-Inhalt erst nach dem Rendern setzen (srcdoc), damit der Bericht isoliert vom Portal läuft */
-function mcFrameFill(){const f=document.querySelector('[data-mcframe]');if(!f||!MKT.doc)return;const h=MKT.html[MKT.doc];if(typeof h==='string'&&f.dataset.id!==MKT.doc){f.dataset.id=MKT.doc;f.srcdoc=h}}
+function mcFrameFill(){const f=document.querySelector('[data-mcframe]');if(!f||!MKT.doc)return;const h=MKT.html[MKT.doc];if(typeof h==='string'&&f.dataset.id!==MKT.doc){f.dataset.id=MKT.doc;f.srcdoc=mcPrep(h)}}
+/* Im isolierten iframe sendet der Browser keinen Referer – die OSM-Kachelserver blockieren das (403). Kacheln daher über CARTO (OSM-Daten) laden, mit Quellenangabe */
+function mcPrep(h){if(!/tile\.openstreetmap\.org/.test(h))return h;h=h.replace(/https:\/\/(\{s\}\.)?tile\.openstreetmap\.org\//g,'https://a.basemaps.cartocdn.com/rastertiles/voyager/');
+  const att='<div style="position:fixed;right:6px;bottom:4px;z-index:99999;font:10px/1.4 system-ui,sans-serif;background:rgba(255,255,255,.85);padding:1px 6px;border-radius:4px;color:#444">© OpenStreetMap-Mitwirkende · © CARTO</div>';
+  return /<\/body>/i.test(h)?h.replace(/<\/body>/i,att+'</body>'):h+att}
 new MutationObserver(()=>mcFrameFill()).observe(document.documentElement,{childList:true,subtree:true});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-mcdoc],[data-mcdocdel],[data-mcdocfs]');if(!b)return;
   if(b.dataset.mcdoc!==undefined){MKT.doc=b.dataset.mcdoc;MKT.picked=true;render();return}
