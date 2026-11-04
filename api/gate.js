@@ -91,10 +91,10 @@ const SEED_TEAM = [
   { id: 5, name: 'Selin A. (Personal)', role: 'hr', user: 'personal', pass: 'Aydemir-HR-2026' },
 ];
 const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
-  { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: 'UGAlu-GF-2026' },
-  { id: 2, name: 'Vertrieb', role: 'staff', user: 'vertrieb', pass: 'UGAlu-Team-2026' },
-  { id: 3, name: 'Montageleitung', role: 'monteur', user: 'montage', pass: 'UGAlu-Mont-2026' },
-  { id: 4, name: 'Buchhaltung', role: 'buchhaltung', user: 'buchhaltung', pass: 'UGAlu-Buha-2026' },
+  { id: 1, name: 'Geschäftsführung', role: 'gf', user: 'geschaeftsfuehrung', pass: null },
+  { id: 2, name: 'Vertrieb', role: 'staff', user: 'vertrieb', pass: null },
+  { id: 3, name: 'Montageleitung', role: 'monteur', user: 'montage', pass: null },
+  { id: 4, name: 'Buchhaltung', role: 'buchhaltung', user: 'buchhaltung', pass: null },
 ], sirius: [
   { id: 1, name: 'Directie', role: 'gf', user: 'geschaeftsfuehrung', pass: 'Sirius-GF-2026' },
   { id: 2, name: 'Verkoop binnendienst', role: 'staff', user: 'verkoop', pass: 'Sirius-Team-2026' },
@@ -107,11 +107,11 @@ const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
 async function loadTeam(T = 'aydemir') {
   const TP = pth(T, 'team');
   let t = await loadJson(TP);
-  if (!t) { t = SEEDS[T].map(x => ({ id: x.id, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() })); await saveJson(TP, t); }
+  if (!t) { t = SEEDS[T].map(x => ({ id: x.id, name: x.name, role: x.role, user: x.user, hash: sha(x.pass || genPassword()), active: true, created: Date.now() })); await saveJson(TP, t); }
   let tc = false;
   for (const x of t) if ((x.user === 'mehmet' || x.user === 'montage') && x.role === 'mitarbeiter' && !x.roleMig) { x.role = 'monteur'; x.roleMig = true; tc = true; }
   if (T === 'aydemir' && !t.some(x => x.user === 'personal')) { const x = SEED_TEAM[4]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
-  if (T === 'ug-alu' && !t.some(x => x.user === 'buchhaltung')) { const x = SEEDS['ug-alu'][3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
+  if (T === 'ug-alu' && !t.some(x => x.user === 'buchhaltung')) { const x = SEEDS['ug-alu'][3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass || genPassword()), active: true, created: Date.now() }); tc = true; }
   if (T === 'laggner') for (const x of t) if (!x.lagRole && ((x.user === 'disposition' && x.role === 'staff') || (x.user === 'fahrer' && x.role === 'monteur'))) { x.role = x.user === 'fahrer' ? 'fahrer' : 'vermietung'; x.lagRole = true; tc = true; }
   if (T === 'laggner') for (const x of t) if (x.user === 'disposition' && x.role === 'vermietung' && !x.lag2) { x.role = 'buero'; x.lag2 = true; tc = true; }
   if (tc) await saveJson(TP, t);
