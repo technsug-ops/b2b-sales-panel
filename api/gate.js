@@ -105,9 +105,13 @@ const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
   { id: 4, name: 'Buchhaltung', role: 'buchhaltung', user: 'buchhaltung', pass: 'Laggner-Buha-2026' },
 ], 'mb-hoogwerkers': [
   { id: 1, name: 'Directie', role: 'gf', user: 'geschaeftsfuehrung', hash: '57d04b4ad9c449bc7850142ae5a54321423413cf1f0674e0a2daef7d3375bb9d' },
-  { id: 2, name: 'Planning & verhuur', role: 'buero', user: 'disposition', hash: '817959b90eb04af103887c45b96aee9a1ee33bec6ad74ba37efeb4cc090db0dd' },
-  { id: 3, name: 'Chauffeur / instructie', role: 'fahrer', user: 'fahrer', hash: '0d5a53ff84a829c331cc673e0e7568f64282e99468fbe681dfd953e927bf9b62' },
-  { id: 4, name: 'Administratie', role: 'buchhaltung', user: 'buchhaltung', hash: '8f6c4b48a53eb9c8c2d03095d9dee708eb0f0b78fcb7ca03af1b20d736107c35' },
+  { id: 2, name: 'Planning & verhuur', role: 'buero', user: 'disposition', hash: 'b548ab3af3d1126659cb935dde48f047b96a10f3d409a6ae702fc2b0f98a824a' },
+  { id: 3, name: 'Chauffeur / instructie', role: 'fahrer', user: 'fahrer', hash: 'b81555f427b2d517197aa32fbd88b628799729dd1776c10f5facc75af5354786' },
+  { id: 4, name: 'Administratie', role: 'buchhaltung', user: 'buchhaltung', hash: '06af5e6cd071848f971739641b987147fb0024194ef4be6b99794bc9f1493b98' },
+  { id: 5, name: 'Verhuur / binnendienst', role: 'vermietung', user: 'verhuur', hash: '60aafa41ff62c101553d79d295904d915dae859b69e2b4af4e9ce11514806083' },
+  { id: 6, name: 'Werkplaats / onderhoud', role: 'werkstatt', user: 'werkplaats', hash: 'b9081250f636d004c18a0f66230a3bd13430d9b63509b636f42dc62fc76d82ba' },
+  { id: 7, name: 'Buitendienst', role: 'aussendienst', user: 'buitendienst', hash: 'a98179a716dd5195b6579d5a807803ffda4031c2184ddb0a58fc26326ab29fc2' },
+  { id: 8, name: 'Marketing', role: 'marketing', user: 'marketing', hash: 'a6bad3845360fdbe06b307175b820135e33a64143e82bc82a889e2e485cfb09c' },
 ] };
 async function loadTeam(T = 'aydemir') {
   const TP = pth(T, 'team');
@@ -118,6 +122,8 @@ async function loadTeam(T = 'aydemir') {
   if (T === 'aydemir' && !t.some(x => x.user === 'personal')) { const x = SEED_TEAM[4]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }
   if (T === 'ug-alu' && !t.some(x => x.user === 'buchhaltung')) { const x = SEEDS['ug-alu'][3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass || genPassword()), active: true, created: Date.now() }); tc = true; }
   if (T === 'laggner') for (const x of t) if (!x.lagRole && ((x.user === 'disposition' && x.role === 'staff') || (x.user === 'fahrer' && x.role === 'monteur'))) { x.role = x.user === 'fahrer' ? 'fahrer' : 'vermietung'; x.lagRole = true; tc = true; }
+  // MB Hoogwerkers: Rollen-Benutzer wie bei Laggner; Startpasswörter neu setzen, solange der Benutzer sein Passwort nicht selbst geändert hat
+  if (T === 'mb-hoogwerkers' && !t.some(x => x.mbSeed2)) { for (const sd of SEEDS[T]) { if (sd.user === 'geschaeftsfuehrung') continue; const x = t.find(y => y.user === sd.user); if (!x) t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: sd.name, role: sd.role, user: sd.user, hash: sd.hash, active: true, created: Date.now(), mbSeed2: true }); else if (!x.pwAt) { x.hash = sd.hash; x.role = sd.role; x.name = sd.name; x.mbSeed2 = true; } else x.mbSeed2 = true; } tc = true; }
   if (T === 'laggner') for (const x of t) if (x.user === 'disposition' && x.role === 'vermietung' && !x.lag2) { x.role = 'buero'; x.lag2 = true; tc = true; }
   if (tc) await saveJson(TP, t);
   if (T === 'aydemir' && !t.some(x => x.user === 'mehmet')) { const x = SEED_TEAM[3]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); await saveJson(TP, t); }
