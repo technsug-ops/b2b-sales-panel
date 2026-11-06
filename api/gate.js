@@ -30,17 +30,17 @@ const RENT_ONLY = ['auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mieta
 const DEFAULT_TCFG = { features: ADDONS.filter(x => x !== 'invoices' && !RENT_ONLY.includes(x)), types: { leadgen: { on: true, label: '' }, freelancer: { on: true, label: '' }, partner: { on: true, label: '' }, distributor: { on: true, label: '' } } };
 const ROLES_PATH = 'gate/roles.json';
 // ---- tenants: aydemir keeps its original blob paths; others live under gate/t/<slug>/
-const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner'];
+const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner', 'mb-hoogwerkers'];
 const tenantOf = b => (TENANTS.includes(String(b && b.tenant || '')) ? String(b.tenant) : 'aydemir');
 const LEGACY = { team: TEAM_PATH, roles: ROLES_PATH, creds: CREDS_PATH, tcfg: TCFG_PATH };
 const pth = (T, kind) => T === 'aydemir' && LEGACY[kind] ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
 const RENT_MIG = [[2, ['mietkal', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'bewert']], [3, ['wartung']], [4, ['telematik', 'firmenkd', 'baucheck', 'schulung']], [5, ['sortiment']], [6, ['auftrag']], [7, ['markt']]];
 const RENT_V = 7;
-const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert', 'markt'], types: DEFAULT_TCFG.types } };
+const TENANT_DEFAULT_CFG = { 'ug-alu': { features: ['orders', 'stock', 'install', 'sites', 'hr', 'invoices', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, sirius: { features: ['orders', 'stock', 'pricing', 'perf', ...F2], types: DEFAULT_TCFG.types }, laggner: { features: ['orders', 'stock', 'install', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'sortiment', 'zumiet', 'flotte', 'mietabr', 'boerse', 'uebergabe', 'wartung', 'telematik', 'firmenkd', 'baucheck', 'schulung', 'bewert', 'markt'], types: DEFAULT_TCFG.types }, 'mb-hoogwerkers': { features: ['orders', 'stock', 'invoices', 'pricing', 'perf', ...F2, 'auftrag', 'mietkal', 'mietabr', 'uebergabe', 'wartung', 'firmenkd', 'baucheck', 'schulung'], types: DEFAULT_TCFG.types } };
 const tcfgDefault = T => TENANT_DEFAULT_CFG[T] || DEFAULT_TCFG;
 // packages: partners (sub-dealers) and team users a tenant may open; 0 = unlimited; per-tenant override in cfg.limits
 const PLAN_LIMITS = { Starter: { partners: 25, users: 5 }, Business: { partners: 100, users: 15 }, Group: { partners: 0, users: 0 } };
-const PLAN_DEFAULT = { aydemir: 'Group', 'ug-alu': 'Starter', sirius: 'Business', laggner: 'Group' };
+const PLAN_DEFAULT = { aydemir: 'Group', 'ug-alu': 'Starter', sirius: 'Business', laggner: 'Group', 'mb-hoogwerkers': 'Business' };
 function limitsOf(cfg, T) { const plan = PLAN_LIMITS[cfg && cfg.plan] ? cfg.plan : (PLAN_DEFAULT[T] || 'Starter'); const o = (cfg && cfg.limits) || {}; return { plan, partners: Number.isFinite(+o.partners) && o.partners !== '' && o.partners != null ? +o.partners : PLAN_LIMITS[plan].partners, users: Number.isFinite(+o.users) && o.users !== '' && o.users != null ? +o.users : PLAN_LIMITS[plan].users }; }
 // a token's tenant (tokens minted before tenancy belong to aydemir)
 const tokTenant = d => d && (d.ten || 'aydemir');
@@ -63,7 +63,7 @@ async function loadRoles(T = 'aydemir') {
   let changed = false;
   for (const b of BUILTIN_ROLES) if (!r.some(x => x.key === b.key)) { r.push({ ...b, fixMa: true, migratedProjects: true, migratedInstall: true }); changed = true; }
   if (T === 'laggner') for (const b of LAGGNER_ROLES) { const x = r.find(y => y.key === b.key); if (x && (b.key === 'buero' || b.key === 'vermietung') && !x.lag2) { x.name = b.name; x.perms = b.perms.slice(); x.lag2 = true; changed = true; } }
-  if (T === 'laggner') for (const b of LAGGNER_ROLES) if (!r.some(x => x.key === b.key)) { r.push({ ...b, fixMa: true, migratedProjects: true, migratedInstall: true }); changed = true; }
+  if (T === 'laggner' || T === 'mb-hoogwerkers') for (const b of LAGGNER_ROLES) if (!r.some(x => x.key === b.key)) { r.push({ ...b, fixMa: true, migratedProjects: true, migratedInstall: true }); changed = true; }
   for (const x of r) if (!x.migratedInstall) { if (x.perms.includes('orders') && !x.perms.includes('install')) x.perms.push('install'); x.migratedInstall = true; changed = true; }
   for (const x of r) { if (x.key === 'gf' && x.perms.length !== PERMS.length) { x.perms = PERMS.slice(); changed = true; } if (x.key === 'mitarbeiter' && !x.fixMa) { x.perms = x.perms.filter(p => p !== 'projects'); x.fixMa = true; changed = true; }
     if (x.builtin && x.key !== 'mitarbeiter' && !x.migratedProjects) { if (!x.perms.includes('projects')) x.perms.push('projects'); x.migratedProjects = true; changed = true; } }
@@ -103,11 +103,16 @@ const SEEDS = { aydemir: SEED_TEAM, 'ug-alu': [
   { id: 2, name: 'Disposition Heidenheim', role: 'vermietung', user: 'disposition', pass: 'Laggner-Dispo-2026' },
   { id: 3, name: 'Fahrer / Einweisung', role: 'fahrer', user: 'fahrer', pass: 'Laggner-Fahrer-2026' },
   { id: 4, name: 'Buchhaltung', role: 'buchhaltung', user: 'buchhaltung', pass: 'Laggner-Buha-2026' },
+], 'mb-hoogwerkers': [
+  { id: 1, name: 'Directie', role: 'gf', user: 'geschaeftsfuehrung', hash: '57d04b4ad9c449bc7850142ae5a54321423413cf1f0674e0a2daef7d3375bb9d' },
+  { id: 2, name: 'Planning & verhuur', role: 'buero', user: 'disposition', hash: '817959b90eb04af103887c45b96aee9a1ee33bec6ad74ba37efeb4cc090db0dd' },
+  { id: 3, name: 'Chauffeur / instructie', role: 'fahrer', user: 'fahrer', hash: '0d5a53ff84a829c331cc673e0e7568f64282e99468fbe681dfd953e927bf9b62' },
+  { id: 4, name: 'Administratie', role: 'buchhaltung', user: 'buchhaltung', hash: '8f6c4b48a53eb9c8c2d03095d9dee708eb0f0b78fcb7ca03af1b20d736107c35' },
 ] };
 async function loadTeam(T = 'aydemir') {
   const TP = pth(T, 'team');
   let t = await loadJson(TP);
-  if (!t) { t = SEEDS[T].map(x => ({ id: x.id, name: x.name, role: x.role, user: x.user, hash: sha(x.pass || genPassword()), active: true, created: Date.now() })); await saveJson(TP, t); }
+  if (!t) { t = SEEDS[T].map(x => ({ id: x.id, name: x.name, role: x.role, user: x.user, hash: x.hash || sha(x.pass || genPassword()), active: true, created: Date.now() })); await saveJson(TP, t); }
   let tc = false;
   for (const x of t) if ((x.user === 'mehmet' || x.user === 'montage') && x.role === 'mitarbeiter' && !x.roleMig) { x.role = 'monteur'; x.roleMig = true; tc = true; }
   if (T === 'aydemir' && !t.some(x => x.user === 'personal')) { const x = SEED_TEAM[4]; t.push({ id: Math.max(0, ...t.map(m => m.id)) + 1, name: x.name, role: x.role, user: x.user, hash: sha(x.pass), active: true, created: Date.now() }); tc = true; }

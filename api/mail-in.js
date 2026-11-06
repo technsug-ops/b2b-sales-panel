@@ -4,7 +4,7 @@
 import { put, get } from '@vercel/blob';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner'];
+const TENANTS = ['aydemir', 'ug-alu', 'sirius', 'laggner', 'mb-hoogwerkers'];
 const LEGACY = {};
 const pth = (T, kind) => T === 'aydemir' && LEGACY[kind] ? LEGACY[kind] : `gate/t/${T}/${kind}.json`;
 async function loadJson(path) {
