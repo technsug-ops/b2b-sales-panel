@@ -36,6 +36,7 @@
 .mapctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 .mapctl input,.mapctl select{padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);font-size:13px}
 .mapctl input{min-width:160px}
+.mapctl.tidy{display:grid;gap:8px;margin-bottom:12px}.mapctl.tidy .mrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}.mapctl.tidy .mrow:first-child input{flex:1;min-width:140px}.mapctl.tidy .mrow:first-child select{flex:0 0 auto;max-width:48%}.mlbl{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);min-width:44px}.mapctl.tidy .chips{margin:0}
 .maplist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-top:10px;max-height:220px;overflow:auto}
 .maplist button{text-align:left;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel);cursor:pointer;display:grid;gap:2px;font-size:12px}
 .maplist button:hover{border-color:var(--accent)}.maplist b{font-size:13px}.maplist small{color:var(--muted)}
@@ -1745,10 +1746,11 @@ let mapType='all', mapState='all', mapQ='';
 const TYPE_COL={leadgen:'#7a8a96',freelancer:'#c48a12',partner:'#0f6f8c',distributor:'#c23b3b'};
 const mainRoleOf=(p)=>{const roles=p.roles.filter(r=>brandF==='all'||r.b===brandF);return roles.sort((a,b)=>TYPES.indexOf(b.t)-TYPES.indexOf(a.t))[0]};
 function mapFiltered(list){return list.filter(p=>(mapType==='all'||p.roles.some(r=>r.t===mapType&&(brandF==='all'||r.b===brandF)))&&(mapState==='all'||p.state===mapState)&&(!mapQ||(p.name+' '+p.city+' '+p.contact+' '+p.ind.join(' ')).toLowerCase().includes(mapQ.toLowerCase())))}
-function mapBlock(list,{small=false,controls=true}={}){
+function mapBlock(list,{small=false,controls=true,tidy=false}={}){
   const f=mapFiltered(list);
   const states=[...new Set(PARTNERS.map(p=>p.state))].sort();
-  const ctl=controls?`<div class="mapctl"><input id="mapQ" placeholder="🔍 ${t('cols.name')} / ${t('cols.city')}" value="${esc(mapQ)}">
+  const LBL=(de,tr,en,nl)=>`<span class="mlbl">${L4(de,tr,en,nl)}</span>`;
+  const ctl=controls&&tidy?`<div class="mapctl tidy"><div class="mrow"><input id="mapQ" placeholder="🔍 ${t('cols.name')} / ${t('cols.city')}" value="${esc(mapQ)}"><select id="mapState"><option value="all">${lang==='tr'?'Tüm bölgeler':lang==='en'?'All regions':'Alle Regionen'}</option><optgroup label="Deutschland">${states.filter(x=>DE_STATE_LIST.includes(x)).map(s=>`<option ${mapState===s?'selected':''}>${s}</option>`).join('')}</optgroup><optgroup label="Europa">${states.filter(x=>!DE_STATE_LIST.includes(x)).map(s=>`<option ${mapState===s?'selected':''}>${s}</option>`).join('')}</optgroup></select></div>${allowedBrands().length>1?`<div class="mrow">${LBL('Marke','Marka','Brand','Merk')}${brandChips()}</div>`:''}<div class="mrow">${LBL('Typ','Tür','Type','Type')}<div class="chips"><button class="chip ${mapType==='all'?'on':''}" data-mt="all">${lang==='tr'?'Tümü':lang==='en'?'All':'Alle'}</button>${typesOn().map(k=>`<button class="chip ${mapType===k?'on':''}" data-mt="${k}"><span class="dot" style="background:${TYPE_COL[k]}"></span>${t('types.'+k)}</button>`).join('')}</div></div></div>`:controls?`<div class="mapctl"><input id="mapQ" placeholder="🔍 ${t('cols.name')} / ${t('cols.city')}" value="${esc(mapQ)}">
     <select id="mapState"><option value="all">${lang==='tr'?'Tüm bölgeler':lang==='en'?'All regions':'Alle Regionen'}</option><optgroup label="Deutschland">${states.filter(x=>DE_STATE_LIST.includes(x)).map(s=>`<option ${mapState===s?'selected':''}>${s}</option>`).join('')}</optgroup><optgroup label="Europa">${states.filter(x=>!DE_STATE_LIST.includes(x)).map(s=>`<option ${mapState===s?'selected':''}>${s}</option>`).join('')}</optgroup></select>
     <div class="chips"><button class="chip ${mapType==='all'?'on':''}" data-mt="all">${lang==='tr'?'Tümü':lang==='en'?'All':'Alle'}</button>${typesOn().map(k=>`<button class="chip ${mapType===k?'on':''}" data-mt="${k}"><span class="dot" style="background:${TYPE_COL[k]}"></span>${t('types.'+k)}</button>`).join('')}</div>
     <span class="pill" style="margin-left:auto">${f.length} / ${list.length}</span></div>`:'';
@@ -1822,7 +1824,7 @@ function viewDash(){
     </div>
     ${top}
     <div class="grid two dash-mid">
-      <div class="card dash-map"><div class="hd"><h2>${t('map.title')}</h2><span class="sp"></span>${brandChips()}</div>${mapBlock(visiblePartners())}</div>
+      <div class="card dash-map"><div class="hd"><h2>${t('map.title')}</h2><span class="sp"></span><span class="pill">${mapFiltered(visiblePartners()).length} / ${visiblePartners().length}</span></div>${mapBlock(visiblePartners(),{tidy:true})}</div>
       <div style="display:grid;gap:14px;align-content:start">
         <div class="card"><div class="hd"><h2>${t('activity')}</h2></div><div class="feed">${FEED.map(f=>`<div class="it"><span class="st ${f.c}" style="width:8px;height:8px;margin-top:6px;background:currentColor;border-radius:50%"></span><span>${pick(f)}</span><small>${f.w}</small></div>`).join('')}</div></div>
         ${perfCard()}
